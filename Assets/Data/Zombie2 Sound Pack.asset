@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 160d8d36be90b8c4bb2beb67c9b3f1ec, type: 3}
+  m_Name: Zombie2 Sound Pack
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieSoundPack
+  alive:
+  - {fileID: 8300000, guid: 8a7e00b8fb1bfea45b0f7094ef0160c6, type: 3}
+  - {fileID: 8300000, guid: d015d655a30438342beb0dac5d55a1bf, type: 3}
+  - {fileID: 8300000, guid: b9b87194bdc8bbc468342ffb9f4a5e3a, type: 3}
+  - {fileID: 8300000, guid: 636f25171638abf419b3d22b8271735a, type: 3}
+  - {fileID: 8300000, guid: 4d2cefffd6eb55a46b3fbfefd69b56d1, type: 3}
+  - {fileID: 8300000, guid: d152e735fbd1cd9448fdf148a3fd50ab, type: 3}
+  hit:
+  - {fileID: 8300000, guid: e8f5a062bcd6f1b4599813c6c9545f9d, type: 3}
+  - {fileID: 8300000, guid: 1359739b93d4e7f46aaa7fecb1243fa7, type: 3}
+  - {fileID: 8300000, guid: 5672c33dcf0a05e4dbf892842189ccc0, type: 3}
+  - {fileID: 8300000, guid: b23da23f178028347821dad70f7ee2dd, type: 3}
+  - {fileID: 8300000, guid: af5a83f9b1fa41742ae5b6764ea2bd4c, type: 3}
+  death:
+  - {fileID: 8300000, guid: 2e153660f7c73cf40bea8188837beee1, type: 3}
+  - {fileID: 8300000, guid: ad38eb31c4e353f43ac6260a7da7eef7, type: 3}
+  - {fileID: 8300000, guid: ccbfdb1db98610748ae563791679d99e, type: 3}
+  - {fileID: 8300000, guid: b6d1fe45311bace47943088045f368b9, type: 3}
+  - {fileID: 8300000, guid: 5fb61f973bc4c02408fc2b6bc84b3b5d, type: 3}
+  aliveVolume: 0.5
+  hitVolume: 0.7
+  deathVolume: 0.8
