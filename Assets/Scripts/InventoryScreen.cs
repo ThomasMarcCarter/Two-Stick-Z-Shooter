@@ -55,7 +55,7 @@ public class InventoryScreen : MonoBehaviour
     [SerializeField] private Vector2 size = new Vector2(820f, 470f);
 
     private const float CardHeight = 104f;
-    private const float ModBarHeight = 38f;
+    private const float ModBarHeight = 48f;
     private const float CellGap = 5f;
     private const float DragThreshold = 10f;
 
@@ -100,8 +100,7 @@ public class InventoryScreen : MonoBehaviour
     private readonly TMP_Text[] cardLabels = new TMP_Text[2];
     private readonly TMP_Text[] cardNames = new TMP_Text[2];
     private readonly TMP_Text[] cardDetails = new TMP_Text[2];
-    private readonly TMP_Text[,] modMain = new TMP_Text[2, 5];
-    private readonly TMP_Text[,] modSub = new TMP_Text[2, 5];
+    private readonly TMP_Text[,] modLabels = new TMP_Text[2, 5];
     private readonly TMP_Text[] cellMain = new TMP_Text[Backpack.CellCount];
     private readonly TMP_Text[] cellSub = new TMP_Text[Backpack.CellCount];
     private readonly TMP_Text[] quickMain = new TMP_Text[QuickBar.SlotCount];
@@ -321,7 +320,7 @@ public class InventoryScreen : MonoBehaviour
 
     private Rect CardRect(int index)
     {
-        float top = Top - 66f - index * (CardHeight + ModBarHeight + 24f);
+        float top = Top - 66f - index * (CardHeight + ModBarHeight + 16f);
         return Rect.MinMaxRect(Left, top - CardHeight, Middle - 14f, top);
     }
 
@@ -411,23 +410,22 @@ public class InventoryScreen : MonoBehaviour
             for (int s = 0; s < ModSlots.Length; s++)
             {
                 Rect slot = ModSlotRect(i, s);
-                modMain[i, s] = MakeText(panel.transform, "", 14, new Rect(slot.xMin + 4f, slot.yMin + 13f, slot.width - 8f, 20f), phosphor, TextAlignmentOptions.Center, 3f);
-                modSub[i, s] = MakeText(panel.transform, WeaponAttachment.SlotName(ModSlots[s]), 8, new Rect(slot.xMin + 4f, slot.yMin + 3f, slot.width - 8f, 12f), dim, TextAlignmentOptions.Center, 2f);
+                modLabels[i, s] = MakeLabel(panel.transform, new Rect(slot.xMin + 3f, slot.yMin + 3f, slot.width - 6f, 11f), dim);
             }
         }
 
         // Melee: its stats and upgrades, under the sidearm.
         Rect lastBar = ModBarRect(1);
-        meleeStats = MakeText(panel.transform, "", 11, new Rect(Left, lastBar.yMin - 30f, Middle - 14f - Left, 18f), phosphor, TextAlignmentOptions.Left, 3f);
+        meleeStats = MakeText(panel.transform, "", 11, new Rect(Left, lastBar.yMin - 22f, Middle - 14f - Left, 18f), phosphor, TextAlignmentOptions.Left, 3f);
         meleeStats.richText = true;
-        meleeUpgrades = MakeText(panel.transform, "", 10, new Rect(Left, lastBar.yMin - 50f, Middle - 14f - Left, 16f), dim, TextAlignmentOptions.Left, 3f);
+        meleeUpgrades = MakeText(panel.transform, "", 10, new Rect(Left, lastBar.yMin - 38f, Middle - 14f - Left, 16f), dim, TextAlignmentOptions.Left, 3f);
         meleeUpgrades.richText = true;
 
         for (int i = 0; i < Backpack.CellCount; i++)
         {
             Rect cell = CellRect(i);
             cellMain[i] = MakeText(panel.transform, "", 15, new Rect(cell.xMin + 2f, cell.yMin + 22f, cell.width - 4f, 22f), phosphor, TextAlignmentOptions.Center, 2f);
-            cellSub[i] = MakeText(panel.transform, "", 8, new Rect(cell.xMin + 2f, cell.yMin + 9f, cell.width - 4f, 12f), dim, TextAlignmentOptions.Center, 1f);
+            cellSub[i] = MakeLabel(panel.transform, new Rect(cell.xMin + 2f, cell.yMin + 9f, cell.width - 4f, 12f), dim);
         }
 
         BuildOverlay();
@@ -448,11 +446,21 @@ public class InventoryScreen : MonoBehaviour
 
         float cell = CellSize;
         ghostMain = MakeText(overlay, "", 15, new Rect(0f, 0f, cell * 0.9f, 22f), phosphor, TextAlignmentOptions.Center, 2f);
-        ghostSub = MakeText(overlay, "", 8, new Rect(0f, 0f, cell * 0.9f, 12f), Fade(phosphor, 0.7f), TextAlignmentOptions.Center, 1f);
+        ghostSub = MakeLabel(overlay, new Rect(0f, 0f, cell * 0.9f, 12f), Fade(phosphor, 0.7f));
 
         tooltipText = MakeText(overlay, "", 14, new Rect(0f, 0f, 260f, 80f), phosphor, TextAlignmentOptions.TopLeft, 3f);
         tooltipText.richText = true;
         tooltipRect = tooltipText.rectTransform;
+    }
+
+    // The small caption along the bottom of a slot or cell; long names shrink to fit.
+    private TMP_Text MakeLabel(Transform parent, Rect rect, Color colour)
+    {
+        TMP_Text label = MakeText(parent, "", 8, rect, colour, TextAlignmentOptions.Center, 1f);
+        label.enableAutoSizing = true;
+        label.fontSizeMin = 5f;
+        label.fontSizeMax = 8f;
+        return label;
     }
 
     private TMP_Text MakeText(Transform parent, string text, float fontSize, Rect rect, Color colour, TextAlignmentOptions alignment, float spacing = 6f)
@@ -874,9 +882,8 @@ public class InventoryScreen : MonoBehaviour
             {
                 WeaponAttachment fitted = gun != null ? gun.AttachmentIn(ModSlots[s]) : null;
                 bool lifted = holding && heldFrom.Kind == SpotKind.ModSlot && heldFrom.Index == i && heldFrom.Slot == s;
-                modMain[i, s].text = fitted != null && !lifted ? fitted.shortName : "";
-                modMain[i, s].color = fitted != null ? Color.Lerp(fitted.colour, Color.white, 0.4f) : phosphor;
-                modSub[i, s].alpha = gun != null ? 1f : 0.35f;
+                modLabels[i, s].text = fitted != null && !lifted ? AttachmentLabel(fitted) : WeaponAttachment.SlotName(ModSlots[s]);
+                modLabels[i, s].alpha = gun != null ? 1f : 0.35f;
             }
         }
 
@@ -944,9 +951,8 @@ public class InventoryScreen : MonoBehaviour
 
         if (item.Kind == Backpack.ItemKind.Attachment)
         {
-            main.text = item.Attachment.shortName;
-            main.color = Color.Lerp(item.Attachment.colour, Color.white, 0.4f);
-            sub.text = WeaponAttachment.SlotName(item.Attachment.slot);
+            main.text = "";   // drawn as a picture instead (DrawItem)
+            sub.text = AttachmentLabel(item.Attachment);
         }
         else if (item.Kind == Backpack.ItemKind.Consumable)
         {
@@ -960,6 +966,17 @@ public class InventoryScreen : MonoBehaviour
             main.color = Color.Lerp(AmmoInfo.Colour(item.AmmoType), Color.white, 0.3f);
             sub.text = AmmoInfo.Name(item.AmmoType);
         }
+    }
+
+    private static string AttachmentLabel(WeaponAttachment attachment)
+    {
+        return attachment.name.ToUpperInvariant();
+    }
+
+    // The colour an attachment's picture is drawn in: its own colour, lifted towards white.
+    private static Color AttachmentInk(WeaponAttachment attachment, float alpha)
+    {
+        return Fade(Color.Lerp(attachment.colour, Color.white, 0.4f), alpha);
     }
 
     // The carried item under the cursor, or the tooltip for whatever is under it.
@@ -1203,14 +1220,15 @@ public class InventoryScreen : MonoBehaviour
         {
             FillRect(vh, rect, Fade(fitted.colour, 0.16f));
             FillRect(vh, new Rect(rect.xMin, rect.yMax - 3f, rect.width, 3f), fitted.colour);
+            AttachmentSilhouette.Draw(vh, fitted, new Rect(rect.xMin + 5f, rect.yMin + 15f, rect.width - 10f, rect.height - 21f), AttachmentInk(fitted, 1f));
         }
 
         float thickness = hovered || target ? 2f : 1f;
         OutlineRect(vh, rect, thickness, Fade(phosphor, hovered || target ? 0.95f : 0.3f));
     }
 
-    // An item in a cell (or the one being carried): attachments with a bar in their colour,
-    // ammo with a swatch and a fill bar for how full the stack is.
+    // An item in a cell (or the one being carried): attachments as a wireframe picture under a
+    // bar in their colour, ammo with a swatch and a fill bar for how full the stack is.
     private void DrawItem(VertexHelper vh, Rect cell, Backpack.Item item, float alpha)
     {
         if (item.Kind == Backpack.ItemKind.Attachment)
@@ -1218,6 +1236,8 @@ public class InventoryScreen : MonoBehaviour
             Color colour = item.Attachment.colour;
             FillRect(vh, cell, Fade(colour, 0.15f * alpha));
             FillRect(vh, new Rect(cell.xMin, cell.yMax - 4f, cell.width, 4f), Fade(colour, alpha));
+            Rect picture = new Rect(cell.xMin + 5f, cell.yMin + 22f, cell.width - 10f, cell.height - 30f);
+            AttachmentSilhouette.Draw(vh, item.Attachment, picture, AttachmentInk(item.Attachment, alpha));
             return;
         }
 

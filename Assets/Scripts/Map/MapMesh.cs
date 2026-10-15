@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -70,6 +71,88 @@ public static class MapMesh
         Vector2 side = new Vector2(-direction.y, direction.x) * thickness / 2f;
 
         Quad(vh, from - side, from + side, to + side, to - side, colour);
+    }
+
+    // Joined line segments through the points, closed back to the first one if asked.
+    public static void Polyline(VertexHelper vh, IList<Vector2> points, float thickness, Color colour, bool closed)
+    {
+        int count = closed ? points.Count : points.Count - 1;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 from = points[i];
+            Vector2 to = points[(i + 1) % points.Count];
+            Vector2 direction = (to - from).normalized * thickness * 0.5f;
+            Line(vh, from - direction, to + direction, thickness, colour);   // overlap the joints so corners stay solid
+        }
+    }
+
+    // A filled simple polygon (convex or not), split into triangles by ear clipping.
+    public static void Polygon(VertexHelper vh, IList<Vector2> points, Color colour)
+    {
+        int count = points.Count;
+
+        if (count < 3)
+            return;
+
+        float area = 0f;
+
+        for (int i = 0; i < count; i++)
+            area += Cross(points[i], points[(i + 1) % count]);
+
+        List<int> remaining = new List<int>(count);
+
+        for (int i = 0; i < count; i++)
+            remaining.Add(area >= 0f ? i : count - 1 - i);   // walk anticlockwise
+
+        int guard = count * count;
+
+        while (remaining.Count > 3 && guard-- > 0)
+        {
+            bool clipped = false;
+
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                Vector2 a = points[remaining[(i + remaining.Count - 1) % remaining.Count]];
+                Vector2 b = points[remaining[i]];
+                Vector2 c = points[remaining[(i + 1) % remaining.Count]];
+
+                if (Cross(b - a, c - b) <= 0f || AnyInside(points, remaining, a, b, c))
+                    continue;
+
+                Triangle(vh, a, b, c, colour);
+                remaining.RemoveAt(i);
+                clipped = true;
+                break;
+            }
+
+            if (!clipped)
+                break;   // degenerate outline: fill what's left as a fan below
+        }
+
+        for (int i = 1; i < remaining.Count - 1; i++)
+            Triangle(vh, points[remaining[0]], points[remaining[i]], points[remaining[i + 1]], colour);
+    }
+
+    private static float Cross(Vector2 a, Vector2 b)
+    {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    private static bool AnyInside(IList<Vector2> points, List<int> remaining, Vector2 a, Vector2 b, Vector2 c)
+    {
+        foreach (int index in remaining)
+        {
+            Vector2 p = points[index];
+
+            if (p == a || p == b || p == c)
+                continue;
+
+            if (Cross(b - a, p - a) >= 0f && Cross(c - b, p - b) >= 0f && Cross(a - c, p - c) >= 0f)
+                return true;
+        }
+
+        return false;
     }
 
     public static void Ring(VertexHelper vh, Vector2 centre, float radius, float thickness, Color colour)
