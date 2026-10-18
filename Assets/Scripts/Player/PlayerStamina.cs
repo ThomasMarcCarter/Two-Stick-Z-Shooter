@@ -80,6 +80,13 @@ public class PlayerStamina : MonoBehaviour
 
     // Uses some up in one go (a melee swing), holding off the refill like sprinting does.
     // Running it dry this way winds the player too.
+    // Scales the stamina pool (and refills it), e.g. from the hideout's Conditioning upgrade.
+    public void ScaleMax(float multiplier)
+    {
+        maxStamina *= Mathf.Max(0.1f, multiplier);
+        Current = maxStamina;
+    }
+
     public void Spend(float amount)
     {
         if (amount <= 0f)

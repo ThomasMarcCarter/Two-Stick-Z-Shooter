@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 060ed1ddb6938734ea27b63f26d62e09, type: 3}
+  m_Name: CharacterVisuals
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterVisuals
+  player: {fileID: 919132149155446097, guid: cc1b53da5f9f0ec489fd1cb409658ccd, type: 3}
+  zombie: {fileID: 919132149155446097, guid: 03a7eb42cf38c4e4aab8c47884d99d57, type: 3}
+  brute: {fileID: 919132149155446097, guid: b9420a263c828734cbc244f993ee9a6f, type: 3}
+  bloater: {fileID: 919132149155446097, guid: eba8a8fa4cc27f449955ffc0702b5ade, type: 3}
+  butcher: {fileID: 919132149155446097, guid: 5607f9e21fe302a47973da839f15318c, type: 3}
+  broodmother: {fileID: 919132149155446097, guid: 4ebf4e71b57099c42a3303d721d785a5, type: 3}
+  howler: {fileID: 919132149155446097, guid: f4ef00dc6cd19464cbd9a9bec4d232ac, type: 3}

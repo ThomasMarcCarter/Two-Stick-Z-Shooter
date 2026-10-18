@@ -89,10 +89,15 @@ public class Projectile : MonoBehaviour
         tracer = null;
     }
 
-    // bonusDamage: extra damage from the gun's attachments (a match barrel).
-    public void Initialize(Vector3 direction, GameObject shooter, float speedMultiplier = 1f, int bonusDamage = 0)
+    // bonusDamage: extra damage from the gun's attachments (a match barrel). tracerLift: how far
+    // above the round its streak is drawn, so it comes out of a gun held higher than shots fly
+    // (see Gun.ShotHeight).
+    public void Initialize(Vector3 direction, GameObject shooter, float speedMultiplier = 1f, int bonusDamage = 0, float tracerLift = 0f)
     {
         damage += bonusDamage;
+
+        if (tracer != null)
+            tracer.transform.position = transform.position + Vector3.up * tracerLift;
 
         rb = GetComponent<Rigidbody>();
 

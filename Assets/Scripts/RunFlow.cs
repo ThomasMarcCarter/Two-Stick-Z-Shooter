@@ -1,15 +1,20 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Leaving the current run: starting a fresh one, or heading to the hideout. Shared by the main
-// menu and the pause, death and victory screens.
+// Leaving the current run: starting a fresh one, heading to the hideout, or back to the main
+// menu. Shared by the main menu and the pause, death and victory screens. Each reloads the game
+// scene; the hideout is built by the FloorGenerator as floor 0 of that same scene (a single room
+// with the upgrade terminal and the hatch down to floor 1), so no other scene is needed.
 public static class RunFlow
 {
-    // The hideout scene. Until a scene with this name exists and is in the build list, exiting
-    // to the hideout just reports that it isn't available.
-    public const string HideoutScene = "Hideout";
+    // Set before reloading for the hideout; the FloorGenerator reads it once when it starts.
+    private static bool enterHideoutOnLoad;
 
-    public const string HideoutUnavailable = "> HIDEOUT UPLINK OFFLINE // UNDER CONSTRUCTION";
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        enterHideoutOnLoad = false;
+    }
 
     // Reloads the game scene for a fresh run, going straight in rather than to the main menu.
     public static void RestartRun()
@@ -25,14 +30,20 @@ public static class RunFlow
         Load(SceneManager.GetActiveScene().name);
     }
 
-    // Returns false if there's no hideout to go to yet.
-    public static bool TryExitToHideout()
+    // Reloads the game scene into the hideout.
+    public static void ExitToHideout()
     {
-        if (!Application.CanStreamedLevelBeLoaded(HideoutScene))
-            return false;
+        MainMenu.SkipOnNextLoad = true;
+        enterHideoutOnLoad = true;
+        Load(SceneManager.GetActiveScene().name);
+    }
 
-        Load(HideoutScene);
-        return true;
+    // True once if the scene was loaded for the hideout.
+    public static bool ConsumeHideoutRequest()
+    {
+        bool requested = enterHideoutOnLoad;
+        enterHideoutOnLoad = false;
+        return requested;
     }
 
     private static void Load(string sceneName)

@@ -18,7 +18,7 @@ public class PlayerWeapon : MonoBehaviour
         public Gun Gun;
         public GameObject Prefab;
 
-        public string Name => Prefab != null ? Prefab.name.ToUpperInvariant() : "";
+        public string Name => Gun.DisplayName(Prefab);
     }
 
     public Equipped Main { get; } = new Equipped();
@@ -141,6 +141,18 @@ public class PlayerWeapon : MonoBehaviour
 
         Destroy(pickup.gameObject);
         nearbyPickup = null;
+    }
+
+    // Hands the player a gun with a full magazine, e.g. the hideout's Armory upgrade at the start
+    // of a run.
+    public Gun Give(GameObject weaponPrefab)
+    {
+        if (weaponPrefab == null || weaponPrefab.GetComponent<Gun>() == null)
+            return null;
+
+        Gun gun = Equip(weaponPrefab);
+        gun.SetCurrentAmmo(gun.GetMagazineSize());
+        return gun;
     }
 
     // Puts a new gun from a prefab into its slot (dropping what was there) and takes it in hand.

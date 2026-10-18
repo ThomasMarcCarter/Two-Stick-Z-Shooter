@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 
 // Shown when the player takes the trophy after the last boss. Pauses the game, shows the run's
-// stats, and offers a new run, the hideout or the main menu. Works with mouse or controller (CrtMenu).
+// stats and the scrap it earned for the hideout, and offers a new run, the hideout or the main menu. Works with mouse or controller (CrtMenu).
 public class VictoryScreen : MonoBehaviour
 {
     public static bool IsShowing { get; private set; }
@@ -23,7 +23,7 @@ public class VictoryScreen : MonoBehaviour
         menu = new CrtMenu(newRunButton, hideoutButton, mainMenuButton);
     }
 
-    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth)
+    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned)
     {
         IsShowing = true;
         Time.timeScale = 0f;
@@ -35,7 +35,8 @@ public class VictoryScreen : MonoBehaviour
             $"<mspace=0.62em>FLOORS CLEARED     {floorsCleared}\n" +
             $"HOSTILES DOWN      {enemiesKilled}\n" +
             $"VITALS REMAINING   {health}/{maxHealth}\n" +
-            $"MISSION TIME       {minutes:00}:{seconds:00}";
+            $"MISSION TIME       {minutes:00}:{seconds:00}\n" +
+            $"<color=#FFD95A>SCRAP SALVAGED     +{scrapEarned}  ({MetaProgress.Scrap} BANKED)</color>";
 
         notice.text = "";
         panel.SetActive(true);
@@ -53,8 +54,7 @@ public class VictoryScreen : MonoBehaviour
                 RunFlow.RestartRun();
                 break;
             case 1:
-                if (!RunFlow.TryExitToHideout())
-                    notice.text = RunFlow.HideoutUnavailable;
+                RunFlow.ExitToHideout();
                 break;
             case 2:
                 RunFlow.ExitToMainMenu();

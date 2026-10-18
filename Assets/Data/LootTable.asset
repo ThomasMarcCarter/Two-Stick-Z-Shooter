@@ -91,6 +91,39 @@ MonoBehaviour:
     count: 1
     weight: 0.5
     minFloor: 1
+  - label: Uzi
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 0d3df37da49af364c8189243fc0cd179, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.4
+    minFloor: 1
+  - label: Revolver
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 69e926b163683e9499e43036f7dd98c2, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.4
+    minFloor: 1
+  - label: DoubleBarrel
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.35
+    minFloor: 1
   - label: Medkit
     kind: 3
     weapon: {fileID: 0}
@@ -214,6 +247,61 @@ MonoBehaviour:
     count: 1
     weight: 0.1
     minFloor: 1
+  - label: MP5
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.08
+    minFloor: 1
+  - label: Uzi
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 0d3df37da49af364c8189243fc0cd179, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.08
+    minFloor: 1
+  - label: Revolver
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 69e926b163683e9499e43036f7dd98c2, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.08
+    minFloor: 1
+  - label: DoubleBarrel
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.08
+    minFloor: 1
+  - label: HuntingRifle
+    kind: 0
+    weapon: {fileID: 1053666970914164882, guid: 13c3f3d244d004d49b72e595e72e6581, type: 3}
+    fullMagazine: 0
+    ammoType: 0
+    amountMultiplier: 1
+    crate: 0
+    consumable: 0
+    count: 1
+    weight: 0.06
+    minFloor: 2
   - label: Ammo crate for held guns
     kind: 2
     weapon: {fileID: 0}

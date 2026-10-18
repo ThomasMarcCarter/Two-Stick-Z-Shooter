@@ -110,8 +110,7 @@ public class PauseMenu : MonoBehaviour
                 RunFlow.RestartRun();
                 break;
             case 4:
-                if (!RunFlow.TryExitToHideout())
-                    notice.text = RunFlow.HideoutUnavailable;
+                RunFlow.ExitToHideout();
                 break;
             case 5:
                 RunFlow.ExitToMainMenu();
@@ -145,7 +144,7 @@ public class PauseMenu : MonoBehaviour
         AudioListener.pause = true;
 
         subtitle.text = floor != null
-            ? $"OPERATION SUSPENDED // FLOOR {floor.FloorNumber} OF {floor.TotalFloors}"
+            ? (floor.IsHideout ? "OPERATION STANDBY // HIDEOUT" : $"OPERATION SUSPENDED // FLOOR {floor.FloorNumber} OF {floor.TotalFloors}")
             : "OPERATION SUSPENDED";
         notice.text = "";
         panel.SetActive(true);

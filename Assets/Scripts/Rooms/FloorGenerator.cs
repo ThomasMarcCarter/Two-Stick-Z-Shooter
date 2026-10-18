@@ -156,6 +156,10 @@ public class FloorGenerator : MonoBehaviour
     [SerializeField] private Material ammoMaterial;
     [Tooltip("Models for ammo drops and crates. Without one they're plain glowing blocks.")]
     [SerializeField] private AmmoVisuals ammoVisuals;
+    [Tooltip("Player, zombie and boss models. Without one they stay placeholder blocks.")]
+    [SerializeField] private CharacterVisuals characterVisuals;
+    [Tooltip("Models for consumable pickups and thrown items. Without one they're built from primitives.")]
+    [SerializeField] private ConsumableVisuals consumableVisuals;
     [Tooltip("Chance an enemy drops ammo when it dies. Bosses always drop.")]
     [SerializeField, Range(0f, 1f)] private float enemyAmmoDropChance = 0.3f;
     [Tooltip("Chance a combat room has an ammo crate in it.")]
@@ -241,6 +245,10 @@ public class FloorGenerator : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private Vector3 spawnOffset = new Vector3(0f, 1f, -2f);
 
+    [Header("Hideout")]
+    [Tooltip("The main weapons the hideout's Armory upgrade starts a run with, by level (1, 2, 3).")]
+    [SerializeField] private GameObject[] armoryWeapons;
+
     public event Action<Room> RoomEntered;
 
     public IReadOnlyList<Room> Rooms => rooms;
@@ -249,6 +257,18 @@ public class FloorGenerator : MonoBehaviour
     public int FloorNumber { get; private set; } = 1;
     public int TotalFloors => totalFloors;
     public int EnemiesKilled { get; private set; }
+
+    // Floor 0 is the hideout: one quiet room with the upgrade terminal and the hatch to floor 1.
+    public bool IsHideout => FloorNumber == 0;
+    public string FloorName => IsHideout ? "HIDEOUT" : $"FLOOR {FloorNumber}";
+
+    // When floor 1 of this run began, for the victory screen's mission time.
+    public float RunStartTime { get; private set; }
+
+    private bool runPerksApplied;
+
+    // The ammo drop chance after the hideout's Scavenger upgrade.
+    private float EnemyAmmoDropChance => Mathf.Clamp01(enemyAmmoDropChance + 0.1f * MetaProgress.Level(MetaUpgrade.Scavenger));
     public Vector2 RoomSize => roomSize;
     public float WallThickness => wallThickness;
 
@@ -284,6 +304,8 @@ public class FloorGenerator : MonoBehaviour
     {
         EnemySenses.Use(enemySenses);
         AmmoVisuals.Use(ammoVisuals);
+        ConsumableVisuals.Use(consumableVisuals);
+        CharacterVisuals.Use(characterVisuals);
 
         // Thrown things and effects are built from the pickups' material, even before any
         // pickup has spawned.
@@ -300,6 +322,12 @@ public class FloorGenerator : MonoBehaviour
 
     private void Start()
     {
+        if (RunFlow.ConsumeHideoutRequest())
+            FloorNumber = 0;
+
+        // The player's capsule is 2 tall around its middle; the model stands on the floor.
+        CharacterVisuals.AttachToPlayer(player, 1f);
+
         Generate();
     }
 
@@ -331,6 +359,12 @@ public class FloorGenerator : MonoBehaviour
 
         CurrentSeed = randomSeed ? UnityEngine.Random.Range(int.MinValue, int.MaxValue) : seed;
         rng = new System.Random(CurrentSeed);
+
+        if (IsHideout)
+        {
+            GenerateHideout();
+            return;
+        }
 
         List<PlannedRoom> plan = GenerateLayout();
 
@@ -380,7 +414,92 @@ public class FloorGenerator : MonoBehaviour
         MountSpawnPickup();
         PlacePlayer();
 
+        if (FloorNumber == 1 && !runPerksApplied)
+            StartCoroutine(BeginRun());
+
         Debug.Log($"Generated floor {FloorNumber}: {rooms.Count} rooms, seed {CurrentSeed}");
+    }
+
+    // ---------- Hideout ----------
+
+    // Floor 0: a single quiet room with the upgrade terminal against the far wall and the hatch
+    // down to floor 1 in a near corner, well away from the walk to the terminal. No enemies,
+    // loot or clutter.
+    private void GenerateHideout()
+    {
+        PlannedRoom room = new PlannedRoom { Shape = RoomShape.Single, Cells = new List<Vector2Int> { Vector2Int.zero }, Type = RoomType.Start };
+
+        floorRoot = new GameObject("Hideout").transform;
+        floorRoot.SetParent(transform, false);
+        BuildRoom(room, new HashSet<(Vector2Int, Vector2Int)>());
+        BuildNavMesh();
+
+        Room hideout = rooms[0];
+        Vector3 centre = CellToWorld(Vector2Int.zero);
+
+        // The spawn room's wall gun waits for floor 1 (MountSpawnPickup brings it back).
+        if (spawnRoomPickup != null)
+            spawnRoomPickup.gameObject.SetActive(false);
+        float halfDepth = roomSize.y / 2f;
+
+        TerminalStation.Create(centre + new Vector3(0f, 0f, halfDepth - 1f), Vector3.back, hideout.transform);
+
+        SpawnExit(hideout, FloorExit.Kind.NextFloor);
+        Transform hatch = hideout.transform.Find("Hatch");
+
+        if (hatch != null)
+            hatch.position = centre + new Vector3(roomSize.x * 0.28f, 0f, -halfDepth * 0.45f);
+
+        PlacePlayer();
+        Debug.Log("Generated the hideout");
+    }
+
+    // The start of a run (floor 1): applies the hideout's upgrades to the player and starts the
+    // clock and the run's scrap tally. Waits a frame so the player's own start-up (starting gun,
+    // starting ammo) has happened first.
+    private System.Collections.IEnumerator BeginRun()
+    {
+        runPerksApplied = true;
+        RunStartTime = Time.time;
+        MetaProgress.BeginRun();
+        yield return null;
+
+        if (player == null)
+            yield break;
+
+        int toughness = MetaProgress.Level(MetaUpgrade.Toughness);
+        int conditioning = MetaProgress.Level(MetaUpgrade.Conditioning);
+        int cache = MetaProgress.Level(MetaUpgrade.AmmoCache);
+        int kit = MetaProgress.Level(MetaUpgrade.FieldKit);
+        int armory = MetaProgress.Level(MetaUpgrade.Armory);
+
+        if (toughness > 0 && player.TryGetComponent(out PlayerHealth health))
+            health.AddMaxHealth(toughness);
+
+        if (conditioning > 0 && player.TryGetComponent(out PlayerStamina stamina))
+            stamina.ScaleMax(1f + 0.15f * conditioning);
+
+        AmmoInventory ammo = player.GetComponent<AmmoInventory>();
+
+        if (cache > 0 && ammo != null)
+            ammo.Add(AmmoType.NineMil, MetaUpgrades.AmmoCacheRounds(cache));
+
+        Backpack backpack = Backpack.For(player.gameObject);
+
+        if (kit >= 1)
+            backpack.AddConsumable(ConsumableType.Medkit, 1, true);
+
+        if (kit >= 2)
+            backpack.AddConsumable(ConsumableType.Grenade, 1, true);
+
+        if (armory > 0 && armoryWeapons != null && armoryWeapons.Length > 0 && player.TryGetComponent(out PlayerWeapon weapons))
+        {
+            Gun gun = weapons.Give(armoryWeapons[Mathf.Min(armory, armoryWeapons.Length) - 1]);
+
+            // A spare magazine's worth for it.
+            if (gun != null && ammo != null)
+                ammo.Add(gun.AmmoType, gun.GetMagazineSize());
+        }
     }
 
     public void Clear()
@@ -639,7 +758,8 @@ public class FloorGenerator : MonoBehaviour
         if (kind == FloorExit.Kind.Trophy)
         {
             PlayerHealth health = player.GetComponent<PlayerHealth>();
-            victoryScreen.Show(FloorNumber, EnemiesKilled, Time.timeSinceLevelLoad, health.Health, health.MaxHealth);
+            int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled);
+            victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap);
             return;
         }
 
@@ -1116,7 +1236,7 @@ public class FloorGenerator : MonoBehaviour
         if (room.Type == RoomType.Boss)
         {
             room.Cleared += OnBossRoomCleared;
-            SpawnEnemy(room, room.transform.position, 2f, bossHealth, bossSpeed, bossContactDamage, "Boss", EnemyKind.Walker);
+            SpawnBoss(room);
             return placed;
         }
 
@@ -1144,13 +1264,38 @@ public class FloorGenerator : MonoBehaviour
     }
 
     // A combat-room zombie of a kind, scaled from the walker's numbers.
-    private void SpawnNormalEnemy(Room room, Vector3 position, EnemyKind kind)
+    private Enemy SpawnNormalEnemy(Room room, Vector3 position, EnemyKind kind)
     {
         int health = Mathf.Max(1, Mathf.RoundToInt(enemyHealth * EnemyKinds.HealthMultiplier(kind)));
         float speed = enemySpeed * EnemyKinds.SpeedMultiplier(kind);
         int damage = enemyContactDamage + EnemyKinds.ExtraDamage(kind);
         float size = 0.9f * EnemyKinds.SizeMultiplier(kind);
-        SpawnEnemy(room, position, size, health, speed, damage, kind == EnemyKind.Walker ? "Enemy" : EnemyKinds.Name(kind), kind);
+        return SpawnEnemy(room, position, size, health, speed, damage, kind == EnemyKind.Walker ? "Enemy" : EnemyKinds.Name(kind), kind);
+    }
+
+    // The floor's boss (see Bosses: a different one each floor), in the middle of its room,
+    // scaled from the boss health and speed set here.
+    private void SpawnBoss(Room room)
+    {
+        BossKind kind = Bosses.ForFloor(FloorNumber);
+        int health = Mathf.Max(1, Mathf.RoundToInt(bossHealth * Bosses.HealthMultiplier(kind)));
+        float speed = bossSpeed * Bosses.SpeedMultiplier(kind);
+        Enemy boss = SpawnEnemy(room, room.transform.position, Bosses.Size(kind), health, speed, bossContactDamage, "Boss", EnemyKind.Walker);
+        if (CharacterVisuals.Current != null)
+            CharacterVisuals.AttachToEnemy(boss, CharacterVisuals.Current.For(kind), CharacterAnimator.Style.Walker);
+
+        Bosses.Equip(boss, kind, (position, minionKind) => SpawnMinion(room, position, minionKind));
+    }
+
+    // A zombie a boss calls in mid-fight. Capped, so a long fight doesn't flood the room.
+    private Enemy SpawnMinion(Room room, Vector3 position, EnemyKind kind)
+    {
+        const int maxAlive = 8;   // the boss and seven others
+
+        if (room.Enemies.Count >= maxAlive)
+            return null;
+
+        return SpawnNormalEnemy(room, position, kind);
     }
 
     // Weighted pick among the kinds allowed on this floor that aren't at their room limit.
@@ -1224,7 +1369,7 @@ public class FloorGenerator : MonoBehaviour
 
         if (!boss)
         {
-            if (UnityEngine.Random.value < enemyAmmoDropChance)
+            if (UnityEngine.Random.value < EnemyAmmoDropChance)
             {
                 AmmoType type = PickAmmoType(UnityEngine.Random.value, UnityEngine.Random.value);
                 AmmoPickup.Spawn(type, DropAmount(type, 1f, UnityEngine.Random.value), position, room.transform, ammoMaterial, false);
@@ -2253,7 +2398,7 @@ public class FloorGenerator : MonoBehaviour
         return true;
     }
 
-    private void SpawnEnemy(Room room, Vector3 worldPosition, float size, int health, float speed, int contactDamage, string name, EnemyKind kind)
+    private Enemy SpawnEnemy(Room room, Vector3 worldPosition, float size, int health, float speed, int contactDamage, string name, EnemyKind kind)
     {
         GameObject enemyObject = CreateBlock(
             name,
@@ -2278,6 +2423,10 @@ public class FloorGenerator : MonoBehaviour
         Enemy enemy = enemyObject.AddComponent<Enemy>();
         enemy.Initialise(room, player, health, speed, contactDamage);
         enemy.SetKind(kind);
+
+        // Bosses get their own model in SpawnBoss.
+        if (CharacterVisuals.Current != null && name != "Boss")
+            CharacterVisuals.AttachToEnemy(enemy, CharacterVisuals.Current.For(kind), CharacterVisuals.StyleFor(kind));
         bool boss = name == "Boss";
 
         if (kind == EnemyKind.Bloater)
@@ -2324,6 +2473,7 @@ public class FloorGenerator : MonoBehaviour
             }
         };
         room.AddEnemy(enemy);
+        return enemy;
     }
 
     private void BuildCorridor(Vector2Int cell, Vector2Int direction)
@@ -2388,6 +2538,8 @@ public class FloorGenerator : MonoBehaviour
     {
         if (spawnRoomPickup == null || rooms.Count == 0)
             return;
+
+        spawnRoomPickup.gameObject.SetActive(true);
 
         Room start = rooms[0];
 

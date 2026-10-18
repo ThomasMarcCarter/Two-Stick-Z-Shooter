@@ -70,7 +70,7 @@ public class Enemy : MonoBehaviour
     private Rigidbody targetBody;
     private PlayerMovement targetMovement;
     private Rigidbody rb;
-    private Renderer bodyRenderer;
+    private Renderer[] bodyRenderers = new Renderer[0];
     private MaterialPropertyBlock flashBlock;
     private float flashTimer;
     private float bodyRadius = 0.5f;
@@ -117,10 +117,25 @@ public class Enemy : MonoBehaviour
     // Scales its speed, e.g. a bloater slowing as it swells. 1 normally.
     public float SpeedMultiplier { get; set; } = 1f;
 
+    // Scales the damage it takes, e.g. a boss dazed after charging into a wall. 1 normally.
+    public float DamageMultiplier { get; set; } = 1f;
+
+    // Scales how far it can see (walls still block it). Bosses see across their whole room.
+    public float SightRangeMultiplier { get; set; } = 1f;
+
+    // While true it still sees and hears, but doesn't move itself: a boss's attack (a charge,
+    // a dodge) is driving its body instead.
+    public bool ExternalControl { get; set; }
+
+    public bool CanSeeTarget => canSee;
+    public int MaxHealth => maxHealth;
+    public Rigidbody Body => rb;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        bodyRenderer = GetComponent<Renderer>();
+        Renderer own = GetComponent<Renderer>();
+        bodyRenderers = own != null ? new[] { own } : new Renderer[0];
         health = maxHealth;
 
         Collider body = GetComponent<Collider>();
@@ -190,21 +205,47 @@ public class Enemy : MonoBehaviour
         ApplyTint();
     }
 
+    // Overrides its look, for bosses (which aren't one of the normal kinds).
+    public void SetLook(Color? bodyTint, Color glow)
+    {
+        tint = bodyTint;
+        emission = glow;
+        ApplyTint();
+    }
+
+    // Changes how much it glows, e.g. a boss lighting up as it winds up an attack.
+    public void SetGlow(Color glow)
+    {
+        emission = glow;
+
+        if (flashTimer <= 0f)
+            ApplyTint();
+    }
+
+    // The renderers its colour, glow and hit flash go on: its block, or the model that replaced
+    // it (CharacterVisuals).
+    public void SetBodyRenderers(Renderer[] renderers)
+    {
+        bodyRenderers = renderers ?? new Renderer[0];
+        ApplyTint();
+    }
+
     private void ApplyTint()
     {
-        if (bodyRenderer == null)
-            return;
-
         if (tint == null)
         {
-            bodyRenderer.SetPropertyBlock(null);
+            foreach (Renderer renderer in bodyRenderers)
+                renderer.SetPropertyBlock(null);
+
             return;
         }
 
         flashBlock ??= new MaterialPropertyBlock();
         flashBlock.SetColor("_BaseColor", tint.Value);
         flashBlock.SetColor("_EmissionColor", emission);
-        bodyRenderer.SetPropertyBlock(flashBlock);
+
+        foreach (Renderer renderer in bodyRenderers)
+            renderer.SetPropertyBlock(flashBlock);
     }
 
     // Knocked back along a velocity (scaled down for heavy kinds), and staggered: it doesn't
@@ -251,6 +292,9 @@ public class Enemy : MonoBehaviour
         }
 
         UpdateSenses();
+
+        if (ExternalControl)
+            return;
 
         // Reeling from a blow: slide to a stop rather than steer.
         if (IsStaggered)
@@ -337,7 +381,7 @@ public class Enemy : MonoBehaviour
     private bool HasLineOfSight()
     {
         // A sneaking player is harder to pick out, so has to be closer to be seen.
-        float range = Senses.SightRangeFor(targetMovement != null && targetMovement.IsSneaking);
+        float range = Senses.SightRangeFor(targetMovement != null && targetMovement.IsSneaking) * SightRangeMultiplier;
 
         if (FlatDistance(rb.position, target.position) > range)
             return false;
@@ -601,7 +645,7 @@ public class Enemy : MonoBehaviour
         if (health <= 0 || room == null || !room.IsLocked)
             return;
 
-        health -= amount;
+        health -= Mathf.Max(1, Mathf.RoundToInt(amount * DamageMultiplier));
         Flash();
 
         // Being shot gives the shooter away, even from out of sight.
@@ -634,13 +678,13 @@ public class Enemy : MonoBehaviour
 
     private void Flash()
     {
-        if (bodyRenderer == null)
-            return;
-
         flashBlock ??= new MaterialPropertyBlock();
         flashBlock.SetColor("_BaseColor", Color.white);
         flashBlock.SetColor("_EmissionColor", emission);
-        bodyRenderer.SetPropertyBlock(flashBlock);
+
+        foreach (Renderer renderer in bodyRenderers)
+            renderer.SetPropertyBlock(flashBlock);
+
         flashTimer = hitFlashTime;
     }
 }

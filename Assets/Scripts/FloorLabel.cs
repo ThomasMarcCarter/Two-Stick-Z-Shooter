@@ -23,6 +23,8 @@ public class FloorLabel : MonoBehaviour
             return;
 
         shownFloor = floor.FloorNumber;
-        label.text = string.Format(format, shownFloor, floor.TotalFloors);
+        label.text = floor.IsHideout
+            ? string.Format(format.Replace("FLOOR {0}", "{2}"), shownFloor, floor.TotalFloors, floor.FloorName)
+            : string.Format(format, shownFloor, floor.TotalFloors);
     }
 }

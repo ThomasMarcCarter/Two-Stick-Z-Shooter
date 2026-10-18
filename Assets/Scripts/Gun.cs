@@ -23,13 +23,19 @@ public class Gun : MonoBehaviour
         Sidearm
     }
 
-    // Silhouette drawn for the gun on the equipment HUD.
+    // Silhouette drawn for the gun on the equipment HUD and inventory (see WeaponSilhouette).
+    // Append new ones at the end: prefabs store the number.
     public enum Icon
     {
         Pistol,
         Shotgun,
-        Rifle,
-        Carbine
+        Rifle,          // AK-47
+        Carbine,        // M4A1
+        SMG,            // MP5
+        MachinePistol,  // Uzi
+        Revolver,
+        DoubleBarrel,
+        BoltAction      // hunting rifle
     }
 
     [Header("Equipment")]
@@ -85,6 +91,8 @@ public class Gun : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioSource shotAudio;
+    [Tooltip("Pitch of the shot sound: below 1 is deeper (a bigger gun), above 1 sharper. Lets guns share a clip.")]
+    [SerializeField] private float shotPitch = 1f;
     [SerializeField] private AudioSource reloadAudio;
     [SerializeField] private AudioSource emptyAudio;
     [Tooltip("Per Shell only: played as each round goes in, through the reload audio source.")]
@@ -189,6 +197,33 @@ public class Gun : MonoBehaviour
 
     public Slot EquipSlot => slot;
     public Icon HudIcon => icon;
+
+    // The height (world Y) shots travel at, whatever height the gun is held at. Zombie bodies,
+    // low cover (boxes, props) and blasts are sized for shots at this height; the guns are held
+    // higher, at mid-torso, so each bullet's tracer is drawn lifted up to the muzzle (Projectile)
+    // and the laser sight finds its target at this height but is drawn from the muzzle.
+    public const float ShotHeight = 0.51f;
+
+    // The name shown for a gun prefab: its asset name upper-cased, with words split where a
+    // lower-case letter meets a capital ("DoubleBarrel" -> "DOUBLE BARREL", "AK47" unchanged).
+    public static string DisplayName(GameObject weapon)
+    {
+        if (weapon == null)
+            return "";
+
+        string name = weapon.name;
+        System.Text.StringBuilder text = new System.Text.StringBuilder(name.Length + 4);
+
+        for (int i = 0; i < name.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(name[i]) && char.IsLower(name[i - 1]))
+                text.Append(' ');
+
+            text.Append(name[i]);
+        }
+
+        return text.ToString().ToUpperInvariant();
+    }
     public AmmoType AmmoType => ammoType;
 
     // Spare rounds of this gun's ammo the player is carrying.
@@ -285,7 +320,8 @@ public class Gun : MonoBehaviour
                 pelletDirection,
                 transform.root.gameObject,
                 ProjectileSpeed * (1f + Random.Range(-pelletSpeedVariation, pelletSpeedVariation)),
-                BonusDamage
+                BonusDamage,
+                muzzle.position.y - spawn.y
             );
         }
 
@@ -297,7 +333,7 @@ public class Gun : MonoBehaviour
 
         // A suppressed shot is quieter and a little higher: a crack rather than a bang.
         float loudness = Loudness;
-        shotAudio.pitch = Random.Range(0.95f, 1.05f) * (loudness < 1f ? 1.15f : 1f);
+        shotAudio.pitch = shotPitch * Random.Range(0.95f, 1.05f) * (loudness < 1f ? 1.15f : 1f);
         shotAudio.PlayOneShot(shotAudio.clip, Mathf.Clamp01(Mathf.Lerp(0.25f, 1f, loudness)));
         Noise.Emit(transform.position, Noise.Gunshot * loudness, Noise.Kind.Gunshot);
 
@@ -307,14 +343,16 @@ public class Gun : MonoBehaviour
     // Where shots start: the muzzle, unless the barrel is poking through a wall or into an
     // enemy, in which case just short of whatever it's pushed into, so point-blank shots still
     // hit and shots can't start on the far side of a wall.
+    // (At ShotHeight, under the muzzle: see ShotHeight.)
     private Vector3 SpawnPoint()
     {
-        Vector3 from = new Vector3(transform.root.position.x, muzzle.position.y, transform.root.position.z);
-        Vector3 toMuzzle = muzzle.position - from;
+        Vector3 from = new Vector3(transform.root.position.x, ShotHeight, transform.root.position.z);
+        Vector3 muzzlePoint = new Vector3(muzzle.position.x, ShotHeight, muzzle.position.z);
+        Vector3 toMuzzle = muzzlePoint - from;
         float length = toMuzzle.magnitude;
 
         if (length < 0.001f)
-            return muzzle.position;
+            return muzzlePoint;
 
         Vector3 direction = toMuzzle / length;
         RaycastHit[] hits = Physics.RaycastAll(from, direction, length, ~0, QueryTriggerInteraction.Ignore);
@@ -329,7 +367,7 @@ public class Gun : MonoBehaviour
             nearest = Mathf.Min(nearest, hit.distance);
         }
 
-        return nearest < length ? from + direction * Mathf.Max(0f, nearest - 0.05f) : muzzle.position;
+        return nearest < length ? from + direction * Mathf.Max(0f, nearest - 0.05f) : muzzlePoint;
     }
 
     // Pellets are spread evenly across the cone with a little jitter, so every shot covers the

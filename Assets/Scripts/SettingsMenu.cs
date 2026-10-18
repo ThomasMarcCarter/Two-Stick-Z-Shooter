@@ -1,13 +1,17 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// Control rebinding, opened from the pause menu. One row per action with a keyboard/mouse column
-// and a controller column; pick a cell and press the new key or button. Moving and aiming on the
-// controller stay on the sticks. Bindings are saved by GameInput.
-// The rows are built at runtime, so adding an action here is one line in BuildRows.
+// The settings screen, opened from the pause and main menus, with two tabs along the top.
+// CONTROLS: one row per action with a keyboard/mouse column and a controller column; pick a cell
+// and press the new key or button (moving and aiming on the controller stay on the sticks).
+// Bindings are saved by GameInput. AUDIO / VIDEO: volumes, display mode, resolution, frame rate
+// and CRT strength (GameSettings); click or press to step a value on, right-click or left/right
+// to step it either way. Rows are built at runtime, so adding one is a line in BuildControls or
+// BuildOptions.
 public class SettingsMenu : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -24,7 +28,7 @@ public class SettingsMenu : MonoBehaviour
     // Waiting for the player to press the new key or button.
     public bool IsRebinding => rebinding != null || pendingRebind != null;
 
-    // One rebindable (or fixed) cell.
+    // One rebindable, fixed, option, tab or plain button cell.
     private class Cell
     {
         public CrtButton Button;      // null for fixed cells
@@ -33,9 +37,21 @@ public class SettingsMenu : MonoBehaviour
         public InputAction Action;
         public int BindingIndex = -1;
         public bool Gamepad;
+        public int Tab = -1;          // a tab button: the page it opens
+        public Func<string> Value;    // an option: its current value...
+        public Action<int> Step;      // ...and how to move it on (+1) or back (-1)
     }
 
-    private readonly List<Cell[]> grid = new List<Cell[]>();
+    private const int ControlsPage = 0;
+    private const int OptionsPage = 1;
+
+    private readonly List<Cell[]>[] pages = { new List<Cell[]>(), new List<Cell[]>() };
+    private readonly RectTransform[] pageRoots = new RectTransform[2];
+    private int page;
+    private RectTransform building;
+
+    private List<Cell[]> grid => pages[page];
+
     private int row = -1;
     private int column;
     private float nextMove;
@@ -55,13 +71,9 @@ public class SettingsMenu : MonoBehaviour
     {
         IsOpen = true;
         panel.SetActive(true);
-        status.text = "";
-        row = GameInput.UsingGamepad ? 0 : -1;
-        column = 0;
+        ShowPage(ControlsPage);
         held = true;
         nextMove = Time.unscaledTime + 0.35f;
-        RefreshLabels();
-        Highlight();
     }
 
     public void Close()
@@ -72,6 +84,22 @@ public class SettingsMenu : MonoBehaviour
         pendingRebind = null;
         IsOpen = false;
         panel.SetActive(false);
+    }
+
+    private void ShowPage(int index)
+    {
+        page = index;
+
+        for (int i = 0; i < pageRoots.Length; i++)
+            pageRoots[i].gameObject.SetActive(i == page);
+
+        status.text = page == OptionsPage
+            ? (GameInput.UsingGamepad ? "> LEFT / RIGHT TO CHANGE A SETTING" : "> CLICK TO CHANGE // RIGHT-CLICK OR LEFT / RIGHT TO GO BACK")
+            : "";
+        row = GameInput.UsingGamepad ? 0 : -1;
+        column = page;
+        RefreshLabels();
+        Highlight();
     }
 
     // Call every frame while open. Returns true when the player backs out.
@@ -96,21 +124,44 @@ public class SettingsMenu : MonoBehaviour
         HandleNavigation();
         Highlight();
 
+        // Right-click steps an option back.
+        if (hovered != null && hovered.Step != null && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        {
+            hovered.Step(-1);
+            RefreshLabels();
+            return false;
+        }
+
         bool clicked = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && hovered != null;
         Cell chosen = clicked ? hovered : GameInput.Submit.WasPressedThisFrame() ? Selected() : null;
 
         if (chosen == null)
             return false;
 
-        if (chosen == resetCell)
+        if (chosen.Tab >= 0)
+        {
+            ShowPage(chosen.Tab);
+        }
+        else if (chosen.Step != null)
+        {
+            chosen.Step(1);
+            RefreshLabels();
+        }
+        else if (chosen == controlsResetCell)
         {
             GameInput.ResetBindings();
             RefreshLabels();
             status.text = "> BINDINGS RESET TO DEFAULTS";
         }
-        else if (chosen == backCell)
+        else if (chosen == optionsResetCell)
         {
-            return true;
+            GameSettings.ResetToDefaults();
+            RefreshLabels();
+            status.text = "> AUDIO / VIDEO RESET TO DEFAULTS";
+        }
+        else if (chosen.Tab < 0 && chosen.Action == null)
+        {
+            return true;   // a BACK button
         }
         else if (chosen.Action != null)
         {
@@ -124,19 +175,44 @@ public class SettingsMenu : MonoBehaviour
 
     // ---------- Rows ----------
 
-    private Cell resetCell;
-    private Cell backCell;
+    private Cell controlsResetCell;
+    private Cell optionsResetCell;
 
-    // Header + action rows + gap + two buttons, for fitting everything into the container.
-    private const float LayoutRows = 1 + 23 + 0.5f + 2;
+    // Tabs + header + action rows + gap + two buttons, for fitting everything into the container.
+    private const float LayoutRows = 1 + 1 + 23 + 0.5f + 2;
 
     private void BuildRows()
     {
         // Shrink the rows if they'd otherwise run past the bottom of the panel.
         rowHeight = Mathf.Min(rowHeight, rowContainer.rect.height / LayoutRows - 4f);
 
-        float y = 0f;
+        for (int i = 0; i < pageRoots.Length; i++)
+        {
+            GameObject go = new GameObject(i == ControlsPage ? "Controls Page" : "Audio Video Page", typeof(RectTransform));
+            go.layer = gameObject.layer;
+            go.transform.SetParent(rowContainer, false);
+            RectTransform rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            pageRoots[i] = rect;
+        }
 
+        page = ControlsPage;
+        building = pageRoots[ControlsPage];
+        BuildControls();
+
+        page = OptionsPage;
+        building = pageRoots[OptionsPage];
+        BuildOptions();
+
+        page = ControlsPage;
+    }
+
+    private void BuildControls()
+    {
+        float y = 0f;
+        AddTabs(ref y);
         AddHeader(ref y);
 
         AddRow(ref y, "MOVE UP", Part(GameInput.Move, "Up"), Fixed("L-STICK"));
@@ -163,8 +239,58 @@ public class SettingsMenu : MonoBehaviour
         AddRow(ref y, "PAUSE", Binding(GameInput.Pause, false), Binding(GameInput.Pause, true));
 
         y -= rowHeight * 0.5f;
-        resetCell = AddWideButton(ref y, "[ RESET TO DEFAULTS ]");
-        backCell = AddWideButton(ref y, "[ BACK ]");
+        controlsResetCell = AddWideButton(ref y, "[ RESET TO DEFAULTS ]");
+        AddWideButton(ref y, "[ BACK ]");
+    }
+
+    private void BuildOptions()
+    {
+        float y = 0f;
+        AddTabs(ref y);
+        y -= rowHeight * 0.5f;
+
+        AddSection(ref y, "AUDIO");
+        AddOption(ref y, "MASTER VOLUME", () => GameSettings.Percent(GameSettings.MasterVolume), GameSettings.StepMaster);
+        AddOption(ref y, "EFFECTS VOLUME", () => GameSettings.Percent(GameSettings.EffectsVolume), GameSettings.StepEffects);
+        AddOption(ref y, "MUSIC VOLUME", () => GameSettings.Percent(GameSettings.MusicVolume), GameSettings.StepMusic);
+
+        y -= rowHeight * 0.5f;
+        AddSection(ref y, "VIDEO");
+        AddOption(ref y, "DISPLAY MODE", () => GameSettings.DisplayModeName(GameSettings.DisplayMode), GameSettings.StepDisplayMode);
+        AddOption(ref y, "RESOLUTION", () => $"{GameSettings.Resolution.x} x {GameSettings.Resolution.y}", GameSettings.StepResolution);
+        AddOption(ref y, "VSYNC", () => GameSettings.VSync ? "ON" : "OFF", _ => GameSettings.ToggleVSync());
+        AddOption(ref y, "FRAME RATE CAP", () => GameSettings.FrameCapName, d => { if (!GameSettings.VSync) GameSettings.StepFrameCap(d); });
+        AddOption(ref y, "CRT EFFECT", () => GameSettings.Crt.ToString().ToUpperInvariant(), GameSettings.StepCrt);
+
+        y -= rowHeight * 0.5f;
+        optionsResetCell = AddWideButton(ref y, "[ RESET TO DEFAULTS ]");
+        AddWideButton(ref y, "[ BACK ]");
+    }
+
+    private void AddTabs(ref float y)
+    {
+        Cell controls = new Cell { Tab = ControlsPage };
+        controls.Button = MakeButton("Tab Controls", "CONTROLS", new Vector2(0f, y), new Vector2(325f, rowHeight));
+        Cell options = new Cell { Tab = OptionsPage };
+        options.Button = MakeButton("Tab Audio Video", "AUDIO / VIDEO", new Vector2(335f, y), new Vector2(325f, rowHeight));
+        grid.Add(new[] { controls, options });
+        y -= rowHeight + 10f;
+    }
+
+    private void AddSection(ref float y, string title)
+    {
+        Color dim = new Color(phosphor.r, phosphor.g, phosphor.b, 0.55f);
+        MakeText(title + " Section", "> " + title, new Vector2(0f, y), new Vector2(240f, rowHeight), dim, TextAlignmentOptions.Left);
+        y -= rowHeight + 4f;
+    }
+
+    private void AddOption(ref float y, string name, Func<string> value, Action<int> step)
+    {
+        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), phosphor, TextAlignmentOptions.Left);
+        Cell cell = new Cell { Value = value, Step = step };
+        cell.Button = MakeButton(name + " Value", "", new Vector2(250f, y), new Vector2(410f, rowHeight));
+        grid.Add(new[] { cell });
+        y -= rowHeight + 4f;
     }
 
     private Cell Part(InputAction action, string part)
@@ -227,7 +353,7 @@ public class SettingsMenu : MonoBehaviour
     {
         GameObject go = new GameObject(name, typeof(RectTransform));
         go.layer = gameObject.layer;
-        go.transform.SetParent(rowContainer, false);
+        go.transform.SetParent(building, false);
         RectTransform rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
@@ -253,7 +379,7 @@ public class SettingsMenu : MonoBehaviour
     {
         GameObject go = new GameObject(name, typeof(RectTransform));
         go.layer = gameObject.layer;
-        go.transform.SetParent(parent != null ? parent : rowContainer, false);
+        go.transform.SetParent(parent != null ? parent : building, false);
         RectTransform rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
@@ -273,12 +399,17 @@ public class SettingsMenu : MonoBehaviour
 
     private void RefreshLabels()
     {
-        foreach (Cell[] cells in grid)
+        foreach (List<Cell[]> rows in pages)
         {
-            foreach (Cell cell in cells)
+            foreach (Cell[] cells in rows)
             {
-                if (cell.Action != null && cell.BindingIndex >= 0)
-                    cell.Button.Label.text = GameInput.BindingLabel(cell.Action, cell.BindingIndex);
+                foreach (Cell cell in cells)
+                {
+                    if (cell.Action != null && cell.BindingIndex >= 0)
+                        cell.Button.Label.text = GameInput.BindingLabel(cell.Action, cell.BindingIndex);
+                    else if (cell.Value != null)
+                        cell.Button.Label.text = $"<    {cell.Value()}    >";
+                }
             }
         }
     }
@@ -366,6 +497,16 @@ public class SettingsMenu : MonoBehaviour
         }
         else
         {
+            Cell current = grid[row][Mathf.Min(column, grid[row].Length - 1)];
+
+            // Left / right on an option changes it rather than moving across.
+            if (current.Step != null)
+            {
+                current.Step(input.x > 0f ? 1 : -1);
+                RefreshLabels();
+                return;
+            }
+
             column = Mathf.Clamp(column + (input.x > 0f ? 1 : -1), 0, 1);
         }
 
@@ -393,8 +534,11 @@ public class SettingsMenu : MonoBehaviour
         {
             foreach (Cell cell in cells)
             {
+                // The open page's tab stays lit, unless the cursor is on the tab row choosing another.
+                bool openTab = cell.Tab == page && row != 0;
+
                 if (cell.Button != null)
-                    cell.Button.SetHighlighted(cell == selected);
+                    cell.Button.SetHighlighted(cell == selected || openTab);
             }
         }
     }

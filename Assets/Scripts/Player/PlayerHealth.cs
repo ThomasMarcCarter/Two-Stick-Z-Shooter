@@ -34,22 +34,26 @@ public class PlayerHealth : MonoBehaviour
     public event Action<PlayerHealth> Died;
 
     private Rigidbody rb;
-    private Renderer body;
+    private Renderer[] bodies = new Renderer[0];
     private float invulnerableUntil;
 
     private void Awake()
     {
         Health = maxHealth;
         rb = GetComponent<Rigidbody>();
-        body = GetComponent<Renderer>();
+        Renderer own = GetComponent<Renderer>();
+        bodies = own != null ? new[] { own } : new Renderer[0];
     }
 
     private void Update()
     {
-        if (body == null || IsDead)
+        if (IsDead)
             return;
 
-        body.enabled = !IsInvulnerable || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f;
+        bool visible = !IsInvulnerable || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f;
+
+        foreach (Renderer renderer in bodies)
+            renderer.enabled = visible;
     }
 
     // Returns false if the hit didn't land (dead, or still invulnerable from the last one).
@@ -86,6 +90,23 @@ public class PlayerHealth : MonoBehaviour
         TakeDamage(amount, transform.position);
     }
 
+    // The renderers that blink while invulnerable: the capsule, or the model that replaced it.
+    public void SetBodyRenderers(Renderer[] renderers)
+    {
+        bodies = renderers ?? new Renderer[0];
+    }
+
+    // Raises max health (and current health with it), e.g. from the hideout's Toughness upgrade.
+    public void AddMaxHealth(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        maxHealth += amount;
+        Health += amount;
+        Healed?.Invoke(this);
+    }
+
     // Returns how much health was actually restored (none if dead or already full).
     public int Heal(int amount)
     {
@@ -111,7 +132,8 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         IsDead = true;
-        body.enabled = true;
+        foreach (Renderer renderer in bodies)
+            renderer.enabled = true;
         rb.linearVelocity = Vector3.zero;
 
         // Lock the controls.

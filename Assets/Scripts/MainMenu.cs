@@ -103,8 +103,7 @@ public class MainMenu : MonoBehaviour
                 NewRun();
                 break;
             case 1:
-                if (!RunFlow.TryExitToHideout())
-                    notice.text = RunFlow.HideoutUnavailable;
+                RunFlow.ExitToHideout();
                 break;
             case 2:
                 OpenSettings();

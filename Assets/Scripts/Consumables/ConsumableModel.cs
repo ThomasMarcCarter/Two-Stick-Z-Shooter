@@ -1,8 +1,9 @@
 using UnityEngine;
 
-// The little models for consumables, built from primitives: on the floor as pickups, and in
-// flight when thrown. Each glows a bit in its colour so it reads in the dark. Pivot at the
-// bottom middle; size 1 is pickup size.
+// The little models for consumables: on the floor as pickups, and in flight when thrown. Uses
+// the type's model from ConsumableVisuals when there is one, otherwise builds a stand-in from
+// primitives. Each glows a bit in its colour so it reads in the dark. Pivot at the bottom
+// middle; size 1 is pickup size.
 public static class ConsumableModel
 {
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -15,6 +16,20 @@ public static class ConsumableModel
         root.transform.localScale = Vector3.one * scale;
         Transform t = root.transform;
         Color colour = ConsumableInfo.Colour(type);
+
+        GameObject model = ConsumableVisuals.Current != null ? ConsumableVisuals.Current.ModelFor(type) : null;
+
+        if (model != null)
+        {
+            GameObject instance = Object.Instantiate(model, t, false);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+
+            foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>())
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            return t;
+        }
 
         switch (type)
         {

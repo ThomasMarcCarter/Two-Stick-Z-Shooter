@@ -108,7 +108,7 @@ public class DebugMenu : MonoBehaviour
         IsOpen = true;
         previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
-        status.text = floor != null ? $"FLOOR {floor.FloorNumber} // {(floor.CurrentRoom != null ? floor.CurrentRoom.name : "NO ROOM")}" : "";
+        status.text = floor != null ? $"{floor.FloorName} // {(floor.CurrentRoom != null ? floor.CurrentRoom.name : "NO ROOM")}" : "";
         RefreshLabels();
         panel.SetActive(true);
         menu.Open();
@@ -145,6 +145,8 @@ public class DebugMenu : MonoBehaviour
         Add("HURT PLAYER (1)", HurtPlayer, false);
         Add("GIVE MAX AMMO (ALL TYPES)", GiveAllAmmo, false);
         Add("GIVE CONSUMABLES (1 STACK EACH)", GiveConsumables, false);
+        Add(() => $"GIVE 100 SCRAP ({MetaProgress.Scrap})", () => MetaProgress.AddScrap(100), false);
+        Add("RESET META PROGRESS (SCRAP + UPGRADES)", MetaProgress.ResetAll, false);
 
         Section(1, "SPAWN ITEMS");
         Add("SPAWN WEAPONS", SpawnWeapons, true);
@@ -332,11 +334,13 @@ public class DebugMenu : MonoBehaviour
             ammo.FillAll();
     }
 
-    // Drops each debug weapon in a row in front of the player, with a full magazine.
+    // Drops each debug weapon in front of the player, in rows of three, with a full magazine.
     private void SpawnWeapons()
     {
         if (gunPickupPrefab == null || debugWeapons == null)
             return;
+
+        const int perRow = 3;
 
         for (int i = 0; i < debugWeapons.Length; i++)
         {
@@ -345,7 +349,9 @@ public class DebugMenu : MonoBehaviour
             if (gun == null)
                 continue;
 
-            Vector3 position = player.position + player.forward * 2f + player.right * ((i - (debugWeapons.Length - 1) / 2f) * 2.5f);
+            int row = i / perRow;
+            int column = i % perRow;
+            Vector3 position = player.position + player.forward * (1.8f + row * 1.4f) + player.right * ((column - (perRow - 1) / 2f) * 1.8f);
             position.y = 0f;
 
             GameObject pickup = Instantiate(gunPickupPrefab, position, Quaternion.identity);

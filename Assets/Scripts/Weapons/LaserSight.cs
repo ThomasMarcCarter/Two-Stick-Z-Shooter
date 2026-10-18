@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // The beam of a laser sight attachment: a thin red line from the muzzle along the gun's aim to
-// the first thing it touches, with a brighter dot where it lands. Bright enough to bloom, so it
+// the first thing a shot would hit (found at Gun.ShotHeight, where shots travel; the beam itself
+// is drawn level from the muzzle), with a brighter dot where it lands. Bright enough to bloom, so it
 // shows the aim in the dark. A child of the muzzle, so it holsters with the gun.
 public class LaserSight : MonoBehaviour
 {
@@ -66,6 +67,7 @@ public class LaserSight : MonoBehaviour
     private void LateUpdate()
     {
         Vector3 start = transform.position;
+        Vector3 probe = new Vector3(start.x, Gun.ShotHeight, start.z);
         Vector3 direction = gun.forward;
         direction.y = 0f;
 
@@ -77,15 +79,18 @@ public class LaserSight : MonoBehaviour
         Vector3 normal = -direction;
         float nearest = Range;
 
-        foreach (RaycastHit hit in Physics.RaycastAll(start, direction, Range, ~0, QueryTriggerInteraction.Ignore))
+        foreach (RaycastHit hit in Physics.RaycastAll(probe, direction, Range, ~0, QueryTriggerInteraction.Ignore))
         {
             // Not the shooter's own body.
             if (hit.collider.transform.root == gun.root || hit.distance >= nearest)
                 continue;
 
             nearest = hit.distance;
-            end = hit.point;
-            normal = hit.normal;
+            end = start + direction * hit.distance;
+            normal = Vector3.ProjectOnPlane(hit.normal, Vector3.up).normalized;
+
+            if (normal.sqrMagnitude < 0.01f)
+                normal = -direction;
         }
 
         line.SetPosition(0, start);

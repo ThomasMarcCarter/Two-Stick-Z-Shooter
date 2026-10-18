@@ -341,7 +341,7 @@ public class FullscreenMap : MonoBehaviour
         Gun gun = weapon.GetComponent<Gun>();
         string ammo = gun != null ? $"  {pickup.GetStoredAmmo()}/{gun.GetMagazineSize()} RDS" : "";
 
-        return weapon.name.ToUpperInvariant() + ammo;
+        return Gun.DisplayName(weapon) + ammo;
     }
 
     private static string TypeName(RoomType type)

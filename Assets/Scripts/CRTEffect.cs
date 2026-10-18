@@ -36,14 +36,40 @@ public class CRTEffect : MonoBehaviour
 
     private static CRTEffect instance;
 
+    // From the settings screen: Full uses the values above, Light softens the scanlines, noise,
+    // fringing and curve, Off switches the pass off (and the pointer stops being remapped).
+    private static GameSettings.CrtLevel level = GameSettings.CrtLevel.Full;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        instance = null;
+        level = GameSettings.CrtLevel.Full;
+    }
+
+    public static void SetLevel(GameSettings.CrtLevel newLevel)
+    {
+        level = newLevel;
+
+        if (instance != null)
+            instance.Refresh();
+    }
+
+    private float Strength => level == GameSettings.CrtLevel.Light ? 0.4f : 1f;
+
     private void OnEnable()
     {
         instance = this;
+        Refresh();
+    }
+
+    private void Refresh()
+    {
         ApplySettings();
 
         if (crtFeature != null)
         {
-            crtFeature.SetActive(true);
+            crtFeature.SetActive(level != GameSettings.CrtLevel.Off);
         }
     }
 
@@ -72,14 +98,15 @@ public class CRTEffect : MonoBehaviour
             return;
 
         Material material = crtFeature.passMaterial;
-        material.SetFloat(CurvatureId, curvature);
-        material.SetFloat(ScanlineStrengthId, scanlineStrength);
+        float strength = Strength;
+        material.SetFloat(CurvatureId, curvature * strength);
+        material.SetFloat(ScanlineStrengthId, scanlineStrength * strength);
         material.SetFloat(ScanlineCountId, scanlineCount);
         material.SetFloat(ScanlineSpeedId, scanlineSpeed);
-        material.SetFloat(ChromaticAberrationId, chromaticAberration);
-        material.SetFloat(VignetteStrengthId, vignetteStrength);
+        material.SetFloat(ChromaticAberrationId, chromaticAberration * strength);
+        material.SetFloat(VignetteStrengthId, vignetteStrength * Mathf.Lerp(0.6f, 1f, strength));
         material.SetFloat(BrightnessId, brightness);
-        material.SetFloat(NoiseId, noise);
+        material.SetFloat(NoiseId, noise * strength);
     }
 
     // Maps a point on the physical screen (e.g. Input.mousePosition) to the point in the
@@ -96,7 +123,7 @@ public class CRTEffect : MonoBehaviour
         Vector2 screenSize = new Vector2(Screen.width, Screen.height);
 
         Vector2 centered = screenPoint / screenSize - new Vector2(0.5f, 0.5f);
-        Vector2 uv = centered * (1f + Vector2.Dot(centered, centered) * instance.curvature * 4f)
+        Vector2 uv = centered * (1f + Vector2.Dot(centered, centered) * instance.curvature * instance.Strength * 4f)
             + new Vector2(0.5f, 0.5f);
 
         // Outside 0-1 is the black bezel; keep the point on the visible screen.
