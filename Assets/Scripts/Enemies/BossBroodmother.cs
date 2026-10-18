@@ -7,7 +7,7 @@ using UnityEngine;
 // one third health she bursts, and runners pour out of her. Keeping on the move, and dealing
 // with the brood, is the fight.
 [RequireComponent(typeof(Enemy))]
-public class BossBroodmother : MonoBehaviour
+public class BossBroodmother : MonoBehaviour, IBossMoves
 {
     private const float SpitRange = 15f;
     private const float WindUpTime = 0.55f;
@@ -21,6 +21,9 @@ public class BossBroodmother : MonoBehaviour
     private int burstsDone;
     private Color restGlow;
     private Vector3 baseScale;
+
+    public BossMove Move => spitAt >= 0f ? BossMove.Spit : BossMove.None;
+    public float MoveProgress => spitAt >= 0f ? Mathf.Clamp01(1f - (spitAt - Time.time) / WindUpTime) : 0f;
 
     public void Configure(Func<Vector3, EnemyKind, Enemy> spawn)
     {

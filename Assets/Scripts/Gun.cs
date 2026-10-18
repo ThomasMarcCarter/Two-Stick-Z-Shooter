@@ -206,6 +206,15 @@ public class Gun : MonoBehaviour
 
     // The name shown for a gun prefab: its asset name upper-cased, with words split where a
     // lower-case letter meets a capital ("DoubleBarrel" -> "DOUBLE BARREL", "AK47" unchanged).
+    // Shots don't use ammo (the hideout's shooting range). Set by the FloorGenerator per floor.
+    public static bool FreeAmmo { get; set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetFreeAmmo()
+    {
+        FreeAmmo = false;
+    }
+
     public static string DisplayName(GameObject weapon)
     {
         if (weapon == null)
@@ -325,8 +334,9 @@ public class Gun : MonoBehaviour
             );
         }
 
-        // One shell per shot, however many pellets it holds.
-        currentAmmo--;
+        // One shell per shot, however many pellets it holds (none in the hideout).
+        if (!FreeAmmo)
+            currentAmmo--;
 
         if (muzzleFlash != null && !HidesFlash)
             muzzleFlash.Fire();

@@ -41,8 +41,15 @@ public class Room : MonoBehaviour
     public RoomType Type { get; private set; }
     public string ShapeName { get; private set; }
     public bool Visited { get; private set; }
+
+    // On the maps from the start (the Recon upgrade) without having been entered; it still
+    // shows as unexplored until it is.
+    public bool Scouted { get; set; }
     public bool IsLocked { get; private set; }
     public bool IsCleared { get; private set; }
+
+    // A name for the maps instead of the room type (the hideout's areas), or null.
+    public string DisplayName { get; set; }
 
     public IReadOnlyList<Vector2Int> Cells => cells;
     public IReadOnlyList<RoomConnection> Connections => connections;

@@ -17,7 +17,7 @@ public class TacticalMapView : MaskableGraphic
     [SerializeField] private float gridSpacing = 32f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
 
     public Color Phosphor => phosphor;
@@ -215,7 +215,7 @@ public class TacticalMapView : MaskableGraphic
             if (connection.Direction != Vector2Int.right && connection.Direction != Vector2Int.up)
                 continue;
 
-            if (!room.Visited && !connection.Neighbour.Visited)
+            if (!FloorGenerator.IsCorridorKnown(room, connection.Neighbour))
                 continue;
 
             floor.GetCorridorEnds(connection, out Vector2 from, out Vector2 to);

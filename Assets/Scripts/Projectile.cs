@@ -141,7 +141,7 @@ public class Projectile : MonoBehaviour
                 continue;
 
             if (hit.CompareTag("Wall") || hit.GetComponent<Enemy>() != null || hit.GetComponentInParent<CardboardBox>() != null
-                || hit.GetComponentInParent<Prop>() != null)
+                || hit.GetComponentInParent<Prop>() != null || hit.GetComponent<TrainingDummy>() != null)
             {
                 nearest = hit;
                 nearestDistance = sweepHits[i].distance;
@@ -199,6 +199,16 @@ public class Projectile : MonoBehaviour
             // The enemy's own voice reacts to the hit (EnemyVoice).
             spent = true;
             enemy.TakeDamage(damage);
+            LeaveTracer();
+            Destroy(gameObject);
+            return;
+        }
+
+        if (other.TryGetComponent(out TrainingDummy dummy))
+        {
+            spent = true;
+            FindHit(other, out Vector3 dummyPoint, out Vector3 _);
+            dummy.Hit(damage, dummyPoint, rb != null ? rb.linearVelocity : transform.forward);
             LeaveTracer();
             Destroy(gameObject);
             return;

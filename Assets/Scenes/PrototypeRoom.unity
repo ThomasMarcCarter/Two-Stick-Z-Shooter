@@ -4341,7 +4341,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.0000051524758}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000041219806}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4349,7 +4349,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 38.293545}
+  m_AnchoredPosition: {x: -640.00006, y: -360.00006}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7301,6 +7301,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fe70768325149a40a3f0c1074470a0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FloorGenerator
+  armoryWeapons:
+  - {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
+  - {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
+  - {fileID: 1053666970914164882, guid: 92c76f7b7f1319249b3e548478591e5f, type: 3}
+  sealedDoorTint: {r: 0.55, g: 0.12, b: 0.08, a: 1}
+  enemyMaterialChance: 0.06
+  roomMaterialChance: 0.35
+  bossMaterials: 3
+  treasureMaterials: 2
+  survivorChance: 0.25
+  distressCallDelay: 3
   totalFloors: 3
   exitMaterial: {fileID: 2100000, guid: 5bd0d9809f258f04cb50bb85c5c8b373, type: 2}
   trophyMaterial: {fileID: 2100000, guid: 5a98307e115964c4a9fe3735f109409b, type: 2}
@@ -7318,8 +7329,16 @@ MonoBehaviour:
   doorWidth: 2
   corridorLength: 3
   floorMaterial: {fileID: 2100000, guid: c4f973701a0483446a24834eabbc8c38, type: 2}
+  floorVariants:
+  - {fileID: 2100000, guid: 02b8511834c227e45a4b0e97766d7443, type: 2}
+  floorVariantChance: 0.35
   floorTextureSize: 4
-  wallMaterial: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  wallMaterial: {fileID: 2100000, guid: cc20b43c208f03b4e9a9c64f51c4c5ae, type: 2}
+  wallTextureLength: 4
+  wallTrimMaterial: {fileID: 2100000, guid: fec037202b4175b448ca90013d79309a, type: 2}
+  corridorFloorMaterial: {fileID: 2100000, guid: b33a41830af98b04aa5e67c077cdcfe7, type: 2}
+  hazardStripeMaterial: {fileID: 2100000, guid: 72f8140eef6072244b533f6f63bd208b, type: 2}
+  bossArenaMaterial: {fileID: 2100000, guid: 96a476b462445ea47a43d4764e405905, type: 2}
   doorMaterial: {fileID: 2100000, guid: b52559631164fc6418f1dc5742438049, type: 2}
   treasureTint: {r: 1, g: 0.85, b: 0.3, a: 1}
   bossTint: {r: 0.8, g: 0.25, b: 0.25, a: 1}
@@ -7517,6 +7536,8 @@ MonoBehaviour:
   ammoVisuals: {fileID: 11400000, guid: b9aff567b7c936e44aaabe457e7a6f16, type: 2}
   characterVisuals: {fileID: 11400000, guid: 9586a25a77173f947bf1711ef4e3689d, type: 2}
   consumableVisuals: {fileID: 11400000, guid: 77e1333713450064c8f32a267f6f5036, type: 2}
+  materialVisuals: {fileID: 11400000, guid: be8cd1a919ac25549bc61695780242d8, type: 2}
+  stationVisuals: {fileID: 11400000, guid: 4ee1f09f40faa3e4992c3bb195b96cf9, type: 2}
   enemyAmmoDropChance: 0.3
   ammoCrateChance: 0.4
   crateMultiplier: 2.5
@@ -7745,10 +7766,6 @@ MonoBehaviour:
   pickupWallGap: 0.35
   player: {fileID: 603282793}
   spawnOffset: {x: 0, y: 1, z: -2}
-  armoryWeapons:
-  - {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
-  - {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
-  - {fileID: 1053666970914164882, guid: 92c76f7b7f1319249b3e548478591e5f, type: 3}
 --- !u!4 &1558234086
 Transform:
   m_ObjectHideFlags: 0
@@ -8570,7 +8587,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.0000051524758}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000041219806}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8578,7 +8595,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 38.293545}
+  m_AnchoredPosition: {x: -640.00006, y: -360.00006}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

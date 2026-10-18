@@ -54,6 +54,34 @@ public static class EnemyKinds
         return kind == EnemyKind.Brute ? 1 : 0;
     }
 
+    // How long one attack swing takes, in seconds (matches its CharacterAnimator swing).
+    public static float AttackPeriod(EnemyKind kind)
+    {
+        switch (kind)
+        {
+            case EnemyKind.Runner: return 0.5f;
+            case EnemyKind.Brute: return 1.4f;
+            case EnemyKind.Bloater: return 0.35f;
+            default: return 0.9f;
+        }
+    }
+
+    // Where in a swing (0 to 1) the blows land: the moment the arms come down. A runner rakes
+    // with each claw in turn, so it has two.
+    public static float[] StrikeTimes(EnemyKind kind)
+    {
+        switch (kind)
+        {
+            case EnemyKind.Runner: return RunnerStrikes;
+            case EnemyKind.Brute: return BruteStrikes;
+            default: return SwipeStrikes;
+        }
+    }
+
+    private static readonly float[] RunnerStrikes = { 0.23f, 0.73f };
+    private static readonly float[] BruteStrikes = { 0.55f };
+    private static readonly float[] SwipeStrikes = { 0.47f };
+
     // Body size, against the walker's.
     public static float SizeMultiplier(EnemyKind kind)
     {

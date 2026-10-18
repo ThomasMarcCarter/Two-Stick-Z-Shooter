@@ -87,7 +87,7 @@ public static class GameSettings
         QualitySettings.vSyncCount = VSync ? 1 : 0;
         Application.targetFrameRate = VSync || FrameCap <= 0 ? -1 : FrameCap;
 
-        if (!Application.isEditor)
+        if (!Application.isEditor && Platform.HasWindowSettings)
             Screen.SetResolution(Resolution.x, Resolution.y, DisplayMode);
 
         CRTEffect.SetLevel(Crt);

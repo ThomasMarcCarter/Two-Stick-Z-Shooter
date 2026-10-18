@@ -9,7 +9,7 @@ using static MapMesh;
 // code under the HUD canvas, below the menus and end screens (see GameFlow.md's Canvas order).
 public class BossHealthBar : MaskableGraphic
 {
-    private static readonly Color Phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    private static readonly Color Phosphor = UiColours.Phosphor;
     private static readonly Vector2 Size = new Vector2(560f, 46f);
 
     private static BossHealthBar instance;

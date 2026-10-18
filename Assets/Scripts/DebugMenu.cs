@@ -139,6 +139,13 @@ public class DebugMenu : MonoBehaviour
         Add("SPAWN ONE OF EACH ZOMBIE", SpawnEnemyKinds, true);
         Add(() => "SHOW DETECTION RADII: " + (NoiseDebug.Enabled ? "ON" : "OFF"), () => NoiseDebug.SetEnabled(!NoiseDebug.Enabled), false);
 
+        Section(0, "HIDEOUT");
+        Add(() => $"GIVE 10 OF EACH MATERIAL (PARTS {MetaProgress.MaterialCount(MaterialType.Parts)})", () => MetaProgress.AddEveryMaterial(10), false);
+        Add(() => $"RESCUE ALL SURVIVORS ({MetaProgress.RescuedCount()}/{Npcs.All.Length})", MetaProgress.RescueAll, false);
+        Add("SPAWN ALL MATERIALS", SpawnMaterials, true);
+        Add(() => $"+1 COMPLETED RUN ({MetaProgress.Victories})", MetaProgress.AddVictory, false);
+        Add("SURVIVOR ON NEXT FLOOR", FloorGenerator.ForceSurvivorOnNextFloor, false);
+
         Section(1, "PLAYER");
         Add(() => "GOD MODE: " + (Health != null && Health.GodMode ? "ON" : "OFF"), ToggleGodMode, false);
         Add("REFILL HEALTH + AMMO", Refill, false);
@@ -146,7 +153,7 @@ public class DebugMenu : MonoBehaviour
         Add("GIVE MAX AMMO (ALL TYPES)", GiveAllAmmo, false);
         Add("GIVE CONSUMABLES (1 STACK EACH)", GiveConsumables, false);
         Add(() => $"GIVE 100 SCRAP ({MetaProgress.Scrap})", () => MetaProgress.AddScrap(100), false);
-        Add("RESET META PROGRESS (SCRAP + UPGRADES)", MetaProgress.ResetAll, false);
+        Add("RESET META PROGRESS (ALL HIDEOUT)", MetaProgress.ResetAll, false);
 
         Section(1, "SPAWN ITEMS");
         Add("SPAWN WEAPONS", SpawnWeapons, true);
@@ -244,6 +251,13 @@ public class DebugMenu : MonoBehaviour
         Vector3 ahead = player.position + player.forward * 2f;
         ahead.y = 0f;
         floor.SpawnAllMeleeUpgrades(ahead, player.right);
+    }
+
+    private void SpawnMaterials()
+    {
+        Vector3 ahead = player.position + player.forward * 2.5f;
+        ahead.y = 0f;
+        floor.SpawnAllMaterials(ahead, player.right);
     }
 
     // Further ahead, so they don't spawn on top of the player.

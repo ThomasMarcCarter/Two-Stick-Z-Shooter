@@ -29,7 +29,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private string subtitle = "> TERMINAL READY // AWAITING OPERATOR";
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Color background = new Color(0f, 0.025f, 0.012f, 1f);
     [SerializeField] private Vector2 buttonSize = new Vector2(340f, 42f);
 
@@ -204,7 +204,10 @@ public class MainMenu : MonoBehaviour
         MakeText("Title", heading.ToUpperInvariant(), 54, new Vector2(0f, 175f), new Vector2(700f, 70f), phosphor, 14f);
         subtitleText = MakeText("Subtitle", subtitle, 15, new Vector2(0f, 122f), new Vector2(700f, 24f), dim, 6f);
 
-        string[] labels = { "[ NEW RUN ]", "[ ENTER HIDEOUT ]", "[ SETTINGS ]", "[ EXIT TO DESKTOP ]" };
+        // No quit button where the platform doesn't allow one (consoles).
+        string[] labels = Platform.CanQuit
+            ? new[] { "[ NEW RUN ]", "[ ENTER HIDEOUT ]", "[ SETTINGS ]", "[ EXIT TO DESKTOP ]" }
+            : new[] { "[ NEW RUN ]", "[ ENTER HIDEOUT ]", "[ SETTINGS ]" };
         CrtButton[] buttons = new CrtButton[labels.Length];
 
         for (int i = 0; i < labels.Length; i++)

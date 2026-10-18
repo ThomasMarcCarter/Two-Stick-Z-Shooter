@@ -8,6 +8,27 @@ public enum BossKind
     Howler          // floor 3: fast, dodges, howls a shockwave that calls the horde
 }
 
+// What a boss is doing, for its model's animation (CharacterAnimator's boss styles).
+public enum BossMove
+{
+    None,       // walking / stalking
+    WindUp,     // Butcher about to charge
+    Charge,     // Butcher charging
+    Dazed,      // Butcher stunned after hitting a wall
+    Spit,       // Broodmother swelling up to lob acid
+    Howl,       // Howler rearing up to howl
+    Dodge       // Howler darting sideways
+}
+
+// Implemented by each boss behaviour so the animator can pose the model to match.
+public interface IBossMoves
+{
+    BossMove Move { get; }
+
+    // How far through the move it is, 0 to 1 (moves without a set length stay at 0).
+    float MoveProgress { get; }
+}
+
 // The floor bosses: which one each floor gets, their numbers (as multiples of the FloorGenerator's
 // boss health and speed), looks, and the behaviour component that makes each one different. The
 // FloorGenerator spawns the body like any enemy, then calls Equip. Floors past the third cycle
@@ -88,6 +109,7 @@ public static class Bosses
     {
         boss.SetLook(Tint(kind), Glow(kind));
         boss.SightRangeMultiplier = 3f;
+        boss.SwingAttacks = false;
 
         switch (kind)
         {
@@ -99,6 +121,10 @@ public static class Bosses
                 break;
             default:
                 boss.gameObject.AddComponent<BossButcher>();
+
+                // Up close it hacks with the cleaver, the hit landing as the blade comes down.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 1.1f;
                 break;
         }
 
@@ -106,6 +132,17 @@ public static class Bosses
     }
 
     // Shared helpers for the behaviours.
+
+    // The animation style for each boss's model.
+    public static CharacterAnimator.Style AnimationStyle(BossKind kind)
+    {
+        switch (kind)
+        {
+            case BossKind.Broodmother: return CharacterAnimator.Style.Broodmother;
+            case BossKind.Howler: return CharacterAnimator.Style.Howler;
+            default: return CharacterAnimator.Style.Butcher;
+        }
+    }
 
     public static float FlatDistance(Vector3 a, Vector3 b)
     {

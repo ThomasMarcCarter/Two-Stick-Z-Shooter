@@ -9,7 +9,7 @@ public class HealthDisplay : MaskableGraphic
     [SerializeField] private PlayerHealth playerHealth;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [SerializeField] private float segmentGap = 4f;
     [Tooltip("At or below this much health the bar turns red.")]

@@ -12,9 +12,9 @@ public class CrtButton : MonoBehaviour
     [SerializeField] private TMP_Text label;
 
     [Header("Look")]
-    [SerializeField] private Color colour = new Color(0.35f, 1f, 0.55f, 0.12f);
-    [SerializeField] private Color hoverColour = new Color(0.35f, 1f, 0.55f, 0.4f);
-    [SerializeField] private Color labelColour = new Color(0.35f, 1f, 0.55f, 0.75f);
+    [SerializeField] private Color colour = UiColours.WithAlpha(UiColours.Phosphor, 0.12f);
+    [SerializeField] private Color hoverColour = UiColours.WithAlpha(UiColours.Phosphor, 0.4f);
+    [SerializeField] private Color labelColour = UiColours.WithAlpha(UiColours.Phosphor, 0.75f);
     [SerializeField] private Color labelHoverColour = Color.white;
 
     public TMP_Text Label => label;

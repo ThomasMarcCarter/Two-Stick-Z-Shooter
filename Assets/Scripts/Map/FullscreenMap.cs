@@ -287,7 +287,7 @@ public class FullscreenMap : MonoBehaviour
         text.AppendLine("ROOM DATA");
         text.AppendLine();
         text.AppendLine(sector);
-        text.AppendLine($"TYPE      {TypeName(room.Type)}");
+        text.AppendLine($"TYPE      {room.DisplayName ?? TypeName(room.Type)}");
         text.AppendLine($"STATUS    {status}");
         text.AppendLine($"HOSTILES  {room.Enemies.Count}");
         text.AppendLine();

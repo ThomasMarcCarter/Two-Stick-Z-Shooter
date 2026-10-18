@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// The character models (Tools/Blender/Characters.py): the player, the zombie kinds and the
-// floor bosses. Set on the FloorGenerator, which makes it current. Attach swaps a body's
+// The character models (Tools/Blender/Characters.py): the player, the zombie kinds, the
+// floor bosses and the hideout survivors. Set on the FloorGenerator, which makes it current. Attach swaps a body's
 // placeholder block or capsule for a model: the model goes in as a child standing on the floor,
 // the root's own renderer is hidden, and the body's tint/flash/blink switch to the model's
 // renderers. Without an asset (or a model for that kind) the blocks stay as they were.
@@ -20,6 +20,12 @@ public class CharacterVisuals : ScriptableObject
     public GameObject butcher;
     public GameObject broodmother;
     public GameObject howler;
+
+    [Header("Hideout survivors (real size, 4 materials)")]
+    public GameObject mechanic;
+    public GameObject medic;
+    public GameObject quartermaster;
+    public GameObject trader;
 
     public static CharacterVisuals Current { get; private set; }
 
@@ -52,6 +58,30 @@ public class CharacterVisuals : ScriptableObject
             case BossKind.Howler: return howler;
             default: return butcher;
         }
+    }
+
+    public GameObject For(NpcKind kind)
+    {
+        switch (kind)
+        {
+            case NpcKind.Medic: return medic;
+            case NpcKind.Quartermaster: return quartermaster;
+            case NpcKind.Trader: return trader;
+            default: return mechanic;
+        }
+    }
+
+    // Puts a survivor's model on an empty root standing on the floor, animated as a survivor.
+    // Returns the animator (null if there's no model for them).
+    public static CharacterAnimator AttachToNpc(Transform root, NpcKind kind)
+    {
+        GameObject model = Current != null ? Current.For(kind) : null;
+
+        if (model == null || root == null)
+            return null;
+
+        Attach(root, model, Vector3.zero, Vector3.one);
+        return CharacterAnimator.Add(root.Find("Model"), CharacterAnimator.Style.Npc);
     }
 
     // Puts a model on an enemy's unit-cube body (scaled with it), feet on the floor, turning to

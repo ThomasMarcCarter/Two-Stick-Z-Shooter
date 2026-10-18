@@ -10,13 +10,27 @@ using UnityEngine;
 //   Player: crouches and leans when sneaking, leans into a sprint, and reloads: for a magazine
 //   the support hand drops to the belt for a fresh one while the gun tips over, then slaps it
 //   home; shell by shell, the gun stays tipped and the hand feeds it in a steady rhythm.
-//   Zombies: attack whenever they're on the player and close: a two-handed swipe for walkers and
+//   Zombies: swing in time with the Enemy's attack clock (the hit lands as the arms come down):
+//   a two-handed swipe for walkers and
 //   screamers, quick alternating claws for runners, an overhead double-fisted slam for brutes and
 //   a frantic flailing for bloaters. They reel back when staggered.
-// Added by CharacterVisuals when a model is attached; bosses (one-piece models) don't get one.
+//   Bosses: each has its own walk and poses for its moves (IBossMoves): the Butcher raises its
+//   cleaver to wind up, leans into the charge with the blade out front, and reels about limp-armed
+//   and lolling when dazed, chopping when it's on the player; the Broodmother's sac breathes and
+//   her arms clutch, and she rears back with arms spread before lunging forward to spit; the
+//   Howler lopes stooped with its arms dragging, rears up with its arms flung wide and head
+//   thrown back to howl, and leans hard into a dodge.
+//   Survivors: stand easy and breathe, turn their head to whoever they're looking at, gesture
+//   while talking, and cower (crouched, arms over the head) while caged in a fight.
+// Added by CharacterVisuals when a model is attached.
 public class CharacterAnimator : MonoBehaviour
 {
-    public enum Style { Player, Walker, Runner, Brute, Bloater }
+    public enum Style { Player, Walker, Runner, Brute, Bloater, Npc, Butcher, Broodmother, Howler }
+
+    // Survivors (Style.Npc): what they're doing, set by HideoutNpc / CagedSurvivor.
+    public bool Talking { get; set; }
+    public bool Cowering { get; set; }
+    public Transform LookAt { get; set; }
 
     private struct Limb
     {
@@ -33,6 +47,7 @@ public class CharacterAnimator : MonoBehaviour
     private Limb RearArm => armL;
 
     private Enemy enemy;
+    private IBossMoves boss;
     private PlayerShooting shooting;
     private PlayerMovement movement;
     private PlayerStamina stamina;
@@ -41,7 +56,6 @@ public class CharacterAnimator : MonoBehaviour
     private Vector3 velocity;
     private float phase;
     private float walkBlend;
-    private float attackTime = -1f;
     private float seed;
     private Transform tiltedGun;   // the gun visual currently being tipped
 
@@ -77,6 +91,7 @@ public class CharacterAnimator : MonoBehaviour
         legR = Bind(transform.Find("LegR"));
 
         enemy = GetComponentInParent<Enemy>();
+        boss = GetComponentInParent<IBossMoves>();
         shooting = GetComponentInParent<PlayerShooting>();
         movement = GetComponentInParent<PlayerMovement>();
         stamina = GetComponentInParent<PlayerStamina>();
@@ -121,6 +136,10 @@ public class CharacterAnimator : MonoBehaviour
 
         if (style == Style.Player)
             AnimatePlayerArms();
+        else if (style == Style.Npc)
+            AnimateNpcArms();
+        else if (IsBoss)
+            AnimateBossArms(dt);
         else
             AnimateZombieArms(dt);
     }
@@ -135,6 +154,10 @@ public class CharacterAnimator : MonoBehaviour
                 case Style.Brute: return 1.2f;
                 case Style.Bloater: return 0.6f;
                 case Style.Player: return 1.3f;
+                case Style.Npc: return 1.2f;
+                case Style.Butcher: return 1.1f;
+                case Style.Broodmother: return 0.5f;
+                case Style.Howler: return 1.6f;
                 default: return 0.9f;
             }
         }
@@ -150,6 +173,9 @@ public class CharacterAnimator : MonoBehaviour
                 case Style.Brute: return 22f;
                 case Style.Bloater: return 20f;
                 case Style.Player: return Sneaking ? 22f : Sprinting ? 40f : 30f;
+                case Style.Butcher: return Move == BossMove.Charge ? 40f : 24f;
+                case Style.Broodmother: return 14f;
+                case Style.Howler: return 34f;
                 default: return 26f;
             }
         }
@@ -198,6 +224,19 @@ public class CharacterAnimator : MonoBehaviour
                 drop = Sneaking ? 0.1f : 0f;
                 bob *= 0.035f;
                 break;
+            case Style.Npc:
+                // Breathing, and a slow shift of weight.
+                bob = bob * 0.035f + Mathf.Sin(Time.time * 1.6f + seed) * 0.006f;
+                roll = (Mathf.PerlinNoise(seed, Time.time * 0.2f) - 0.5f) * 4f;
+                cower = Mathf.MoveTowards(cower, Cowering ? 1f : 0f, dt * 3f);
+                lean = 28f * cower + (Talking ? Mathf.Sin(Time.time * 3f) * 2f : 0f);
+                drop = 0.3f * cower;
+                break;
+            case Style.Butcher:
+            case Style.Broodmother:
+            case Style.Howler:
+                BossBody(dt, ref bob, ref lean, ref roll);
+                break;
             default:
                 roll = Mathf.Sin(phase) * 4f * walkBlend;
                 bob *= 0.035f;
@@ -216,9 +255,16 @@ public class CharacterAnimator : MonoBehaviour
 
         if (head.Bone != null)
         {
-            // Zombies' heads loll; the player's stays steady.
-            float loll = style == Style.Player ? 0f : (Mathf.PerlinNoise(seed, Time.time * 0.7f) - 0.5f) * 24f;
-            Pose(head, Quaternion.Euler(0f, 0f, loll));
+            // Zombies' heads loll; the player's stays steady; survivors look about.
+            if (style == Style.Npc)
+                AnimateNpcHead(dt);
+            else if (IsBoss)
+                Pose(head, BossHead());
+            else
+            {
+                float loll = style == Style.Player ? 0f : (Mathf.PerlinNoise(seed, Time.time * 0.7f) - 0.5f) * 24f;
+                Pose(head, Quaternion.Euler(0f, 0f, loll));
+            }
         }
     }
 
@@ -342,53 +388,57 @@ public class CharacterAnimator : MonoBehaviour
         arm.Bone.localScale = Vector3.one * stretch;
     }
 
-    // ---------- Zombies ----------
+    // ---------- Survivors ----------
 
-    private float AttackPeriod
+    private float cower;
+    private float headYaw;
+
+    // Turned (within reach of the neck) towards whoever they're looking at, otherwise glancing
+    // around now and then; a nod while talking.
+    private void AnimateNpcHead(float dt)
     {
-        get
+        float wanted = (Mathf.PerlinNoise(seed + 5f, Time.time * 0.15f) - 0.5f) * 70f;
+
+        if (LookAt != null)
         {
-            switch (style)
-            {
-                case Style.Runner: return 0.5f;
-                case Style.Brute: return 1.4f;
-                case Style.Bloater: return 0.35f;
-                default: return 0.9f;
-            }
+            Vector3 local = transform.InverseTransformPoint(LookAt.position);
+            wanted = Mathf.Clamp(Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg, -65f, 65f);
         }
+
+        headYaw = Mathf.LerpAngle(headYaw, wanted, 1f - Mathf.Exp(-6f * dt));
+        float nod = Talking ? Mathf.Sin(Time.time * 7f) * 5f : 0f;
+        Pose(head, Quaternion.Euler(nod - 12f * cower, headYaw, 0f));
     }
 
-    private bool InAttackRange()
+    // Arms hang and sway with the stride; one hand gestures while talking; both come up over
+    // the head when cowering.
+    private void AnimateNpcArms()
     {
-        if (enemy == null || !enemy.IsActive || !enemy.IsChasing || enemy.Target == null || enemy.IsStaggered)
-            return false;
+        float sway = Mathf.Sin(phase) * walkBlend * 18f;
+        float idle = (Mathf.PerlinNoise(seed + 10f, Time.time * 0.4f) - 0.5f) * 6f;
+        float gesture = Talking ? (0.5f + 0.5f * Mathf.Sin(Time.time * 4.5f + seed)) : 0f;
 
-        Vector3 offset = enemy.Target.position - transform.position;
-        offset.y = 0f;
-        return offset.magnitude < transform.lossyScale.x * 0.5f + 1.3f;
+        // Negative X brings an arm forward and up.
+        Quaternion left = Quaternion.Euler(sway + idle, 0f, 0f);
+        Quaternion right = Quaternion.Euler(-sway - idle - 55f * gesture, 0f, -15f * gesture);
+        Quaternion shield = Quaternion.Euler(-150f, 0f, 0f);
+
+        Pose(armL, Quaternion.Slerp(left, shield * Quaternion.Euler(0f, 0f, -20f), cower));
+        Pose(armR, Quaternion.Slerp(right, shield * Quaternion.Euler(0f, 0f, 20f), cower));
     }
+
+    // ---------- Zombies ----------
 
     private void AnimateZombieArms(float dt)
     {
-        // Attacks run a whole swing once started, and keep coming while the player is close.
-        if (attackTime >= 0f)
-        {
-            attackTime += dt / AttackPeriod;
+        // The swing runs on the enemy's attack clock, so the blow lands as the arms come down.
+        float attack = enemy != null ? enemy.AttackTime : -1f;
 
-            if (attackTime >= 1f)
-                attackTime = InAttackRange() ? 0f : -1f;
-        }
-        else if (InAttackRange())
+        if (attack >= 0f)
         {
-            attackTime = 0f;
-        }
-
-        if (attackTime >= 0f)
-        {
-            AttackPose(attackTime);
+            AttackPose(attack);
             return;
         }
-
         // Walking: arms sway with the stride (pumping, for a runner); a little drift when still.
         float sway = Mathf.Sin(phase) * walkBlend;
         float drift = (Mathf.PerlinNoise(seed + 10f, Time.time * 0.5f) - 0.5f) * 10f;
@@ -476,14 +526,173 @@ public class CharacterAnimator : MonoBehaviour
 
     private float AttackLean()
     {
-        if (attackTime < 0f)
+        float t = enemy != null ? enemy.AttackTime : -1f;
+
+        if (t < 0f)
             return 0f;
 
-        float t = attackTime;
         float windUp = Mathf.InverseLerp(0f, 0.4f, t);
         float strike = Mathf.Sin(Mathf.Clamp01(Mathf.InverseLerp(0.4f, 0.8f, t)) * Mathf.PI);
         float amount = style == Style.Brute ? 22f : style == Style.Bloater ? 6f : 14f;
         return -amount * 0.4f * windUp * (1f - Mathf.InverseLerp(0.4f, 0.5f, t)) + amount * strike;
+    }
+
+    // ---------- Bosses ----------
+
+    private bool IsBoss => style == Style.Butcher || style == Style.Broodmother || style == Style.Howler;
+    private BossMove Move => boss != null ? boss.Move : BossMove.None;
+    private float MoveTime => boss != null ? boss.MoveProgress : 0f;
+
+    // Smoothed, so a pose eases out when a move ends rather than snapping back.
+    private float bossLean;
+    private float bossRoll;
+    private float armLift;      // cleaver raised / arms flung up (0 to 1)
+    private float armSpread;
+
+    private void BossBody(float dt, ref float bob, ref float lean, ref float roll)
+    {
+        float t = MoveTime;
+        float targetLean = 0f;
+        float targetRoll = 0f;
+
+        switch (style)
+        {
+            case Style.Butcher:
+                bob *= 0.04f;
+                targetRoll = Mathf.Sin(phase) * 6f * walkBlend;
+
+                if (Move == BossMove.WindUp)
+                    targetLean = -14f * Mathf.SmoothStep(0f, 1f, t);
+                else if (Move == BossMove.Charge)
+                    targetLean = 26f;
+                else if (Move == BossMove.Dazed)
+                {
+                    // Reeling in a slow wobbly circle.
+                    targetLean = Mathf.Sin(Time.time * 4.3f) * 9f - 6f;
+                    targetRoll = Mathf.Sin(Time.time * 6.1f) * 12f;
+                }
+                break;
+
+            case Style.Broodmother:
+            {
+                bob *= 0.02f;
+                targetRoll = Mathf.Sin(phase) * 5f * walkBlend;
+
+                // The sac breathes.
+                float breath = 1f + Mathf.Sin(Time.time * 2.2f + seed) * 0.03f;
+                torso.Bone.localScale = new Vector3(breath, 1f / breath, breath);
+
+                if (Move == BossMove.Spit)
+                    targetLean = t < 0.75f ? -16f * Mathf.SmoothStep(0f, 1f, t / 0.75f) : Mathf.Lerp(-16f, 20f, (t - 0.75f) / 0.25f);
+                break;
+            }
+
+            case Style.Howler:
+                bob *= 0.05f;
+                targetLean = 16f * walkBlend;
+                targetRoll = Mathf.Sin(phase) * 5f * walkBlend;
+
+                if (Move == BossMove.Howl)
+                    targetLean = -34f * Mathf.SmoothStep(0f, 1f, t);
+                else if (Move == BossMove.Dodge)
+                {
+                    // Leans into the dart, whichever way it's going.
+                    Vector3 local = transform.InverseTransformDirection(velocity);
+                    targetRoll = -Mathf.Clamp(local.x * 4f, -28f, 28f);
+                    targetLean = 10f;
+                }
+                break;
+        }
+
+        float rate = 1f - Mathf.Exp(-14f * dt);
+        bossLean = Mathf.Lerp(bossLean, targetLean, rate);
+        bossRoll = Mathf.Lerp(bossRoll, targetRoll, rate);
+        lean += bossLean;
+        roll += bossRoll;
+    }
+
+    private Quaternion BossHead()
+    {
+        float t = MoveTime;
+        float loll = (Mathf.PerlinNoise(seed, Time.time * 0.7f) - 0.5f) * 20f;
+
+        switch (Move)
+        {
+            case BossMove.Dazed:
+                return Quaternion.Euler(Mathf.Sin(Time.time * 5f) * 15f, Mathf.Sin(Time.time * 3.7f) * 25f, Mathf.Sin(Time.time * 4.4f) * 30f);
+            case BossMove.Howl:
+                return Quaternion.Euler(-40f * Mathf.SmoothStep(0f, 1f, t), 0f, loll * 0.3f);
+            case BossMove.Spit:
+                return Quaternion.Euler(t < 0.75f ? -20f * t / 0.75f : Mathf.Lerp(-20f, 25f, (t - 0.75f) / 0.25f), 0f, 0f);
+            case BossMove.WindUp:
+                return Quaternion.Euler(-10f * t, 0f, Mathf.Sin(Time.time * 40f) * 4f * t);
+            default:
+                return Quaternion.Euler(0f, 0f, loll);
+        }
+    }
+
+    private void AnimateBossArms(float dt)
+    {
+        float t = MoveTime;
+        float sway = Mathf.Sin(phase) * walkBlend;
+        float rate = 1f - Mathf.Exp(-12f * dt);
+
+        switch (style)
+        {
+            case Style.Butcher:
+            {
+                // The cleaver arm (ArmR) goes up overhead for the wind-up and leads the charge.
+                float lift = Move == BossMove.WindUp ? Mathf.SmoothStep(0f, 1f, t) : 0f;
+                armLift = Mathf.Lerp(armLift, lift, rate);
+
+                if (Move == BossMove.Dazed)
+                {
+                    float limp = Mathf.Sin(Time.time * 5f);
+                    Pose(armL, Quaternion.Euler(limp * 18f, 0f, 18f));
+                    Pose(armR, Quaternion.Euler(-limp * 18f, 0f, -18f));
+                    return;
+                }
+
+                if (Move == BossMove.Charge)
+                {
+                    Pose(armL, Quaternion.Euler(35f, 0f, 15f));
+                    Pose(armR, Quaternion.Euler(-75f, 0f, 0f));
+                    return;
+                }
+
+                // Up on the player: hacks at them with the cleaver, on the enemy's attack clock
+                // (the hit lands on the downstroke).
+                float chop = enemy != null ? enemy.AttackTime : -1f;
+                float cleaver = chop >= 0f ? Claw(chop, true) * 1.6f : 0f;
+                Pose(armL, Quaternion.Euler(-sway * 18f - 50f * armLift, 0f, 0f));
+                Pose(armR, Quaternion.Euler(sway * 14f - 160f * armLift + cleaver, 0f, 12f * armLift));
+                break;
+            }
+
+            case Style.Broodmother:
+            {
+                // Arms clutching at the air, spreading wide as she swells to spit.
+                float spread = Move == BossMove.Spit ? Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, t / 0.75f)) : 0f;
+                armSpread = Mathf.Lerp(armSpread, spread, rate);
+                float clutchL = Mathf.Sin(Time.time * 3.1f + seed) * 25f;
+                float clutchR = Mathf.Sin(Time.time * 3.1f + seed + 2f) * 25f;
+                Pose(armL, Quaternion.Euler(clutchL * (1f - armSpread) - 40f * armSpread, 0f, 50f * armSpread));
+                Pose(armR, Quaternion.Euler(clutchR * (1f - armSpread) - 40f * armSpread, 0f, -50f * armSpread));
+                break;
+            }
+
+            case Style.Howler:
+            {
+                // Long arms swinging loose as it lopes; flung up and wide for the howl.
+                float lift = Move == BossMove.Howl ? Mathf.SmoothStep(0f, 1f, t) : 0f;
+                armLift = Mathf.Lerp(armLift, lift, rate);
+                float trail = Move == BossMove.Dodge ? 25f : 0f;
+                float drift = (Mathf.PerlinNoise(seed + 10f, Time.time * 0.6f) - 0.5f) * 12f;
+                Pose(armL, Quaternion.Euler((sway * 28f + drift + trail) * (1f - armLift) - 110f * armLift, 0f, 65f * armLift));
+                Pose(armR, Quaternion.Euler((-sway * 28f - drift + trail) * (1f - armLift) - 110f * armLift, 0f, -65f * armLift));
+                break;
+            }
+        }
     }
 
     // ---------- Helpers ----------

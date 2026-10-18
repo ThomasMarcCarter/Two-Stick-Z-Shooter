@@ -120,7 +120,7 @@ public class PlayerMelee : MonoBehaviour
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("throw", 2, ProceduralAudio.Throw)), 0.4f, UnityEngine.Random.Range(0.7f, 0.8f));
         Noise.Emit(origin, swingLoudness, Noise.Kind.Melee);
 
-        int hit = HitEnemies(origin, forward);
+        int hit = HitEnemies(origin, forward) + HitDummies(origin, forward);
         HitBoxes(origin, forward);
 
         if (hit > 0)
@@ -175,6 +175,29 @@ public class PlayerMelee : MonoBehaviour
 
             enemy.Knock(direction * Knockback, Stagger);
             enemy.TakeDamage(Damage);
+        }
+
+        return count;
+    }
+
+    // The hideout's training dummies in the arc take the blow too.
+    private int HitDummies(Vector3 origin, Vector3 forward)
+    {
+        int count = 0;
+
+        foreach (Collider collider in Physics.OverlapSphere(origin + Vector3.up * 0.5f, Reach + 0.5f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (!collider.TryGetComponent(out TrainingDummy dummy))
+                continue;
+
+            Vector3 offset = Flat(collider.bounds.center) - origin;
+
+            if (offset.magnitude > 0.5f && Vector3.Angle(forward, offset) > Arc / 2f)
+                continue;
+
+            Vector3 direction = offset.sqrMagnitude > 0.01f ? offset.normalized : forward;
+            dummy.Hit(Damage, collider.ClosestPoint(origin + Vector3.up * 1.1f), direction);
+            count++;
         }
 
         return count;

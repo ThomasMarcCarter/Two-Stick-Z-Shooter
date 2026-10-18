@@ -7,7 +7,7 @@ using UnityEngine;
 // hears, and zombies clawing in from the edges of the room. Below half health it howls more
 // often and calls more. Hit it while it rears up, then get clear.
 [RequireComponent(typeof(Enemy))]
-public class BossHowler : MonoBehaviour
+public class BossHowler : MonoBehaviour, IBossMoves
 {
     private const float HowlWindUp = 0.8f;
     private const float HowlRange = 7f;
@@ -28,6 +28,19 @@ public class BossHowler : MonoBehaviour
     private Vector3 baseScale;
 
     private bool Enraged => enemy.Health <= enemy.MaxHealth / 2;
+
+    public BossMove Move => howlAt >= 0f ? BossMove.Howl : dodgeUntil >= 0f ? BossMove.Dodge : BossMove.None;
+
+    public float MoveProgress
+    {
+        get
+        {
+            if (howlAt >= 0f)
+                return Mathf.Clamp01(1f - (howlAt - Time.time) / HowlWindUp);
+
+            return dodgeUntil >= 0f ? Mathf.Clamp01(1f - (dodgeUntil - Time.time) / DodgeTime) : 0f;
+        }
+    }
 
     public void Configure(Func<Vector3, EnemyKind, Enemy> spawn)
     {
@@ -63,10 +76,11 @@ public class BossHowler : MonoBehaviour
 
         if (howlAt >= 0f)
         {
-            // Rearing up: stretches tall and glows brighter until the howl.
+            // Rearing up (the model's animation does most of it): stretches a little taller and glows
+            // brighter until the howl.
             float t = 1f - (howlAt - Time.time) / HowlWindUp;
             enemy.SetGlow(Color.Lerp(restGlow, new Color(0.75f, 0.4f, 1f) * 2.5f, t));
-            transform.localScale = new Vector3(baseScale.x * (1f - 0.1f * t), baseScale.y * (1f + 0.3f * t), baseScale.z * (1f - 0.1f * t));
+            transform.localScale = new Vector3(baseScale.x * (1f - 0.04f * t), baseScale.y * (1f + 0.1f * t), baseScale.z * (1f - 0.04f * t));
 
             if (Time.time >= howlAt)
                 Howl();

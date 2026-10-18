@@ -36,7 +36,7 @@ public class VictoryScreen : MonoBehaviour
             $"HOSTILES DOWN      {enemiesKilled}\n" +
             $"VITALS REMAINING   {health}/{maxHealth}\n" +
             $"MISSION TIME       {minutes:00}:{seconds:00}\n" +
-            $"<color=#FFD95A>SCRAP SALVAGED     +{scrapEarned}  ({MetaProgress.Scrap} BANKED)</color>";
+            $"<color={UiColours.AmberHex}>SCRAP SALVAGED     +{scrapEarned}  ({MetaProgress.Scrap} BANKED)</color>";
 
         notice.text = "";
         panel.SetActive(true);

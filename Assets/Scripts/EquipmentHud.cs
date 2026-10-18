@@ -26,7 +26,7 @@ public class EquipmentHud : MaskableGraphic
     [SerializeField] private float gap = 6f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [Tooltip("At or below this fraction of a magazine the ammo turns red.")]
     [SerializeField, Range(0f, 1f)] private float lowAmmo = 0.25f;

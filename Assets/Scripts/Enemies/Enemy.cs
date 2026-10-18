@@ -2,8 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.AI;
 
-// Placeholder enemy: a block that hunts the player once its room is locked, hurts them on
-// contact, and dies after enough hits. Rooms count these to decide when they're cleared.
+// Placeholder enemy: a block that hunts the player once its room is locked, attacks them when
+// it gets close, and dies after enough hits. Rooms count these to decide when they're cleared.
 //
 // It only chases what it can see, and only so far: the player has to be within sight range and
 // not behind a wall or pillar. Once spotted it hunts them; when sight is broken it goes to where
@@ -18,6 +18,11 @@ using UnityEngine.AI;
 // moment, less so for heavy kinds. What kind it is (walker, runner, brute and so on) only
 // changes its numbers and colour here; the screamer's and bloater's extra behaviour is in their
 // own components (EnemyScreamer, EnemyBloater).
+// Attacks are swings: once the player is within reach it starts one (its length set by kind),
+// and the hit lands at the moment the arms come down, if the player is still in reach then, so
+// backing off during the wind-up dodges it. The model's swing (CharacterAnimator) is driven by
+// the same clock. A blow that staggers it cancels the swing. Bosses hurt on contact instead,
+// except the Butcher, whose cleaver chops use the same timed swing (AttackPeriodOverride).
 [RequireComponent(typeof(Rigidbody))]
 public class Enemy : MonoBehaviour
 {
@@ -42,6 +47,10 @@ public class Enemy : MonoBehaviour
     [Header("Wandering")]
     [SerializeField, Range(0f, 1f)] private float wanderSpeedFraction = 0.35f;
     [SerializeField] private Vector2 wanderPause = new Vector2(0.5f, 1.8f);
+
+    // Starts a swing with the player this far beyond its edge; the blow lands within HitReach.
+    private const float AttackReach = 1.3f;
+    private const float HitReach = 1.45f;
 
     // Below this speed while trying to move, for this long, counts as wedged.
     private const float StuckSpeed = 0.25f;
@@ -107,6 +116,9 @@ public class Enemy : MonoBehaviour
     private float knockbackScale = 1f;
     private float staggerUntil;
 
+    private float attackTime = -1f;
+    private int strikesDone;
+
     public EnemyKind Kind { get; private set; } = EnemyKind.Walker;
     public Room Room => room;
     public Transform Target => target;
@@ -126,6 +138,15 @@ public class Enemy : MonoBehaviour
     // While true it still sees and hears, but doesn't move itself: a boss's attack (a charge,
     // a dodge) is driving its body instead.
     public bool ExternalControl { get; set; }
+
+    // Hurts with timed swings (true) or by touching the player (false, for bosses).
+    public bool SwingAttacks { get; set; } = true;
+
+    // How far through its current swing it is (0 to 1), or -1 when not attacking.
+    public float AttackTime => attackTime;
+
+    // A swing length to use instead of its kind's (a boss with its own attack); 0 for the kind's.
+    public float AttackPeriodOverride { get; set; }
 
     public bool CanSeeTarget => canSee;
     public int MaxHealth => maxHealth;
@@ -258,17 +279,57 @@ public class Enemy : MonoBehaviour
         velocity.y = 0f;
         rb.linearVelocity = velocity * knockbackScale + Vector3.up * rb.linearVelocity.y;
         staggerUntil = Mathf.Max(staggerUntil, Time.time + stagger * Mathf.Lerp(0.4f, 1f, knockbackScale));
+
+        if (IsStaggered)
+            attackTime = -1f;
     }
 
-    // Touching the player hurts them; PlayerHealth's invulnerability window stops this from
-    // landing every physics step while they stay in contact.
+    // Touching the player hurts them (bosses only; zombies swing); PlayerHealth's invulnerability
+    // window stops this from landing every physics step while they stay in contact.
     private void OnCollisionStay(Collision collision)
     {
-        if (room == null || !room.IsLocked)
+        if (room == null || !room.IsLocked || SwingAttacks)
             return;
 
         if (collision.collider.TryGetComponent(out PlayerHealth playerHealth))
             playerHealth.TakeDamage(contactDamage, transform.position);
+    }
+
+    // Runs a whole swing once started, landing its blow(s) on time, and starts another while the
+    // player stays close.
+    private void UpdateAttack()
+    {
+        if (attackTime < 0f)
+        {
+            if (WithinReach(AttackReach) && state == State.Chase && !IsStaggered && !ExternalControl && health > 0)
+            {
+                attackTime = 0f;
+                strikesDone = 0;
+            }
+
+            return;
+        }
+
+        float period = AttackPeriodOverride > 0f ? AttackPeriodOverride : EnemyKinds.AttackPeriod(Kind);
+        attackTime += Time.fixedDeltaTime / period;
+        float[] strikes = EnemyKinds.StrikeTimes(Kind);
+
+        while (strikesDone < strikes.Length && attackTime >= strikes[strikesDone])
+        {
+            strikesDone++;
+
+            if (WithinReach(HitReach) && target.TryGetComponent(out PlayerHealth playerHealth))
+                playerHealth.TakeDamage(contactDamage, transform.position);
+        }
+
+        if (attackTime >= 1f)
+            attackTime = -1f;
+    }
+
+    // Whether the player is within this distance of its edge.
+    private bool WithinReach(float reach)
+    {
+        return target != null && FlatDistance(rb.position, target.position) < bodyRadius + reach;
     }
 
     private void Update()
@@ -292,6 +353,9 @@ public class Enemy : MonoBehaviour
         }
 
         UpdateSenses();
+
+        if (SwingAttacks)
+            UpdateAttack();
 
         if (ExternalControl)
             return;

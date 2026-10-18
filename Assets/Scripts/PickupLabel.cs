@@ -16,7 +16,7 @@ public class PickupLabel : MonoBehaviour
     private const float Padding = 12f;
     private const float WallMargin = 0.25f;
 
-    private static readonly Color Phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    private static readonly Color Phosphor = UiColours.Phosphor;
     private static FloorGenerator floor;
 
     private Transform pickup;

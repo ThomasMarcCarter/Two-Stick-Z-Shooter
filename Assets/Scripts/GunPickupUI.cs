@@ -5,7 +5,7 @@ using UnityEngine;
 // this object's own canvas from the prefab stays hidden.
 public class GunPickupUI : MonoBehaviour
 {
-    private static readonly Color Phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    private static readonly Color Phosphor = UiColours.Phosphor;
 
     private GunPickup gunPickup;
     private PickupLabel label;

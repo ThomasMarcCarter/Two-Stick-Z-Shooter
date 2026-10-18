@@ -19,3 +19,7 @@ MonoBehaviour:
   butcher: {fileID: 919132149155446097, guid: 5607f9e21fe302a47973da839f15318c, type: 3}
   broodmother: {fileID: 919132149155446097, guid: 4ebf4e71b57099c42a3303d721d785a5, type: 3}
   howler: {fileID: 919132149155446097, guid: f4ef00dc6cd19464cbd9a9bec4d232ac, type: 3}
+  mechanic: {fileID: 919132149155446097, guid: 3b3200fbb007c1c46b0463c75c5ab147, type: 3}
+  medic: {fileID: 919132149155446097, guid: f588a9d8f1cb81b48a8a8d2abb9e2e86, type: 3}
+  quartermaster: {fileID: 919132149155446097, guid: 892102b34573cbc4cb8972f291facd1d, type: 3}
+  trader: {fileID: 919132149155446097, guid: c0715992bb76bb5439b05b191e0a9726, type: 3}

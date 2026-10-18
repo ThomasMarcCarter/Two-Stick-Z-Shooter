@@ -17,7 +17,7 @@ public class Minimap : MaskableGraphic
     [SerializeField] private float pixelsPerUnit = 3f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Color background = new Color(0f, 0.07f, 0.03f, 0.85f);
     [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [SerializeField] private float gridSpacing = 16f;
@@ -160,7 +160,7 @@ public class Minimap : MaskableGraphic
             if (connection.Direction != Vector2Int.right && connection.Direction != Vector2Int.up)
                 continue;
 
-            if (!room.Visited && !connection.Neighbour.Visited)
+            if (!FloorGenerator.IsCorridorKnown(room, connection.Neighbour))
                 continue;
 
             floor.GetCorridorEnds(connection, out Vector2 from, out Vector2 to);

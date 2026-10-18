@@ -20,7 +20,7 @@ public class SettingsMenu : MonoBehaviour
     [SerializeField] private TMP_FontAsset font;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = new Color(0.35f, 1f, 0.55f, 1f);
+    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private float rowHeight = 30f;
 
     public bool IsOpen { get; private set; }
@@ -256,10 +256,15 @@ public class SettingsMenu : MonoBehaviour
 
         y -= rowHeight * 0.5f;
         AddSection(ref y, "VIDEO");
-        AddOption(ref y, "DISPLAY MODE", () => GameSettings.DisplayModeName(GameSettings.DisplayMode), GameSettings.StepDisplayMode);
-        AddOption(ref y, "RESOLUTION", () => $"{GameSettings.Resolution.x} x {GameSettings.Resolution.y}", GameSettings.StepResolution);
-        AddOption(ref y, "VSYNC", () => GameSettings.VSync ? "ON" : "OFF", _ => GameSettings.ToggleVSync());
-        AddOption(ref y, "FRAME RATE CAP", () => GameSettings.FrameCapName, d => { if (!GameSettings.VSync) GameSettings.StepFrameCap(d); });
+        // Window settings only where there's a desktop window (not on consoles).
+        if (Platform.HasWindowSettings)
+        {
+            AddOption(ref y, "DISPLAY MODE", () => GameSettings.DisplayModeName(GameSettings.DisplayMode), GameSettings.StepDisplayMode);
+            AddOption(ref y, "RESOLUTION", () => $"{GameSettings.Resolution.x} x {GameSettings.Resolution.y}", GameSettings.StepResolution);
+            AddOption(ref y, "VSYNC", () => GameSettings.VSync ? "ON" : "OFF", _ => GameSettings.ToggleVSync());
+            AddOption(ref y, "FRAME RATE CAP", () => GameSettings.FrameCapName, d => { if (!GameSettings.VSync) GameSettings.StepFrameCap(d); });
+        }
+
         AddOption(ref y, "CRT EFFECT", () => GameSettings.Crt.ToString().ToUpperInvariant(), GameSettings.StepCrt);
 
         y -= rowHeight * 0.5f;

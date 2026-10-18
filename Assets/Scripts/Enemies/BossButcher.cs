@@ -6,7 +6,7 @@ using UnityEngine;
 // a wall stuns it for a couple of seconds, during which it takes double damage. Sidestepping
 // the charge so it hits the wall is the way to beat it.
 [RequireComponent(typeof(Enemy))]
-public class BossButcher : MonoBehaviour
+public class BossButcher : MonoBehaviour, IBossMoves
 {
     private enum Phase { Stalk, WindUp, Charge, Dazed }
 
@@ -27,6 +27,29 @@ public class BossButcher : MonoBehaviour
     private Color restGlow;
     private Vector3 baseScale;
     private float bodyRadius = 1f;
+
+    public BossMove Move
+    {
+        get
+        {
+            switch (phase)
+            {
+                case Phase.WindUp: return BossMove.WindUp;
+                case Phase.Charge: return BossMove.Charge;
+                case Phase.Dazed: return BossMove.Dazed;
+                default: return BossMove.None;
+            }
+        }
+    }
+
+    public float MoveProgress
+    {
+        get
+        {
+            float length = phase == Phase.WindUp ? WindUpTime : phase == Phase.Dazed ? DazedTime : phase == Phase.Charge ? MaxChargeTime : 0f;
+            return length > 0f ? Mathf.Clamp01(1f - (phaseEnds - Time.time) / length) : 0f;
+        }
+    }
 
     private void Awake()
     {

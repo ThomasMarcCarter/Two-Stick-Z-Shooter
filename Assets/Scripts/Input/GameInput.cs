@@ -11,7 +11,9 @@ public enum InputDeviceKind
 
 // All game input in one place, on the Input System: keyboard + mouse and controller side by side,
 // whichever was used last is "active". Bindings can be changed at runtime and are saved to
-// PlayerPrefs. InputDriver updates the shared aim point and active device each frame.
+// PlayerPrefs, by action name and binding index (the bindings are made in code, so their IDs are
+// new every launch and the Input System's own ID-based override JSON never matched them back up).
+// InputDriver updates the shared aim point and active device each frame.
 // The project has domain reload turned off for entering Play mode, so statics survive between
 // sessions; everything here is rebuilt at the start of each one instead of in a static constructor.
 public static class GameInput
@@ -19,7 +21,22 @@ public static class GameInput
     public const string KeyboardMouseGroup = "KeyboardMouse";
     public const string GamepadGroup = "Gamepad";
 
-    private const string SaveKey = "input.bindings";
+    private const string SaveKey = "input.bindings.v2";
+    private const string OldSaveKey = "input.bindings";   // ID-based, never loadable; deleted
+
+    [Serializable]
+    private class SavedOverride
+    {
+        public string action;   // "Map/Action"
+        public int index;
+        public string path;
+    }
+
+    [Serializable]
+    private class SavedOverrides
+    {
+        public List<SavedOverride> overrides = new List<SavedOverride>();
+    }
 
     public static InputActionAsset Asset { get; private set; }
 
@@ -324,16 +341,58 @@ public static class GameInput
 
     private static void SaveBindings()
     {
-        PlayerPrefs.SetString(SaveKey, Asset.SaveBindingOverridesAsJson());
+        SavedOverrides saved = new SavedOverrides();
+
+        foreach (InputActionMap map in Asset.actionMaps)
+        {
+            foreach (InputAction action in map.actions)
+            {
+                for (int i = 0; i < action.bindings.Count; i++)
+                {
+                    string path = action.bindings[i].overridePath;
+
+                    if (path != null)
+                        saved.overrides.Add(new SavedOverride { action = map.name + "/" + action.name, index = i, path = path });
+                }
+            }
+        }
+
+        PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(saved));
         PlayerPrefs.Save();
         BindingsChanged?.Invoke();
     }
 
     private static void LoadBindings()
     {
+        if (PlayerPrefs.HasKey(OldSaveKey))
+            PlayerPrefs.DeleteKey(OldSaveKey);
+
         string json = PlayerPrefs.GetString(SaveKey, "");
 
-        if (!string.IsNullOrEmpty(json))
-            Asset.LoadBindingOverridesFromJson(json);
+        if (string.IsNullOrEmpty(json))
+            return;
+
+        SavedOverrides saved;
+
+        try
+        {
+            saved = JsonUtility.FromJson<SavedOverrides>(json);
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+
+        if (saved?.overrides == null)
+            return;
+
+        // Anything that no longer lines up (an action renamed or removed) is skipped.
+        foreach (SavedOverride entry in saved.overrides)
+        {
+            InputAction action = Asset.FindAction(entry.action);
+
+            if (action != null && entry.index >= 0 && entry.index < action.bindings.Count && !action.bindings[entry.index].isComposite)
+                action.ApplyBindingOverride(entry.index, entry.path);
+        }
     }
 }

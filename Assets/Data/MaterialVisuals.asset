@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab27015462ce23445b27317c8078c737, type: 3}
+  m_Name: MaterialVisuals
+  m_EditorClassIdentifier: Assembly-CSharp::MaterialVisuals
+  models:
+  - type: 0
+    model: {fileID: 919132149155446097, guid: bb0597d4f077405458037a0fef883c96, type: 3}
+  - type: 1
+    model: {fileID: 919132149155446097, guid: cac90dc907d5c3343957d0a960408963, type: 3}
+  - type: 2
+    model: {fileID: 919132149155446097, guid: e76241d6620ad1944a76009b9dc5dff0, type: 3}
+  - type: 3
+    model: {fileID: 919132149155446097, guid: 6422c34c67eab694bb8dd52a883042c4, type: 3}
+  - type: 4
+    model: {fileID: 919132149155446097, guid: a71db185dbd950645933823d29026a50, type: 3}
