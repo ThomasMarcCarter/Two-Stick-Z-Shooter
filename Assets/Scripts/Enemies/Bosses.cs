@@ -56,7 +56,7 @@ public static class Bosses
         switch (kind)
         {
             case BossKind.Broodmother: return 1.4f;
-            case BossKind.Howler: return 1.3f;
+            case BossKind.Howler: return 1.6f;
             default: return 1.2f;
         }
     }

@@ -198,14 +198,21 @@ public partial class FloorGenerator
         Furniture("Bench", "Bench", parent, centre + new Vector3(-3.5f, 0f, -2f), Vector3.right, new Vector3(2.4f, 0.5f, 0.5f), wood);
         Furniture("Bench", "Bench", parent, centre + new Vector3(3.5f, 0f, -2f), Vector3.left, new Vector3(2.4f, 0.5f, 0.5f), wood);
 
-        // Supply crates and sandbags along the walls.
+        // Supply crates and sandbags along the walls. The crates are stacked against the sealed
+        // med bay door and are cleared away once the medic has been rescued.
         Color crate = new Color(0.3f, 0.33f, 0.2f);
         Color sand = new Color(0.45f, 0.4f, 0.3f);
         float eastWall = centre.x + CellStep.x / 2f + roomSize.x / 2f - 0.9f;
         float southWall = centre.z - CellStep.y / 2f - roomSize.y / 2f + 0.9f;
-        Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0f, centre.z - 6f), Vector3.left, new Vector3(1.1f, 0.9f, 1.1f), crate);
-        Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0.9f, centre.z - 6f), new Vector3(-1f, 0f, 0.3f), new Vector3(0.8f, 0.6f, 0.8f), crate * 1.1f);
-        Furniture("Crate", "Crate", parent, new Vector3(eastWall - 0.2f, 0f, centre.z - 7.4f), Vector3.left, new Vector3(1.2f, 0.9f, 1f), crate);
+
+        if (!MetaProgress.IsRescued(NpcKind.Medic))
+        {
+            Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0f, centre.z - 6f), Vector3.left, new Vector3(1.1f, 0.9f, 1.1f), crate);
+            Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0.9f, centre.z - 6f), new Vector3(-1f, 0f, 0.3f), new Vector3(0.8f, 0.6f, 0.8f), crate * 1.1f);
+            Furniture("Crate", "Crate", parent, new Vector3(eastWall - 0.2f, 0f, centre.z - 7.4f), Vector3.left, new Vector3(1.2f, 0.9f, 1f), crate);
+        }
+
+
         Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
         Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x + 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
 

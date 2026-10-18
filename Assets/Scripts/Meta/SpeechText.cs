@@ -3,7 +3,9 @@ using UnityEngine;
 
 // Floating speech over a character's head: no box or panel, just glowing phosphor text in the
 // UI's green, typed out a letter at a time with a soft terminal blip, held long enough to read,
-// then faded out. Faces the top-down camera. Saying something new replaces what's showing.
+// then faded out. Faces the top-down camera, draws over the level (WorldOverlay, so furniture
+// and walls never hide it) and slides sideways to stay on screen. Saying something new replaces
+// what's showing.
 // Built in code; one per speaker.
 // After CameraFollow, so it's placed for where the camera ends up this frame.
 [DefaultExecutionOrder(200)]
@@ -65,7 +67,8 @@ public class SpeechText : MonoBehaviour
         text.richText = true;
 
         // A glow and a thin dark edge, like phosphor on a screen, readable on any floor.
-        Material glowing = new Material(text.fontSharedMaterial);
+        // Drawn over the level, so awnings, shelves and walls never hide what's said.
+        Material glowing = WorldOverlay.Overlay(text.fontSharedMaterial);
         glowing.EnableKeyword(ShaderUtilities.Keyword_Glow);
         glowing.SetFloat(ShaderUtilities.ID_GlowOuter, 0.45f);
         glowing.SetFloat(ShaderUtilities.ID_GlowPower, 0.6f);
@@ -133,7 +136,32 @@ public class SpeechText : MonoBehaviour
         if (camera != null)
             transform.rotation = camera.transform.rotation;
 
-        transform.position = speaker.position + Vector3.up * height;
+        transform.position = KeepOnScreen(camera, speaker.position + Vector3.up * height);
+    }
+
+    // Slid sideways, if need be, so the whole line is on screen (a speaker by the edge of the
+    // view, or against a wall, would otherwise have half their words cut off).
+    private Vector3 KeepOnScreen(Camera camera, Vector3 position)
+    {
+        if (camera == null)
+            return position;
+
+        const float margin = 16f;
+        float halfWidth = Mathf.Min(text.rectTransform.rect.width, text.GetPreferredValues(text.text).x) / 2f * Scale;
+        Vector3 centre = camera.WorldToScreenPoint(position);
+
+        if (centre.z <= 0f)
+            return position;
+
+        float halfPixels = Mathf.Abs(camera.WorldToScreenPoint(position + camera.transform.right * halfWidth).x - centre.x);
+        float min = halfPixels + margin;
+        float max = Screen.width - halfPixels - margin;
+        float x = min > max ? Screen.width / 2f : Mathf.Clamp(centre.x, min, max);
+
+        if (Mathf.Approximately(x, centre.x))
+            return position;
+
+        return camera.ScreenToWorldPoint(new Vector3(x, centre.y, centre.z));
     }
 
     // A short soft square blip, like a terminal printing.

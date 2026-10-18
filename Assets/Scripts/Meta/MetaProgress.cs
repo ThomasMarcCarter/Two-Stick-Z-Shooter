@@ -24,9 +24,14 @@ public enum MetaUpgrade
 // (abandoned runs pay nothing). Materials are banked separately, when sent home from an uplink terminal (UplinkTerminal).
 // An upgrade is bought at its station: it needs the station's survivor rescued (except the
 // generator), scrap and materials, and for levels above 1 the generator upgraded far enough.
+// There are three save profiles, each its own file (profile 1 keeps the original file name); the
+// one in use is remembered in PlayerPrefs and picked or wiped from the main menu.
 public static class MetaProgress
 {
     private const string FileName = "meta_progress.json";
+    private const string ProfileKey = "MetaProfile";
+
+    public const int ProfileCount = 3;
 
     public const int ScrapPerKill = 1;
     public const int ScrapPerFloor = 15;
@@ -47,8 +52,19 @@ public static class MetaProgress
         public int[] rescued = new int[0];
     }
 
+    // What the main menu shows for a profile without switching to it.
+    public struct ProfileSummary
+    {
+        public bool Exists;
+        public int Scrap;
+        public int Runs;
+        public int Victories;
+        public int Rescued;
+    }
+
     private static SaveData data;
     private static bool runActive;
+    private static int profile;   // 0 until read from PlayerPrefs
 
     public static event Action Changed;
 
@@ -58,13 +74,32 @@ public static class MetaProgress
     public static int BestFloor => Data.bestFloor;
     public static int Kills => Data.kills;
 
-    private static string SavePath => Path.Combine(Application.persistentDataPath, FileName);
+    // The profile in use, 1 to ProfileCount.
+    public static int Profile
+    {
+        get
+        {
+            if (profile == 0)
+                profile = Mathf.Clamp(PlayerPrefs.GetInt(ProfileKey, 1), 1, ProfileCount);
+
+            return profile;
+        }
+    }
+
+    private static string SavePath => PathFor(Profile);
+
+    private static string PathFor(int slot)
+    {
+        string file = slot == 1 ? FileName : $"meta_progress_{slot}.json";
+        return Path.Combine(Application.persistentDataPath, file);
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
         data = null;
         runActive = false;
+        profile = 0;
         Changed = null;
     }
 
@@ -323,27 +358,98 @@ public static class MetaProgress
         Changed?.Invoke();
     }
 
+    // ---------- Profiles ----------
+
+    // Switches to another profile; its save is read the next time anything asks.
+    public static void SelectProfile(int slot)
+    {
+        slot = Mathf.Clamp(slot, 1, ProfileCount);
+
+        if (slot == Profile)
+            return;
+
+        profile = slot;
+        runActive = false;
+        data = null;
+        PlayerPrefs.SetInt(ProfileKey, slot);
+        PlayerPrefs.Save();
+        Changed?.Invoke();
+    }
+
+    public static ProfileSummary Summary(int slot)
+    {
+        SaveData saved = slot == Profile ? Data : Read(PathFor(slot));
+        int rescued = 0;
+
+        foreach (int flag in saved.rescued)
+        {
+            if (flag != 0)
+                rescued++;
+        }
+
+        return new ProfileSummary
+        {
+            Exists = File.Exists(PathFor(slot)),
+            Scrap = saved.scrap,
+            Runs = saved.runs,
+            Victories = saved.victories,
+            Rescued = rescued
+        };
+    }
+
+    // Deletes a profile's save file for good. Wiping the profile in use starts it afresh.
+    public static void WipeProfile(int slot)
+    {
+        string path = PathFor(slot);
+
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+
+            if (File.Exists(path + ".tmp"))
+                File.Delete(path + ".tmp");
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"MetaProgress: couldn't delete {path}. {e.Message}");
+        }
+
+        if (slot == Profile)
+        {
+            runActive = false;
+            data = null;
+            Changed?.Invoke();
+        }
+    }
+
     // ---------- File ----------
 
     private static void Load()
     {
-        data = new SaveData();
+        data = Read(SavePath);
+    }
+
+    private static SaveData Read(string path)
+    {
+        SaveData saved = new SaveData();
 
         try
         {
-            if (File.Exists(SavePath))
-                JsonUtility.FromJsonOverwrite(File.ReadAllText(SavePath), data);
+            if (File.Exists(path))
+                JsonUtility.FromJsonOverwrite(File.ReadAllText(path), saved);
         }
         catch (Exception e)
         {
-            Debug.LogWarning($"MetaProgress: couldn't read {SavePath}, starting fresh. {e.Message}");
-            data = new SaveData();
+            Debug.LogWarning($"MetaProgress: couldn't read {path}, starting fresh. {e.Message}");
+            saved = new SaveData();
         }
 
-        data.levels ??= new int[0];
-        data.materials ??= new int[0];
-        data.rescued ??= new int[0];
-        data.version = 2;
+        saved.levels ??= new int[0];
+        saved.materials ??= new int[0];
+        saved.rescued ??= new int[0];
+        saved.version = 2;
+        return saved;
     }
 
     private static void Save()

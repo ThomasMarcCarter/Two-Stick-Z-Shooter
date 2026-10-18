@@ -4349,7 +4349,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640.00006, y: -360.00006}
+  m_AnchoredPosition: {x: -627.2001, y: -352.80008}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -5160,8 +5160,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
   settings: {fileID: 0}
-  floor: {fileID: 0}
-  transition: {fileID: 0}
   title: Two-Stick Z Shooter
   subtitle: '> TERMINAL READY // AWAITING OPERATOR'
   phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
@@ -7504,7 +7502,7 @@ MonoBehaviour:
   enemyHealth: 3
   enemySpeed: 3
   enemyContactDamage: 1
-  bossHealth: 25
+  bossHealth: 100
   bossSpeed: 1.8
   bossContactDamage: 2
   enemyKinds:
@@ -8595,7 +8593,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640.00006, y: -360.00006}
+  m_AnchoredPosition: {x: -627.2001, y: -352.80008}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

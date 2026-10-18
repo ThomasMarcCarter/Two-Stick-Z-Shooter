@@ -3,7 +3,8 @@ using UnityEngine;
 
 // Pause (Esc / Menu) stops the game. Two columns: on the left a live preview of the tactical map,
 // which opens the full map (and comes back here when it closes); on the right resume, settings,
-// restart the run, exit to the hideout, or exit to the main menu. Pause or Back (Esc / B) closes it again, or steps back
+// restart the run, exit to the hideout (not shown in the hideout itself; Main Menu moves up into
+// its place), or exit to the main menu. Pause or Back (Esc / B) closes it again, or steps back
 // out of the settings. Runs before FullscreenMap, so the Esc that closes the map doesn't also open this.
 [DefaultExecutionOrder(-50)]
 public class PauseMenu : MonoBehaviour
@@ -30,6 +31,10 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private FloorGenerator floor;
 
     private CrtMenu menu;
+    private CrtMenu runMenu;
+    private CrtMenu hideoutMenu;
+    private Vector2 hideoutButtonSpot;
+    private Vector2 mainMenuButtonSpot;
     private float previousTimeScale = 1f;
     private int openedFrame;
     private bool returnFromMap;
@@ -40,11 +45,22 @@ public class PauseMenu : MonoBehaviour
         panel.SetActive(false);
 
         // Left column: the map. Right column: everything else. The controller starts on Resume.
-        menu = new CrtMenu(new[]
+        runMenu = new CrtMenu(new[]
         {
             new[] { mapButton },
             new[] { resumeButton, settingsButton, restartButton, hideoutButton, mainMenuButton }
         }, 1, 0);
+
+        // In the hideout there's no going back to it, so that button is left out.
+        hideoutMenu = new CrtMenu(new[]
+        {
+            new[] { mapButton },
+            new[] { resumeButton, settingsButton, restartButton, mainMenuButton }
+        }, 1, 0);
+
+        menu = runMenu;
+        hideoutButtonSpot = ((RectTransform)hideoutButton.transform).anchoredPosition;
+        mainMenuButtonSpot = ((RectTransform)mainMenuButton.transform).anchoredPosition;
     }
 
     private void OnEnable()
@@ -95,7 +111,13 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        switch (menu.Update())
+        int choice = menu.Update();
+
+        // The hideout menu has no hideout button, so Main Menu is one number earlier there.
+        if (menu == hideoutMenu && choice == 4)
+            choice = 5;
+
+        switch (choice)
         {
             case 0:
                 OpenMap();
@@ -147,6 +169,12 @@ public class PauseMenu : MonoBehaviour
             ? (floor.IsHideout ? "OPERATION STANDBY // HIDEOUT" : $"OPERATION SUSPENDED // FLOOR {floor.FloorNumber} OF {floor.TotalFloors}")
             : "OPERATION SUSPENDED";
         notice.text = "";
+
+        bool inHideout = floor != null && floor.IsHideout;
+        menu = inHideout ? hideoutMenu : runMenu;
+        hideoutButton.gameObject.SetActive(!inHideout);
+        ((RectTransform)mainMenuButton.transform).anchoredPosition = inHideout ? hideoutButtonSpot : mainMenuButtonSpot;
+
         panel.SetActive(true);
         menu.Open();
 

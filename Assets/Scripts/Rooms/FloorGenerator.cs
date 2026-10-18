@@ -147,7 +147,8 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private int enemyHealth = 3;
     [SerializeField] private float enemySpeed = 3f;
     [SerializeField] private int enemyContactDamage = 1;
-    [SerializeField] private int bossHealth = 25;
+    [Tooltip("Boss base health, scaled per boss (Bosses.HealthMultiplier).")]
+    [SerializeField] private int bossHealth = 100;
     [SerializeField] private float bossSpeed = 1.8f;
     [SerializeField] private int bossContactDamage = 2;
     [Header("Enemy Kinds")]

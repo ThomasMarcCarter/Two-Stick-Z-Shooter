@@ -12,10 +12,14 @@ public class ProximityLabel : MonoBehaviour
     private float range;
     private Transform player;
 
-    public static ProximityLabel Add(GameObject owner, float height, float showRange, Color stripe, Func<string> source)
+    // clearance > 0 puts the label above the owner on screen, that far clear of it, instead of
+    // over it (see PickupLabel.Clearance).
+    public static ProximityLabel Add(GameObject owner, float height, float showRange, Color stripe, Func<string> source,
+        float clearance = 0f)
     {
         ProximityLabel proximity = owner.AddComponent<ProximityLabel>();
         proximity.label = PickupLabel.Create(owner.transform, height);
+        proximity.label.Clearance = clearance;
         proximity.text = source;
         proximity.colour = stripe;
         proximity.range = showRange;

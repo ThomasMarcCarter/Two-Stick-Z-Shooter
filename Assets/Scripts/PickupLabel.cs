@@ -43,6 +43,11 @@ public class PickupLabel : MonoBehaviour
     private Color accent = Phosphor;
     private Canvas canvas;
 
+    // Above the item on screen instead of over it, with this much room between (world units):
+    // for things the player needs to see while reading the label (the training dummy). 0 keeps
+    // it centred over the item.
+    public float Clearance { get; set; }
+
     // Where it put itself this frame, before any stacking, and its size in world units.
     public Vector3 Placed { get; private set; }
     public Vector2 WorldSize { get; private set; }
@@ -95,6 +100,10 @@ public class PickupLabel : MonoBehaviour
         CallbackGraphic background = panelObject.AddComponent<CallbackGraphic>();
         background.Draw = DrawPanel;
 
+        // Always over the level: never hidden behind walls, furniture or awnings.
+        if (WorldOverlay.UI != null)
+            background.material = WorldOverlay.UI;
+
         GameObject textObject = new GameObject("Text", typeof(RectTransform));
         textObject.transform.SetParent(panel, false);
         RectTransform textRect = textObject.GetComponent<RectTransform>();
@@ -113,6 +122,7 @@ public class PickupLabel : MonoBehaviour
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
         label.richText = true;
+        label.fontSharedMaterial = WorldOverlay.Text(label.fontSharedMaterial);
         text = label;
     }
 
@@ -218,6 +228,13 @@ public class PickupLabel : MonoBehaviour
     {
         Vector3 position = pickup.position + Vector3.up * height;
 
+        // Lifted up the screen so its bottom edge clears the item.
+        if (Clearance > 0f && camera != null)
+        {
+            Vector3 screenUp = Vector3.ProjectOnPlane(camera.transform.up, Vector3.up).normalized;
+            position += screenUp * (halfSize.y + Clearance);
+        }
+
         if (floor == null)
             floor = FindAnyObjectByType<FloorGenerator>();
 
@@ -225,18 +242,7 @@ public class PickupLabel : MonoBehaviour
             return position;
 
         Vector2 point = new Vector2(pickup.position.x, pickup.position.z);
-        Rect area = default;
-        bool found = false;
-
-        foreach (Rect block in room.Blocks)
-        {
-            if (block.Contains(point))
-            {
-                area = block;
-                found = true;
-                break;
-            }
-        }
+        bool found = FloorAround(room, point, out Rect area);
 
         float cameraHeight = camera.transform.position.y;
 
@@ -254,6 +260,87 @@ public class PickupLabel : MonoBehaviour
 
         Vector2 actual = eye + (apparent - eye) / spread;
         return new Vector3(actual.x, position.y, actual.y);
+    }
+
+    // The floor block under a point, grown a side at a time while the blocks beyond that side
+    // cover the whole of it: a plain rectangle of floor round the item, so a label can use the
+    // whole of a big room but never hangs over the wall in the corner of an L-shaped one.
+    private static bool FloorAround(Room room, Vector2 point, out Rect area)
+    {
+        area = default;
+        bool found = false;
+
+        foreach (Rect block in room.Blocks)
+        {
+            if (block.Contains(point))
+            {
+                area = block;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            return false;
+
+        bool grew = true;
+
+        for (int pass = 0; pass < 64 && grew; pass++)
+        {
+            grew = false;
+
+            for (int side = 0; side < 4; side++)
+            {
+                if (TryGrow(room, ref area, side))
+                    grew = true;
+            }
+        }
+
+        return true;
+    }
+
+    // Pushes one side of the area (0 up, 1 down, 2 left, 3 right, in world z/x) out to the far
+    // edge of the blocks just beyond it, if they span that whole side and line up.
+    private static bool TryGrow(Room room, ref Rect area, int side)
+    {
+        const float epsilon = 0.01f;
+        bool vertical = side < 2;
+        float edge = side == 0 ? area.yMax : side == 1 ? area.yMin : side == 2 ? area.xMin : area.xMax;
+        float spanMin = vertical ? area.xMin : area.yMin;
+        float spanMax = vertical ? area.xMax : area.yMax;
+        float covered = 0f;
+        float far = float.NaN;
+
+        foreach (Rect block in room.Blocks)
+        {
+            float near = side == 0 ? block.yMin : side == 1 ? block.yMax : side == 2 ? block.xMax : block.xMin;
+            float blockMin = vertical ? block.xMin : block.yMin;
+            float blockMax = vertical ? block.xMax : block.yMax;
+
+            if (Mathf.Abs(near - edge) > epsilon || blockMin < spanMin - epsilon || blockMax > spanMax + epsilon)
+                continue;
+
+            float blockFar = side == 0 ? block.yMax : side == 1 ? block.yMin : side == 2 ? block.xMin : block.xMax;
+
+            if (!float.IsNaN(far) && Mathf.Abs(blockFar - far) > epsilon)
+                return false;   // ragged: the blocks beyond don't line up
+
+            far = blockFar;
+            covered += blockMax - blockMin;
+        }
+
+        if (float.IsNaN(far) || covered < spanMax - spanMin - epsilon)
+            return false;
+
+        switch (side)
+        {
+            case 0: area.yMax = far; break;
+            case 1: area.yMin = far; break;
+            case 2: area.xMin = far; break;
+            default: area.xMax = far; break;
+        }
+
+        return true;
     }
 
     private static float ClampAxis(float value, float min, float max)

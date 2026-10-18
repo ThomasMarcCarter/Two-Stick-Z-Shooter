@@ -62,7 +62,8 @@ public class TrainingDummy : MonoBehaviour
         body.height = 2f;
         body.radius = 0.32f;
 
-        ProximityLabel.Add(root, 2.3f, 6f, new Color(0.35f, 1f, 0.55f), dummy.LabelText);
+        // Above the dummy on screen, not over it, so it can be seen being hit while reading the score.
+        ProximityLabel.Add(root, 2.3f, 6f, new Color(0.35f, 1f, 0.55f), dummy.LabelText, 0.8f);
         return dummy;
     }
 
