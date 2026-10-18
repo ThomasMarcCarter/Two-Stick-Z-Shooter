@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,9 @@ using static MapMesh;
 // brackets and a stripe in the item's colour. Faces the top-down camera, and is kept over the
 // floor of the room the pickup is in (allowing for perspective, since it floats above the walls),
 // so labels on wall-mounted guns don't hang over the wall. Built entirely in code.
+// Labels that would overlap on screen are stacked into a tidy column by PickupLabelStack, which
+// moves them after they've placed themselves; one moved off its item gets a thin leader line
+// back to it, so it's clear which label is whose.
 // After CameraFollow, so it's placed for where the camera ends up this frame.
 [DefaultExecutionOrder(200)]
 public class PickupLabel : MonoBehaviour
@@ -19,6 +23,18 @@ public class PickupLabel : MonoBehaviour
     private static readonly Color Phosphor = UiColours.Phosphor;
     private static FloorGenerator floor;
 
+    // Every label showing, for PickupLabelStack.
+    private static readonly List<PickupLabel> showing = new List<PickupLabel>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        showing.Clear();
+        floor = null;
+    }
+
+    public static IReadOnlyList<PickupLabel> Showing => showing;
+
     private Transform pickup;
     private float height;
     private RectTransform panel;
@@ -26,6 +42,30 @@ public class PickupLabel : MonoBehaviour
     private Func<string> textSource;
     private Color accent = Phosphor;
     private Canvas canvas;
+
+    // Where it put itself this frame, before any stacking, and its size in world units.
+    public Vector3 Placed { get; private set; }
+    public Vector2 WorldSize { get; private set; }
+
+    // Shown on screen this frame, before the stack has its say (the inventory hides them all).
+    public bool Visible => canvas != null && !InventoryScreen.IsOpen;
+
+    // Hidden by the stack for this frame (too many in one pile; see PickupLabelStack).
+    public bool Suppressed { get; private set; }
+
+    // The stack's own labels ("+3 MORE NEARBY"), which it places itself.
+    public bool Managed { get; set; }
+
+    // Set by the stack: how far it's been moved (screen pixels, eased), and whether it's newly
+    // shown (so it jumps straight into place rather than sliding).
+    public Vector2 StackOffset { get; set; }
+    public bool JustShown { get; set; }
+
+    // The point it marks: just above the pickup.
+    public Vector3 Anchor => pickup.position + Vector3.up * 0.4f;
+
+    // The leader line's far end in the panel's own space, or null for none.
+    private Vector2? leaderEnd;
 
     // Makes a hidden label that floats `labelHeight` above the pickup.
     public static PickupLabel Create(Transform owner, float labelHeight)
@@ -40,6 +80,7 @@ public class PickupLabel : MonoBehaviour
         PickupLabel label = root.AddComponent<PickupLabel>();
         label.pickup = owner;
         label.height = labelHeight;
+        label.canvas = canvas;
         label.Build();
         root.SetActive(false);
         return label;
@@ -92,13 +133,29 @@ public class PickupLabel : MonoBehaviour
 
     public bool IsShowing => gameObject.activeSelf;
 
+    private void OnEnable()
+    {
+        if (!showing.Contains(this))
+            showing.Add(this);
+
+        JustShown = true;
+        StackOffset = Vector2.zero;
+        leaderEnd = null;
+        PickupLabelStack.Ensure();
+    }
+
+    private void OnDisable()
+    {
+        showing.Remove(this);
+    }
+
     private void LateUpdate()
     {
         // Out of the way while the inventory is up over the room.
         if (canvas == null)
             canvas = GetComponent<Canvas>();
 
-        canvas.enabled = !InventoryScreen.IsOpen;
+        canvas.enabled = !InventoryScreen.IsOpen && !Suppressed;
         Refresh();
     }
 
@@ -115,13 +172,45 @@ public class PickupLabel : MonoBehaviour
         // Fit the panel to the text.
         Vector2 size = text.GetPreferredValues(text.text) + new Vector2(Padding * 2f + 6f, Padding * 2f);
         panel.sizeDelta = size;
+        WorldSize = size * Scale;
 
         Camera camera = Camera.main;
 
         if (camera != null)
             transform.rotation = camera.transform.rotation;
 
-        transform.position = Place(camera, size * Scale / 2f);
+        Placed = Place(camera, WorldSize / 2f);
+        transform.position = Placed;
+    }
+
+    public void SetSuppressed(bool suppressed)
+    {
+        // Back from hiding: straight into place, not sliding from wherever it was.
+        if (Suppressed && !suppressed)
+            JustShown = true;
+
+        Suppressed = suppressed;
+
+        if (canvas != null)
+            canvas.enabled = !InventoryScreen.IsOpen && !suppressed;
+    }
+
+    // Moved by the stack: to `position`, with a leader line back to the item if it's been moved
+    // far enough to lose track of it.
+    public void MoveTo(Vector3 position, bool leader, Camera camera)
+    {
+        transform.position = position;
+        leaderEnd = null;
+
+        if (!leader || camera == null)
+            return;
+
+        // Where the item appears, brought onto the label's plane (at the label's depth), in the
+        // panel's own space.
+        Vector3 anchorScreen = camera.WorldToScreenPoint(Anchor);
+        float depth = camera.WorldToScreenPoint(position).z;
+        Vector3 onPlane = camera.ScreenToWorldPoint(new Vector3(anchorScreen.x, anchorScreen.y, depth));
+        leaderEnd = panel.InverseTransformPoint(onPlane);
     }
 
     // Above the pickup, then nudged inwards so the whole label appears over the room's floor.
@@ -174,6 +263,15 @@ public class PickupLabel : MonoBehaviour
 
     private void DrawPanel(VertexHelper vh, Rect rect)
     {
+        // The leader first, so the panel covers its near end: from the panel's nearest edge
+        // to a small dot on the item.
+        if (leaderEnd is Vector2 end && !rect.Contains(end))
+        {
+            Vector2 start = new Vector2(Mathf.Clamp(end.x, rect.xMin, rect.xMax), Mathf.Clamp(end.y, rect.yMin, rect.yMax));
+            Line(vh, start, end, 2f, Fade(accent, 0.7f));
+            FillRect(vh, new Rect(end.x - 4f, end.y - 4f, 8f, 8f), Fade(accent, 0.9f));
+        }
+
         FillRect(vh, rect, new Color(0f, 0.06f, 0.03f, 0.88f));
         OutlineRect(vh, rect, 1.5f, Fade(Phosphor, 0.55f));
 

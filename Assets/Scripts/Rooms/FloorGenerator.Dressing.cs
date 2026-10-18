@@ -17,7 +17,8 @@ public partial class FloorGenerator
         if (clutterBoxes == null || clutterBoxes.Length == 0 || room.Type == RoomType.Start)
             return;
 
-        List<Vector3> placed = new List<Vector3>();
+        // Starts with the theme furniture's footprint, so boxes keep off it too.
+        List<Vector3> placed = new List<Vector3>(ClutterOf(room));
         List<Vector3> doorways = DoorwayPositions(room);
         List<Vector3> lootPoints = new List<Vector3>();
 

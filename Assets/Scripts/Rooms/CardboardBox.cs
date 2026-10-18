@@ -6,7 +6,8 @@ using UnityEngine.AI;
 // bullets but not from sight (enemies see over it). Bullets travel at waist height, so they fly
 // over the smallest boxes and hit the rest, which take a few hits (more for bigger boxes): each
 // puffs cardboard debris, and the last crunches it flat, leaving a scrap of flattened cardboard.
-// A box stacked on top rests there under its own physics, and falls if the one below goes.
+// A box stacked on top rests there under its own physics, and falls if the one below goes. One
+// that falls out of the level is removed.
 public class CardboardBox : MonoBehaviour
 {
     [Tooltip("Hits to break it. Bigger boxes take more.")]
@@ -66,6 +67,14 @@ public class CardboardBox : MonoBehaviour
             obstacle.carving = true;
             obstacle.carveOnlyStationary = true;
         }
+    }
+
+    // A box placed overlapping something can be shoved through the floor by the physics push-out;
+    // one that's fallen out of the level is just removed.
+    private void FixedUpdate()
+    {
+        if (transform.position.y < -2f)
+            Destroy(gameObject);
     }
 
     // A bullet hit it at point, travelling in direction.

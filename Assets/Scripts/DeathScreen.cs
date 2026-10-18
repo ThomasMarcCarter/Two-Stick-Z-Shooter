@@ -1,8 +1,8 @@
 using TMPro;
 using UnityEngine;
 
-// Shown when the player dies. Pauses the game, banks the run's scrap (MetaProgress), loses any
-// unbanked materials (RunMaterials, listed on the notice) and offers a new run, the hideout or
+// Shown when the player dies. Pauses the game, banks the run's scrap (MetaProgress), loses the
+// materials still in the backpack (listed on the notice) and offers a new run, the hideout or
 // the main menu. Works with mouse or controller (CrtMenu).
 public class DeathScreen : MonoBehaviour
 {
@@ -33,16 +33,12 @@ public class DeathScreen : MonoBehaviour
         int scrap = floor != null ? MetaProgress.EndRun(false, floor.FloorNumber - 1, floor.FloorNumber, floor.EnemiesKilled) : 0;
         notice.text = $"<color={UiColours.AmberHex}>+{scrap} SCRAP SALVAGED // {MetaProgress.Scrap} BANKED FOR THE HIDEOUT</color>";
 
-        // Unbanked materials die with the player, apart from what the secure pouch holds.
-        (int[] lostAmounts, int[] keptAmounts) = RunMaterials.Die();
-        string lost = RunMaterials.Describe(lostAmounts);
-        string kept = RunMaterials.Describe(keptAmounts);
-
-        if (kept.Length > 0)
-            notice.text += $"\n<size=80%><color={UiColours.AmberHex}>SECURE POUCH KEPT:</color> {kept}</size>";
+        // Materials never sent home from an uplink die with the player.
+        PlayerWeapon player = FindAnyObjectByType<PlayerWeapon>();
+        string lost = player != null ? Materials.Describe(Backpack.For(player.gameObject).TakeAllMaterials()) : "";
 
         if (lost.Length > 0)
-            notice.text += $"\n<size=80%><color={UiColours.DangerHex}>LOST UNBANKED MATERIALS:</color> {lost}</size>";
+            notice.text += $"\n<size=80%><color={UiColours.DangerHex}>LOST MATERIALS NOT SENT HOME:</color> {lost}</size>";
         panel.SetActive(true);
         menu.Open();
     }

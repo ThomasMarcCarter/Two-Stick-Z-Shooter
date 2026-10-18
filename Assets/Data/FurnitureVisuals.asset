@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 939747d56639f7d469a90ca30f8d0336, type: 3}
+  m_Name: FurnitureVisuals
+  m_EditorClassIdentifier: Assembly-CSharp::HideoutPropVisuals
+  models:
+  - name: AmmoCrate
+    model: {fileID: 919132149155446097, guid: e5a1a1cfd48deac4db0c9e59ca667592, type: 3}
+  - name: Bench
+    model: {fileID: 919132149155446097, guid: a4dbdd7a7a801a843b6a08bde0c08487, type: 3}
+  - name: BunkBed
+    model: {fileID: 919132149155446097, guid: d09dbfee423045d4cb87eaca471507d7, type: 3}
+  - name: Counter
+    model: {fileID: 919132149155446097, guid: 4c48897db0b9b824084c38558dc17ac1, type: 3}
+  - name: Crate
+    model: {fileID: 919132149155446097, guid: 70f40c204957c9e4883a8756109addf0, type: 3}
+  - name: DrumBlue
+    model: {fileID: 919132149155446097, guid: 19baef9500ae3bf4d91a79603001df50, type: 3}
+  - name: DrumRed
+    model: {fileID: 919132149155446097, guid: 5b43cbc4ab3dffe49b90dcacc396caf8, type: 3}
+  - name: FireBarrel
+    model: {fileID: 919132149155446097, guid: 9e7c1e85347076447bd3cb21e436b247, type: 3}
+  - name: GunRack
+    model: {fileID: 919132149155446097, guid: 82b9e7457b7388645a1bf7369b7d42eb, type: 3}
+  - name: HospitalBed
+    model: {fileID: 919132149155446097, guid: c349ed84deaf9ac41bdb612d55a6e5b0, type: 3}
+  - name: Locker
+    model: {fileID: 919132149155446097, guid: 6a5cd13ee4aeac743bf923b8853fb619, type: 3}
+  - name: MedCabinet
+    model: {fileID: 919132149155446097, guid: ed2a8be1817c21542ace5362068b586e, type: 3}
+  - name: Sandbags
+    model: {fileID: 919132149155446097, guid: 4bb9725fc584dd74aae122266e466415, type: 3}
+  - name: Screen
+    model: {fileID: 919132149155446097, guid: 3602160b2bcc70e49a13bbc162dc79ca, type: 3}
+  - name: Shelving
+    model: {fileID: 919132149155446097, guid: 2535f3a449955094c9b7c74ba993e1e6, type: 3}
+  - name: StashLocker
+    model: {fileID: 919132149155446097, guid: b5448ea4d64b34f49934ef746f195e1e, type: 3}
+  - name: Trophy
+    model: {fileID: 919132149155446097, guid: 932a7546c8b7d074185074dc31db49f5, type: 3}
+  - name: Tyres
+    model: {fileID: 919132149155446097, guid: 153c6884a4387414eadc87b4f6656dd8, type: 3}

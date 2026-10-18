@@ -13,8 +13,7 @@ public enum MetaUpgrade
     Scavenger,      // enemies drop ammo more often
     Generator,      // powers higher upgrade levels, and more scrap from runs
     Gunsmith,       // start with attachments in the backpack
-    Recon,          // the boss room, then the whole floor, on the map from the start
-    SecurePouch     // a few unbanked materials survive death
+    Recon           // the boss room, then the whole floor, on the map from the start
 }
 
 // Progress that carries over between runs (the only thing the game saves; there are no
@@ -22,7 +21,7 @@ public enum MetaUpgrade
 // with scrap and materials, and a few lifetime stats. Kept in a small JSON file in the player's
 // data folder, written whenever something changes. A run pays out its scrap once, when it ends
 // in death or victory: a scrap a kill, more for each boss beaten, and a bonus for winning
-// (abandoned runs pay nothing). Materials are banked separately as the run goes (RunMaterials).
+// (abandoned runs pay nothing). Materials are banked separately, when sent home from an uplink terminal (UplinkTerminal).
 // An upgrade is bought at its station: it needs the station's survivor rescued (except the
 // generator), scrap and materials, and for levels above 1 the generator upgraded far enough.
 public static class MetaProgress
@@ -384,7 +383,6 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: return "POWER";
             case MetaUpgrade.Gunsmith: return "GUNSMITH";
             case MetaUpgrade.Recon: return "RECON";
-            case MetaUpgrade.SecurePouch: return "SECURE POUCH";
             default: return "SCAVENGER";
         }
     }
@@ -428,7 +426,6 @@ public static class MetaUpgrades
             case MetaUpgrade.Armory: costs = new[] { Of((P, 3)), Of((P, 5), (W, 2)), Of((P, 8), (W, 4), (G, 3)) }; break;
             case MetaUpgrade.Gunsmith: costs = new[] { Of((P, 3), (W, 2)), Of((P, 5), (W, 4)) }; break;
             case MetaUpgrade.Recon: costs = new[] { Of((W, 2)), Of((W, 3), (P, 2)) }; break;
-            case MetaUpgrade.SecurePouch: costs = new[] { Of((P, 2), (W, 1)), Of((P, 3), (W, 3)), Of((P, 5), (W, 4), (F, 2)) }; break;
             case MetaUpgrade.AmmoCache: costs = new[] { Of((G, 2)), Of((G, 4), (P, 2)), Of((G, 6), (P, 3)) }; break;
             case MetaUpgrade.Generator: costs = new[] { Of((F, 3), (W, 2)), Of((F, 6), (W, 4), (P, 3)) }; break;
             default: costs = new[] { Of((G, 2), (W, 1)), Of((G, 3), (W, 3)), Of((G, 5), (W, 4)) }; break;
@@ -462,7 +459,6 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: costs = new[] { 30, 70 }; break;
             case MetaUpgrade.Gunsmith: costs = new[] { 35, 75 }; break;
             case MetaUpgrade.Recon: costs = new[] { 25, 55 }; break;
-            case MetaUpgrade.SecurePouch: costs = new[] { 30, 60, 100 }; break;
             default: costs = new[] { 25, 50, 80 }; break;
         }
 
@@ -485,14 +481,11 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: return $"POWERS LV{level + 1} UPGRADES // +{level * 10}% SCRAP";
             case MetaUpgrade.Gunsmith: return level >= 2 ? "START WITH 2 ATTACHMENTS" : "START WITH AN ATTACHMENT";
             case MetaUpgrade.Recon: return level >= 2 ? "EVERY FLOOR FULLY MAPPED" : "BOSS ROOM MAPPED ON EVERY FLOOR";
-            case MetaUpgrade.SecurePouch: return $"KEEP {SecurePouchSize(level)} UNBANKED MATERIALS ON DEATH";
             default: return $"+{level * 10}% AMMO DROPS";
         }
     }
 
     public static int AmmoCacheRounds(int level) => level * 12;
-
-    public static int SecurePouchSize(int level) => level * 2;
 
     public static string ArmoryWeaponName(int level)
     {

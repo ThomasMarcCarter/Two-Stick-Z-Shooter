@@ -128,6 +128,8 @@ public partial class InventoryScreen
 
             if (stack.Kind == Backpack.ItemKind.Ammo)
                 AmmoPickup.Drop(stack.AmmoType, amount, position, RoomAt(position));
+            else if (stack.Kind == Backpack.ItemKind.Material)
+                MaterialPickup.Spawn(stack.Material, amount, position, RoomAt(position));
             else
                 ConsumablePickup.Drop(stack.Consumable, amount, position, RoomAt(position));
 

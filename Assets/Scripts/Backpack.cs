@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
 
-// The grid in the inventory: spare weapon attachments, the player's ammo and consumables
-// (medkits, grenades and so on), one item per cell, in whatever order the player has dragged
-// them into. Ammo is carried as stacks of up to StackSize rounds, and consumables as stacks of
+// The grid in the inventory: spare weapon attachments, the player's ammo, consumables
+// (medkits, grenades and so on) and crafting materials, one item per cell, in whatever order the
+// player has dragged them into. Materials are only safe once sent home from an uplink terminal;
+// whatever's still in here when the player dies is lost with the run. Ammo is carried as stacks of up to StackSize rounds, and consumables as stacks of
 // ConsumableInfo.StackSize; there's no limit per type, only the cells, so the player can fill
 // the whole backpack with ammo if they like. AmmoInventory reads and changes the ammo through
 // here, and the QuickBar uses consumables from it.
@@ -18,7 +19,8 @@ public class Backpack : MonoBehaviour
     {
         Attachment,
         Ammo,
-        Consumable
+        Consumable,
+        Material
     }
 
     public class Item
@@ -27,16 +29,37 @@ public class Backpack : MonoBehaviour
         public WeaponAttachment Attachment;
         public AmmoType AmmoType;
         public ConsumableType Consumable;
-        public int Amount;      // stacks: rounds (or consumables) in this stack
+        public MaterialType Material;
+        public int Amount;      // stacks: rounds (or consumables, or materials) in this stack
 
         public bool IsStack => Kind != ItemKind.Attachment;
-        public int StackLimit => Kind == ItemKind.Ammo ? StackSize(AmmoType) : Kind == ItemKind.Consumable ? ConsumableInfo.StackSize(Consumable) : 1;
 
-        // The same kind of stack: the same ammo, or the same consumable.
+        public int StackLimit
+        {
+            get
+            {
+                switch (Kind)
+                {
+                    case ItemKind.Ammo: return StackSize(AmmoType);
+                    case ItemKind.Consumable: return ConsumableInfo.StackSize(Consumable);
+                    case ItemKind.Material: return Materials.StackSize;
+                    default: return 1;
+                }
+            }
+        }
+
+        // The same kind of stack: the same ammo, consumable or material.
         public bool StacksWith(Item other)
         {
-            return other != null && IsStack && other.Kind == Kind
-                && (Kind == ItemKind.Ammo ? other.AmmoType == AmmoType : other.Consumable == Consumable);
+            if (other == null || !IsStack || other.Kind != Kind)
+                return false;
+
+            switch (Kind)
+            {
+                case ItemKind.Ammo: return other.AmmoType == AmmoType;
+                case ItemKind.Consumable: return other.Consumable == Consumable;
+                default: return other.Material == Material;
+            }
         }
     }
 
@@ -328,9 +351,97 @@ public class Backpack : MonoBehaviour
         return true;
     }
 
+    // ---------- Materials ----------
+
+    public int MaterialCount(MaterialType type)
+    {
+        int count = 0;
+
+        foreach (Item item in cells)
+        {
+            if (IsStack(item, type))
+                count += item.Amount;
+        }
+
+        return count;
+    }
+
+    // Every material carried, indexed by MaterialType.
+    public int[] MaterialCounts()
+    {
+        int[] counts = new int[Materials.All.Length];
+
+        foreach (Item item in cells)
+        {
+            if (item != null && item.Kind == ItemKind.Material)
+                counts[(int)item.Material] += item.Amount;
+        }
+
+        return counts;
+    }
+
+    // Tops up the stacks already there, then starts new ones in free cells. Returns how many went in.
+    public int AddMaterial(MaterialType type, int amount)
+    {
+        int left = Mathf.Max(0, amount);
+
+        for (int i = 0; i < CellCount && left > 0; i++)
+        {
+            Item item = cells[i];
+
+            if (!IsStack(item, type) || item.Amount >= Materials.StackSize)
+                continue;
+
+            int add = Mathf.Min(left, Materials.StackSize - item.Amount);
+            item.Amount += add;
+            left -= add;
+        }
+
+        while (left > 0)
+        {
+            int free = FirstFree();
+
+            if (free < 0)
+                break;
+
+            int add = Mathf.Min(left, Materials.StackSize);
+            cells[free] = new Item { Kind = ItemKind.Material, Material = type, Amount = add };
+            left -= add;
+        }
+
+        int added = Mathf.Max(0, amount) - left;
+
+        if (added > 0)
+            Changed?.Invoke();
+
+        return added;
+    }
+
+    // Empties out every material stack (sent home, or lost). Returns what was taken, indexed by
+    // MaterialType.
+    public int[] TakeAllMaterials()
+    {
+        int[] taken = MaterialCounts();
+        bool any = false;
+
+        for (int i = 0; i < CellCount; i++)
+        {
+            if (cells[i] != null && cells[i].Kind == ItemKind.Material)
+            {
+                cells[i] = null;
+                any = true;
+            }
+        }
+
+        if (any)
+            Changed?.Invoke();
+
+        return taken;
+    }
+
     // ---------- Stacks ----------
 
-    // Takes a whole stack (ammo or consumables) out, to drop it. Returns how many it held.
+    // Takes a whole stack (ammo, consumables or materials) out, to drop it. Returns how many it held.
     public int TakeStack(int cell)
     {
         Item item = this[cell];
@@ -345,7 +456,7 @@ public class Backpack : MonoBehaviour
 
     // ---------- Arranging ----------
 
-    // Moves whatever is in one cell to another. Onto a stack of the same ammo or consumable,
+    // Moves whatever is in one cell to another. Onto a stack of the same ammo, consumable or material,
     // it's merged in as far as it fits (what doesn't fit stays behind); onto anything else, the
     // two swap places.
     public void Move(int from, int to)
@@ -389,6 +500,11 @@ public class Backpack : MonoBehaviour
     private static bool IsStack(Item item, ConsumableType type)
     {
         return item != null && item.Kind == ItemKind.Consumable && item.Consumable == type;
+    }
+
+    private static bool IsStack(Item item, MaterialType type)
+    {
+        return item != null && item.Kind == ItemKind.Material && item.Material == type;
     }
 
     private int FirstFree()

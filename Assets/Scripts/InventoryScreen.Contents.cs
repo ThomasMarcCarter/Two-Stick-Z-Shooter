@@ -114,6 +114,12 @@ public partial class InventoryScreen
             main.color = Fade(Color.Lerp(ConsumableInfo.Colour(item.Consumable), Color.white, 0.35f), item.Amount > 0 ? 1f : 0.4f);
             sub.text = "x" + item.Amount;
         }
+        else if (item.Kind == Backpack.ItemKind.Material)
+        {
+            main.text = Materials.Short(item.Material);
+            main.color = Color.Lerp(Materials.Colour(item.Material), Color.white, 0.3f);
+            sub.text = "x" + item.Amount;
+        }
         else
         {
             main.text = item.Amount.ToString();
@@ -247,6 +253,14 @@ public partial class InventoryScreen
             string where = $"{item.Amount} / {ConsumableInfo.StackSize(item.Consumable)} IN STACK // "
                 + (slot >= 0 ? $"ON QUICK SLOT {slot + 1}" : "NOT ON THE QUICK BAR");
             return ConsumableTooltip(item.Consumable, where);
+        }
+
+        if (item.Kind == Backpack.ItemKind.Material)
+        {
+            tooltipAccent = Materials.Colour(item.Material);
+            return $"{Materials.Name(item.Material)}  <alpha=#99><size=85%>// {item.Amount} / {Materials.StackSize} IN STACK</size>\n"
+                + $"<alpha=#CC><size=85%>CRAFTING MATERIAL // {MetaProgress.MaterialCount(item.Material)} AT THE HIDEOUT</size>\n"
+                + $"<alpha=#88><size=80%>LOST IF YOU DIE // SEND IT HOME FROM AN UPLINK TERMINAL</size>";
         }
 
         tooltipAccent = AmmoInfo.Colour(item.AmmoType);

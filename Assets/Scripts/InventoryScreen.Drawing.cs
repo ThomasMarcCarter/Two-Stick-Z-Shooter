@@ -143,6 +143,19 @@ public partial class InventoryScreen
             return;
         }
 
+        // Materials: a tint and a bar in the material's colour, filled to how full the stack is.
+        if (item.Kind == Backpack.ItemKind.Material)
+        {
+            Color colour = Materials.Colour(item.Material);
+            FillRect(vh, cell, Fade(colour, 0.1f * alpha));
+            FillRect(vh, new Rect(cell.xMin, cell.yMax - 4f, cell.width, 4f), Fade(colour, alpha));
+
+            Rect stackBar = new Rect(cell.xMin + 6f, cell.yMin + 4f, cell.width - 12f, 4f);
+            FillRect(vh, stackBar, Fade(phosphor, 0.15f * alpha));
+            FillRect(vh, new Rect(stackBar.xMin, stackBar.yMin, stackBar.width * item.Amount / Materials.StackSize, stackBar.height), Fade(colour, 0.9f * alpha));
+            return;
+        }
+
         Color ammoColour = AmmoInfo.Colour(item.AmmoType);
         FillRect(vh, new Rect(cell.xMin + 6f, cell.yMax - 12f, 8f, 8f), Fade(ammoColour, alpha));
 

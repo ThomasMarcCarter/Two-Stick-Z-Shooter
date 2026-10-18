@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 // Crafting materials found on runs and spent, with scrap, on hideout station upgrades. Carried
-// ones are at risk until banked (see RunMaterials).
+// in the backpack, and at risk until sent home from an uplink terminal (see UplinkTerminal).
 public enum MaterialType
 {
     Parts,
@@ -77,6 +77,30 @@ public static class Materials
     }
 
     public static string Hex(MaterialType type) => "#" + ColorUtility.ToHtmlStringRGB(Colour(type));
+
+    // How many of one material fit in a backpack cell.
+    public const int StackSize = 10;
+
+    // "3 PARTS, 1 FUEL" for a set of amounts (indexed by MaterialType), coloured per material
+    // unless asked for plain text; empty if none.
+    public static string Describe(int[] amounts, bool coloured = true)
+    {
+        System.Text.StringBuilder text = new System.Text.StringBuilder();
+
+        for (int i = 0; i < amounts.Length; i++)
+        {
+            if (amounts[i] <= 0)
+                continue;
+
+            if (text.Length > 0)
+                text.Append(", ");
+
+            MaterialType type = (MaterialType)i;
+            text.Append(coloured ? $"<color={Hex(type)}>{amounts[i]} {Name(type)}</color>" : $"{amounts[i]} {Name(type)}");
+        }
+
+        return text.ToString();
+    }
 }
 
 // A material and how many of it.
@@ -286,7 +310,7 @@ public static class Stations
         switch (station)
         {
             case HideoutStation.Generator: return new[] { MetaUpgrade.Generator };
-            case HideoutStation.Workbench: return new[] { MetaUpgrade.Armory, MetaUpgrade.Gunsmith, MetaUpgrade.SecurePouch };
+            case HideoutStation.Workbench: return new[] { MetaUpgrade.Armory, MetaUpgrade.Gunsmith };
             case HideoutStation.MedStation: return new[] { MetaUpgrade.Toughness, MetaUpgrade.Conditioning, MetaUpgrade.FieldKit };
             case HideoutStation.TradePost: return new MetaUpgrade[0];
             case HideoutStation.IntelDesk: return new[] { MetaUpgrade.Recon };

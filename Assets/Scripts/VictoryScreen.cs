@@ -23,7 +23,8 @@ public class VictoryScreen : MonoBehaviour
         menu = new CrtMenu(newRunButton, hideoutButton, mainMenuButton);
     }
 
-    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned)
+    // recovered: the materials still in the backpack, sent home with the win ("" for none).
+    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned, string recovered = "")
     {
         IsShowing = true;
         Time.timeScale = 0f;
@@ -38,7 +39,7 @@ public class VictoryScreen : MonoBehaviour
             $"MISSION TIME       {minutes:00}:{seconds:00}\n" +
             $"<color={UiColours.AmberHex}>SCRAP SALVAGED     +{scrapEarned}  ({MetaProgress.Scrap} BANKED)</color>";
 
-        notice.text = "";
+        notice.text = recovered.Length > 0 ? $"<size=80%>MATERIALS BROUGHT HOME: {recovered}</size>" : "";
         panel.SetActive(true);
         menu.Open();
     }

@@ -21,8 +21,14 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private int totalFloors = 3;
     [SerializeField] private Material exitMaterial;
     [SerializeField] private Material trophyMaterial;
-    [Tooltip("Seconds after the boss dies before the hatch or trophy can be used.")]
-    [SerializeField] private float exitArmDelay = 1f;
+    [Tooltip("Seconds after the boss dies before the hatch or trophy can be used (the hatch doors swing open over it).")]
+    [SerializeField] private float exitArmDelay = 1.6f;
+    [Tooltip("The hatch's frame (coaming, shaft, lamps). Without it the hatch is a flat block.")]
+    [SerializeField] private GameObject hatchModel;
+    [Tooltip("One hatch door leaf, pivot on its hinge edge, lying along +X. Two are placed.")]
+    [SerializeField] private GameObject hatchDoorModel;
+    [Tooltip("The supply uplink terminal that turns up in the boss room, for sending materials home.")]
+    [SerializeField] private GameObject uplinkModel;
     [SerializeField] private FloorTransition transition;
     [SerializeField] private VictoryScreen victoryScreen;
     [SerializeField] private CameraFollow cameraFollow;
@@ -181,6 +187,13 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private MaterialVisuals materialVisuals;
     [Tooltip("Models for the hideout stations' bodies. Without one they're built from primitives.")]
     [SerializeField] private StationVisuals stationVisuals;
+    [Tooltip("Furniture models (drums, crates, bunks, lockers...) for the hideout and the themed rooms of a floor. "
+        + "Without one the hideout's are tinted blocks and rooms get no theme furniture.")]
+    [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("hideoutPropVisuals")] private FurnitureVisuals furnitureVisuals;
+    [Tooltip("Chance a combat room is themed (storage, infirmary, barracks, workshop) and furnished to match.")]
+    [SerializeField, Range(0f, 1f)] private float roomThemeChance = 0.7f;
+    [Tooltip("Furniture pieces per cell of a themed room (min, max).")]
+    [SerializeField] private Vector2Int furniturePerCell = new Vector2Int(1, 3);
     [Tooltip("Chance an enemy drops ammo when it dies. Bosses always drop.")]
     [SerializeField, Range(0f, 1f)] private float enemyAmmoDropChance = 0.3f;
     [Tooltip("Chance a combat room has an ammo crate in it.")]
@@ -255,9 +268,8 @@ public partial class FloorGenerator : MonoBehaviour
     [Tooltip("How far out from the wall's face ammo on a wall point sits.")]
     [SerializeField] private float wallAmmoGap = 0.8f;
 
-    [Header("Spawn Room")]
-    [Tooltip("Pickup mounted on a wall of the spawn room each floor, on a side with no door.")]
-    [SerializeField] private Transform spawnRoomPickup;
+    [Header("Wall Pickups")]
+    [Tooltip("Height of guns mounted on wall loot points.")]
     [SerializeField] private float pickupMountHeight = 1.1f;
     [Tooltip("How far out from the wall's face the mounted pickup sits.")]
     [SerializeField] private float pickupWallGap = 0.35f;
@@ -346,7 +358,6 @@ public partial class FloorGenerator : MonoBehaviour
 
         // The player's capsule is 2 tall around its middle; the model stands on the floor.
         CharacterVisuals.AttachToPlayer(player, 1f);
-        MaterialsHud.Ensure();
 
         Generate();
     }
@@ -428,6 +439,7 @@ public partial class FloorGenerator : MonoBehaviour
         {
             // Loot first, then boxes kept clear of it, then enemies kept clear of both.
             List<Vector3> lootFloorPoints = SpawnLoot(room);
+            FurnishRoom(room);
             SpawnClutter(room);
             SpawnTrash(room);
             List<Vector3> placed = SpawnEnemies(room);
@@ -438,7 +450,6 @@ public partial class FloorGenerator : MonoBehaviour
             SpawnAmmoCrate(room, placed);
         }
 
-        MountSpawnPickup();
         PlacePlayer();
         ApplyRecon();
 
@@ -544,12 +555,53 @@ public partial class FloorGenerator : MonoBehaviour
 
     // ---------- Floor progression ----------
 
-    // The boss is dead: a checkpoint (materials carried are banked) and the way on opens.
+    // The boss is dead: the way on opens, and an uplink turns up to send materials home. Not on
+    // the last floor: taking the trophy brings everything home anyway.
     private void OnBossRoomCleared(Room room)
     {
         PlayRoomCleared();
-        BankMaterials();
-        SpawnExit(room, FloorNumber < totalFloors ? FloorExit.Kind.NextFloor : FloorExit.Kind.Trophy);
+        bool last = FloorNumber >= totalFloors;
+        SpawnExit(room, last ? FloorExit.Kind.Trophy : FloorExit.Kind.NextFloor);
+
+        if (!last)
+            SpawnUplink(room);
+    }
+
+    // The uplink terminal, its back to a wall of the boss room's middle cell that has no door,
+    // facing in.
+    private void SpawnUplink(Room room)
+    {
+        Vector3 centre = room.transform.position;
+        Vector2Int cell = room.Cells[0];
+
+        foreach (Vector2Int candidate in room.Cells)
+        {
+            if (Vector3.Distance(CellToWorld(candidate), centre) < Vector3.Distance(CellToWorld(cell), centre))
+                cell = candidate;
+        }
+
+        Vector2Int wall = Vector2Int.zero;
+
+        foreach (Vector2Int side in new[] { Vector2Int.up, Vector2Int.right, Vector2Int.left, Vector2Int.down })
+        {
+            bool door = false;
+
+            foreach (RoomConnection connection in room.Connections)
+                door |= connection.Cell == cell && connection.Direction == side;
+
+            if (!room.Contains(cell + side) && !door)
+            {
+                wall = side;
+                break;
+            }
+        }
+
+        if (wall == Vector2Int.zero)
+            wall = Vector2Int.up;
+
+        Vector3 outward = new Vector3(wall.x, 0f, wall.y);
+        float halfExtent = wall.x != 0 ? roomSize.x / 2f : roomSize.y / 2f;
+        UplinkTerminal.Create(uplinkModel, CellToWorld(cell) + outward * (halfExtent - 0.9f), -outward, room.transform);
     }
 
     // A normal room's last enemy is down: the cleared chime, and sometimes a medkit where it
@@ -611,17 +663,19 @@ public partial class FloorGenerator : MonoBehaviour
         SoundFX.Play2D(clip, roomClearedVolume);
     }
 
-    // Called by FloorExit when the player uses the hatch or picks up the trophy.
+    // Called by FloorExit when the player uses the hatch or takes the trophy.
     public void UseExit(FloorExit.Kind kind)
     {
-        // Leaving a floor (or winning) is a checkpoint for materials.
-        BankMaterials();
-
         if (kind == FloorExit.Kind.Trophy)
         {
+            // The run's won: whatever materials are still in the backpack come home too.
+            int[] recovered = Backpack.For(player.gameObject).TakeAllMaterials();
+            MetaProgress.AddMaterials(recovered);
+
             PlayerHealth health = player.GetComponent<PlayerHealth>();
             int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled);
-            victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap);
+            victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap,
+                Materials.Describe(recovered));
             return;
         }
 
@@ -644,16 +698,14 @@ public partial class FloorGenerator : MonoBehaviour
     private void ClearLooseObjects()
     {
         foreach (GunPickup pickup in FindObjectsByType<GunPickup>())
-        {
-            if (pickup.transform != spawnRoomPickup)
-                Destroy(pickup.gameObject);
-        }
+            Destroy(pickup.gameObject);
 
         foreach (Projectile projectile in FindObjectsByType<Projectile>())
             Destroy(projectile.gameObject);
     }
 
-    // A glowing hatch in the floor, or a spinning gold trophy, in the middle of the boss room.
+    // A hatch in the floor whose doors swing open, or a spinning gold trophy, in the middle of the
+    // boss room. Used with Interact (FloorExit), so it has no collider.
     private void SpawnExit(Room room, FloorExit.Kind kind)
     {
         bool trophy = kind == FloorExit.Kind.Trophy;
@@ -662,12 +714,8 @@ public partial class FloorGenerator : MonoBehaviour
         exit.transform.SetParent(room.transform, false);
         exit.transform.position = room.transform.position;
 
-        BoxCollider trigger = exit.AddComponent<BoxCollider>();
-        trigger.isTrigger = true;
-        trigger.size = new Vector3(2f, 2f, 2f);
-        trigger.center = Vector3.up;
-
         Transform spinning = null;
+        Transform[] doors = null;
 
         if (trophy)
         {
@@ -681,23 +729,56 @@ public partial class FloorGenerator : MonoBehaviour
             CreateVisual("Handle L", spinning, new Vector3(-0.38f, 0.28f, 0f), new Vector3(0.12f, 0.3f, 0.12f), trophyMaterial);
             CreateVisual("Handle R", spinning, new Vector3(0.38f, 0.28f, 0f), new Vector3(0.12f, 0.3f, 0.12f), trophyMaterial);
         }
+        else if (hatchModel != null && hatchDoorModel != null)
+        {
+            VisualOnly(Instantiate(hatchModel, exit.transform, false), "Frame");
+
+            // Two doors hinged on the left and right of the opening, each lying over half of it;
+            // the right one is turned round so it reaches back to the middle.
+            doors = new Transform[2];
+
+            for (int i = 0; i < 2; i++)
+            {
+                float side = i == 0 ? -1f : 1f;
+                Transform hinge = new GameObject(i == 0 ? "Door Hinge L" : "Door Hinge R").transform;
+                hinge.SetParent(exit.transform, false);
+                hinge.localPosition = new Vector3(side * HatchOpening / 2f, HatchRimHeight, 0f);
+                hinge.localRotation = i == 0 ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+                VisualOnly(Instantiate(hatchDoorModel, hinge, false), "Door");
+                doors[i] = hinge;
+            }
+        }
         else
         {
             CreateVisual("Hatch Frame", exit.transform, new Vector3(0f, 0.02f, 0f), new Vector3(2.4f, 0.04f, 2.4f), wallMaterial);
             CreateVisual("Hatch", exit.transform, new Vector3(0f, 0.03f, 0f), new Vector3(2f, 0.04f, 2f), exitMaterial);
         }
 
-        // A glow so it can be found in the dark.
+        // A glow so it can be found in the dark: up out of the shaft for the hatch.
         Light glow = new GameObject("Glow").AddComponent<Light>();
         glow.transform.SetParent(exit.transform, false);
-        glow.transform.localPosition = Vector3.up * 1.5f;
+        glow.transform.localPosition = Vector3.up * (trophy ? 1.5f : 0.6f);
         glow.type = LightType.Point;
         glow.color = trophy ? new Color(1f, 0.8f, 0.3f) : new Color(0.35f, 1f, 0.55f);
         glow.range = 5f;
         glow.intensity = 3f;
         glow.shadows = LightShadows.None;
 
-        exit.AddComponent<FloorExit>().Initialise(this, kind, exitArmDelay, spinning);
+        // The hideout's deploy hatch is waiting open.
+        exit.AddComponent<FloorExit>().Initialise(this, kind, IsHideout ? 0f : exitArmDelay, spinning, doors);
+    }
+
+    // The hatch model's opening (square) and the height of its rim, where the doors hinge.
+    private const float HatchOpening = 2.2f;
+    private const float HatchRimHeight = 0.18f;
+
+    // A model instance that's only for looking at: no colliders, named.
+    private static void VisualOnly(GameObject instance, string name)
+    {
+        instance.name = name;
+
+        foreach (Collider collider in instance.GetComponentsInChildren<Collider>())
+            Destroy(collider);
     }
 
     // A block with no collider, so only the exit's trigger affects the player.
@@ -1260,51 +1341,6 @@ public partial class FloorGenerator : MonoBehaviour
 
         CreateWall("Wall", corridor.transform, side * sideOffset + Vector3.up * wallHeight / 2f, wallSize);
         CreateWall("Wall", corridor.transform, -side * sideOffset + Vector3.up * wallHeight / 2f, wallSize);
-    }
-
-    // Hangs the spawn room's pickup on the middle of a wall that has no door, facing into the
-    // room. North is preferred so it's in view when the floor starts. If every wall has a door,
-    // it goes on the north wall a quarter of the way along, clear of the doorway in the middle.
-    private void MountSpawnPickup()
-    {
-        if (spawnRoomPickup == null || rooms.Count == 0)
-            return;
-
-        spawnRoomPickup.gameObject.SetActive(true);
-
-        Room start = rooms[0];
-
-        foreach (Vector2Int side in new[] { Vector2Int.up, Vector2Int.left, Vector2Int.right, Vector2Int.down })
-        {
-            bool hasDoor = false;
-
-            foreach (RoomConnection connection in start.Connections)
-            {
-                if (connection.Cell == start.GridPosition && connection.Direction == side)
-                    hasDoor = true;
-            }
-
-            if (!hasDoor)
-            {
-                MountOnWall(start.GridPosition, side, 0f);
-                return;
-            }
-        }
-
-        MountOnWall(start.GridPosition, Vector2Int.up, -roomSize.x / 4f);
-    }
-
-    // alongOffset slides the mount sideways along the wall from its middle.
-    private void MountOnWall(Vector2Int cell, Vector2Int side, float alongOffset)
-    {
-        Vector3 outward = new Vector3(side.x, 0f, side.y);
-        Vector3 along = new Vector3(side.y, 0f, side.x);
-        float halfExtent = side.x != 0 ? roomSize.x / 2f : roomSize.y / 2f;
-
-        Vector3 position = CellToWorld(cell) + outward * (halfExtent - pickupWallGap) + along * alongOffset;
-        position.y = pickupMountHeight;
-
-        spawnRoomPickup.SetPositionAndRotation(position, Quaternion.LookRotation(-outward));
     }
 
     private void PlacePlayer()

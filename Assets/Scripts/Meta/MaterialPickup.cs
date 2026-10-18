@@ -1,8 +1,9 @@
 using UnityEngine;
 
 // A crafting material lying on the floor (parts, wiring, chemicals, gunpowder, fuel), dropped by
-// zombies, left in cleared rooms, the treasure room and by bosses. Walking over it picks it up
-// into the run's material pouch (RunMaterials), no button needed; it isn't safe until banked.
+// zombies, left in cleared rooms, the treasure room and by bosses. Walking over it puts it in the
+// backpack, no button needed (as much as fits; the rest stays, labelled BACKPACK FULL). It isn't
+// safe until sent home from an uplink terminal (see UplinkTerminal).
 // Its model (MaterialVisuals, or a stand-in built from primitives in the material's colour)
 // floats and turns over a soft glow, with a label once the player is near.
 public class MaterialPickup : MonoBehaviour
@@ -25,6 +26,7 @@ public class MaterialPickup : MonoBehaviour
     private float bobOffset;
     private PickupLabel label;
     private bool taken;
+    private bool full;          // the last try found no room in the backpack
 
     public static MaterialPickup Spawn(MaterialType type, int amount, Vector3 position, Transform parent)
     {
@@ -201,11 +203,11 @@ public class MaterialPickup : MonoBehaviour
         offset.y = 0f;
         float distance = offset.magnitude;
 
-        if (distance <= Reach && !GameFlow.InputBlocked)
-        {
-            Take();
+        if (distance <= Reach && !GameFlow.InputBlocked && Take())
             return;
-        }
+
+        if (distance > Reach)
+            full = false;
 
         bool inRange = distance <= LabelRange;
 
@@ -218,14 +220,27 @@ public class MaterialPickup : MonoBehaviour
     private string LabelText()
     {
         return Materials.Name(Type) + (Amount > 1 ? "  x" + Amount : "")
-            + "\n<size=70%><alpha=#88>MATERIAL // BANK IT TO KEEP IT</size>";
+            + (full ? $"\n<size=70%><color={UiColours.DangerHex}>BACKPACK FULL // MAKE ROOM</color></size>"
+                : "\n<size=70%><alpha=#88>MATERIAL // SEND IT HOME FROM AN UPLINK</size>");
     }
 
-    private void Take()
+    // Into the backpack, as much as fits. True once it's all gone.
+    private bool Take()
     {
-        taken = true;
-        RunMaterials.Add(Type, Amount);
+        int added = Backpack.For(player.gameObject).AddMaterial(Type, Amount);
+        full = added < Amount;
+
+        if (added == 0)
+            return false;
+
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("material-pickup", 3, ProceduralAudio.AmmoPickup)), 0.45f, 1.25f);
+        Amount -= added;
+
+        if (Amount > 0)
+            return false;
+
+        taken = true;
         Destroy(gameObject);
+        return true;
     }
 }

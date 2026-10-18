@@ -107,10 +107,6 @@ public partial class FloorGenerator
         Room hall = rooms[0];
         hall.DisplayName = "HALL";
 
-        // The spawn room's wall gun waits for floor 1 (MountSpawnPickup brings it back).
-        if (spawnRoomPickup != null)
-            spawnRoomPickup.gameObject.SetActive(false);
-
         TraderStock.Restock(rng);
         BuildHall(hall);
 
@@ -133,12 +129,9 @@ public partial class FloorGenerator
         Transform hatch = parent.Find("Hatch");
         Vector3 hatchAt = centre + new Vector3(0f, 0f, 2.5f);
 
+        // Labelled by its FloorExit ("[E] DEPLOY").
         if (hatch != null)
-        {
             hatch.position = hatchAt;
-            ProximityLabel.Add(hatch.gameObject, 1.6f, 6f, UiColours.Phosphor, () =>
-                "DEPLOY HATCH  <size=70%><alpha=#99>// FLOOR 1</size>\n<size=70%><alpha=#BB>STEP ON TO START A RUN</size>");
-        }
 
         // Hazard posts and a low rail round the hatch, gaps front and back to walk in.
         Color yellow = new Color(0.85f, 0.7f, 0.1f);
@@ -172,9 +165,10 @@ public partial class FloorGenerator
 
         // Fuel drums by the generator.
         Color drum = new Color(0.45f, 0.12f, 0.08f);
-        HideoutProp("Drum", parent, west + new Vector3(0.2f, 0.5f, -2.3f), new Vector3(0.6f, 1f, 0.6f), drum, Color.black, true, PrimitiveType.Cylinder);
-        HideoutProp("Drum", parent, west + new Vector3(0.9f, 0.5f, -2.6f), new Vector3(0.6f, 1f, 0.6f), drum, Color.black, true, PrimitiveType.Cylinder);
-        HideoutProp("Drum", parent, west + new Vector3(0.3f, 0.5f, -3.1f), new Vector3(0.6f, 1f, 0.6f), new Color(0.2f, 0.25f, 0.3f), Color.black, true, PrimitiveType.Cylinder);
+        Vector3 drumSize = new Vector3(0.6f, 1f, 0.6f);
+        Furniture("DrumRed", "Drum", parent, west + new Vector3(0.2f, 0f, -2.3f), new Vector3(1f, 0f, 0.4f), drumSize, drum, true, PrimitiveType.Cylinder);
+        Furniture("DrumRed", "Drum", parent, west + new Vector3(0.9f, 0f, -2.6f), new Vector3(0.6f, 0f, -1f), drumSize, drum, true, PrimitiveType.Cylinder);
+        Furniture("DrumBlue", "Drum", parent, west + new Vector3(0.3f, 0f, -3.1f), Vector3.right, drumSize, new Color(0.2f, 0.25f, 0.3f), true, PrimitiveType.Cylinder);
 
         // The intel desk east of the hatch: a planning table with a lit map and the radio (the
         // Recon upgrade).
@@ -186,7 +180,7 @@ public partial class FloorGenerator
         // painted firing line to stand at (guns don't use ammo in the hideout).
         Vector3 dummy = centre + new Vector3(13f, 0f, -1.5f);
         TrainingDummy.Create(dummy, Vector3.left, parent);
-        HideoutProp("Range Backstop", parent, dummy + new Vector3(1.6f, 0.45f, 0f), new Vector3(0.8f, 0.9f, 3f), new Color(0.45f, 0.4f, 0.3f), Color.black, true);
+        Furniture("Sandbags", "Range Backstop", parent, dummy + new Vector3(1.6f, 0f, 0f), Vector3.left, new Vector3(3f, 0.9f, 0.8f), new Color(0.45f, 0.4f, 0.3f));
 
         if (hazardStripeMaterial != null)
         {
@@ -201,19 +195,19 @@ public partial class FloorGenerator
         }
 
         // Benches either side of the walk from the spawn to the hatch.
-        HideoutProp("Bench", parent, centre + new Vector3(-3.5f, 0.25f, -2f), new Vector3(0.5f, 0.5f, 2.4f), wood, Color.black, true);
-        HideoutProp("Bench", parent, centre + new Vector3(3.5f, 0.25f, -2f), new Vector3(0.5f, 0.5f, 2.4f), wood, Color.black, true);
+        Furniture("Bench", "Bench", parent, centre + new Vector3(-3.5f, 0f, -2f), Vector3.right, new Vector3(2.4f, 0.5f, 0.5f), wood);
+        Furniture("Bench", "Bench", parent, centre + new Vector3(3.5f, 0f, -2f), Vector3.left, new Vector3(2.4f, 0.5f, 0.5f), wood);
 
         // Supply crates and sandbags along the walls.
         Color crate = new Color(0.3f, 0.33f, 0.2f);
         Color sand = new Color(0.45f, 0.4f, 0.3f);
         float eastWall = centre.x + CellStep.x / 2f + roomSize.x / 2f - 0.9f;
         float southWall = centre.z - CellStep.y / 2f - roomSize.y / 2f + 0.9f;
-        HideoutProp("Crate", parent, new Vector3(eastWall, 0.45f, centre.z - 6f), new Vector3(1.1f, 0.9f, 1.1f), crate, Color.black, true);
-        HideoutProp("Crate", parent, new Vector3(eastWall, 1.2f, centre.z - 6f), new Vector3(0.8f, 0.6f, 0.8f), crate * 1.1f, Color.black, true);
-        HideoutProp("Crate", parent, new Vector3(eastWall - 0.2f, 0.45f, centre.z - 7.4f), new Vector3(1f, 0.9f, 1.2f), crate, Color.black, true);
-        HideoutProp("Sandbags", parent, new Vector3(centre.x - 9f, 0.35f, southWall), new Vector3(3f, 0.7f, 0.8f), sand, Color.black, true);
-        HideoutProp("Sandbags", parent, new Vector3(centre.x + 9f, 0.35f, southWall), new Vector3(3f, 0.7f, 0.8f), sand, Color.black, true);
+        Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0f, centre.z - 6f), Vector3.left, new Vector3(1.1f, 0.9f, 1.1f), crate);
+        Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0.9f, centre.z - 6f), new Vector3(-1f, 0f, 0.3f), new Vector3(0.8f, 0.6f, 0.8f), crate * 1.1f);
+        Furniture("Crate", "Crate", parent, new Vector3(eastWall - 0.2f, 0f, centre.z - 7.4f), Vector3.left, new Vector3(1.2f, 0.9f, 1f), crate);
+        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
+        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x + 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
 
         // Four pillars framing the middle of the hall round the hatch.
         foreach (Vector2 corner in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
@@ -222,7 +216,7 @@ public partial class FloorGenerator
         // A burning barrel with crates round it to sit on, west of the walk in: the hub's warm
         // corner.
         Vector3 fire = centre + new Vector3(-9f, 0f, -5.5f);
-        HideoutProp("Fire Barrel", parent, fire + Vector3.up * 0.45f, new Vector3(0.6f, 0.9f, 0.6f), new Color(0.2f, 0.12f, 0.08f), Color.black, true, PrimitiveType.Cylinder);
+        Furniture("FireBarrel", "Fire Barrel", parent, fire, Vector3.back, new Vector3(0.6f, 0.9f, 0.6f), new Color(0.2f, 0.12f, 0.08f), true, PrimitiveType.Cylinder);
         Renderer flame = HideoutProp("Flame", parent, fire + Vector3.up * 0.95f, new Vector3(0.5f, 0.24f, 0.5f), new Color(1f, 0.5f, 0.15f), new Color(1f, 0.45f, 0.1f) * 2f, false, PrimitiveType.Cylinder).GetComponent<Renderer>();
         Light warmth = new GameObject("Fire Light").AddComponent<Light>();
         warmth.transform.SetParent(parent, false);
@@ -238,7 +232,7 @@ public partial class FloorGenerator
         {
             float angle = i * 2.1f + 0.5f;
             Vector3 seat = fire + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 1.5f;
-            HideoutProp("Seat", parent, seat + Vector3.up * 0.25f, new Vector3(0.6f, 0.5f, 0.5f), crate * 0.9f, Color.black, true);
+            Furniture("Crate", "Seat", parent, seat, fire - seat, new Vector3(0.6f, 0.5f, 0.5f), crate * 0.9f);
         }
 
         // A rug under the planning table.
@@ -253,8 +247,13 @@ public partial class FloorGenerator
             HideoutProp("Trophy Shelf", parent, shelf, new Vector3(0.4f, 0.08f, 3f), new Color(0.35f, 0.25f, 0.15f), Color.black, false);
 
             for (int i = 0; i < trophies; i++)
-                HideoutProp("Trophy", parent, shelf + new Vector3(0f, 0.22f, (i - (trophies - 1) / 2f) * 0.55f), new Vector3(0.22f, 0.36f, 0.22f),
-                    new Color(1f, 0.8f, 0.3f), new Color(0.5f, 0.35f, 0.05f), false, PrimitiveType.Cylinder);
+            {
+                Vector3 spot = shelf + new Vector3(0f, 0.04f, (i - (trophies - 1) / 2f) * 0.55f);
+
+                if (PropModel("Trophy", "Trophy", parent, spot, Vector3.left, new Vector3(0.3f, 0.36f, 0.22f), false) == null)
+                    HideoutProp("Trophy", parent, spot + Vector3.up * 0.18f, new Vector3(0.22f, 0.36f, 0.22f),
+                        new Color(1f, 0.8f, 0.3f), new Color(0.5f, 0.35f, 0.05f), false, PrimitiveType.Cylinder);
+            }
         }
 
         PlaceHideoutClutter(hall, new[]
@@ -355,37 +354,54 @@ public partial class FloorGenerator
                 for (int s = -1; s <= 1; s += 2)
                 {
                     Vector3 shelf = centre + side * s * (width - 0.6f) + far * (depth - 3.5f);
-                    HideoutProp("Shelving", parent, shelf + Vector3.up * 1f, RotateSize(facing, new Vector3(0.6f, 2f, 2.4f)), metal, Color.black, true);
-                    HideoutProp("Parts Bin", parent, shelf + Vector3.up * 1.3f - side * s * 0.05f, RotateSize(facing, new Vector3(0.65f, 0.3f, 0.6f)), new Color(0.6f, 0.4f, 0.1f), Color.black, false);
-                    HideoutProp("Parts Bin", parent, shelf + Vector3.up * 0.6f + far * 0.4f, RotateSize(facing, new Vector3(0.65f, 0.3f, 0.6f)), new Color(0.2f, 0.3f, 0.5f), Color.black, false);
+                    Furniture("Shelving", "Shelving", parent, shelf, -side * s, new Vector3(2.4f, 2f, 0.6f), metal);
+
+                    // The model has its bins and boxes on the shelves already.
+                    if (!HasPropModel("Shelving"))
+                    {
+                        HideoutProp("Parts Bin", parent, shelf + Vector3.up * 1.3f - side * s * 0.05f, RotateSize(facing, new Vector3(0.65f, 0.3f, 0.6f)), new Color(0.6f, 0.4f, 0.1f), Color.black, false);
+                        HideoutProp("Parts Bin", parent, shelf + Vector3.up * 0.6f + far * 0.4f, RotateSize(facing, new Vector3(0.65f, 0.3f, 0.6f)), new Color(0.2f, 0.3f, 0.5f), Color.black, false);
+                    }
                 }
-                HideoutProp("Tyre", parent, centre + side * (width - 1.2f) - far * (depth - 2f) + Vector3.up * 0.15f, new Vector3(0.9f, 0.15f, 0.9f), new Color(0.06f, 0.06f, 0.06f), Color.black, true, PrimitiveType.Cylinder);
-                HideoutProp("Tyre", parent, centre + side * (width - 1.2f) - far * (depth - 2f) + Vector3.up * 0.45f, new Vector3(0.9f, 0.15f, 0.9f), new Color(0.06f, 0.06f, 0.06f), Color.black, true, PrimitiveType.Cylinder);
+                // In the front corner opposite the clutter by the door.
+                Furniture("Tyres", "Tyres", parent, centre - side * (width - 1.2f) - far * (depth - 2f), far, new Vector3(0.9f, 0.55f, 0.9f),
+                    new Color(0.06f, 0.06f, 0.06f), true, PrimitiveType.Cylinder);
                 break;
 
             case NpcKind.Medic:
                 for (int i = 0; i < 2; i++)
                 {
+                    // Head against the wall.
                     Vector3 bed = centre - side * (width - 1.2f) + far * (depth - 2.5f - i * 2.6f);
-                    HideoutProp("Bed", parent, bed + Vector3.up * 0.35f, RotateSize(Quaternion.LookRotation(side), new Vector3(0.9f, 0.25f, 2f)), new Color(0.75f, 0.77f, 0.75f), Color.black, true);
-                    HideoutProp("Bed Frame", parent, bed + Vector3.up * 0.15f, RotateSize(Quaternion.LookRotation(side), new Vector3(0.85f, 0.3f, 1.9f)), metal, Color.black, true);
+
+                    if (PropModel("HospitalBed", "Bed", parent, bed, side, new Vector3(0.9f, 0.88f, 2f)) == null)
+                    {
+                        HideoutProp("Bed", parent, bed + Vector3.up * 0.35f, RotateSize(Quaternion.LookRotation(side), new Vector3(0.9f, 0.25f, 2f)), new Color(0.75f, 0.77f, 0.75f), Color.black, true);
+                        HideoutProp("Bed Frame", parent, bed + Vector3.up * 0.15f, RotateSize(Quaternion.LookRotation(side), new Vector3(0.85f, 0.3f, 1.9f)), metal, Color.black, true);
+                    }
                 }
-                HideoutProp("Curtain", parent, centre - side * (width - 2.6f) + far * (depth - 3.8f) + Vector3.up * 1f, RotateSize(facing, new Vector3(0.05f, 2f, 2.2f)), new Color(0.5f, 0.65f, 0.6f), Color.black, true);
-                HideoutProp("Supplies", parent, centre + side * (width - 0.7f) + far * (depth - 3f) + Vector3.up * 0.6f, RotateSize(facing, new Vector3(1.2f, 1.2f, 0.6f)), new Color(0.8f, 0.8f, 0.8f), Color.black, true);
+                Furniture("Screen", "Curtain", parent, centre - side * (width - 2.6f) + far * (depth - 3.8f), side, new Vector3(2.2f, 2f, 0.4f), new Color(0.5f, 0.65f, 0.6f));
+                Furniture("MedCabinet", "Supplies", parent, centre + side * (width - 0.3f) + far * (depth - 3f), -side, new Vector3(1.2f, 1.2f, 0.5f), new Color(0.8f, 0.8f, 0.8f));
                 break;
 
             default:
                 for (int i = 0; i < 3; i++)
                 {
                     Vector3 crate = centre - side * (width - 0.9f) + far * (depth - 1.5f - i * 1.3f);
-                    HideoutProp("Ammo Crate", parent, crate + Vector3.up * 0.3f, new Vector3(1.1f, 0.6f, 0.7f), new Color(0.3f, 0.35f, 0.2f), Color.black, true);
+                    Furniture("AmmoCrate", "Ammo Crate", parent, crate, side, new Vector3(1.1f, 0.6f, 0.7f), new Color(0.3f, 0.35f, 0.2f));
                     if (i != 1)
-                        HideoutProp("Ammo Crate", parent, crate + Vector3.up * 0.85f, new Vector3(0.9f, 0.5f, 0.6f), new Color(0.33f, 0.37f, 0.22f), Color.black, true);
+                        Furniture("AmmoCrate", "Ammo Crate", parent, crate + Vector3.up * 0.6f, side, new Vector3(0.9f, 0.5f, 0.6f), new Color(0.33f, 0.37f, 0.22f));
                 }
-                Vector3 rack = centre + side * (width - 0.6f) + far * (depth - 3.5f);
-                HideoutProp("Gun Rack", parent, rack + Vector3.up * 1f, RotateSize(facing, new Vector3(2.6f, 2f, 0.3f)), new Color(0.3f, 0.22f, 0.14f), Color.black, true);
-                for (int g = -2; g <= 2; g++)
-                    HideoutProp("Rifle", parent, rack + Vector3.up * 1.1f + RotateSize(facing, new Vector3(g * 0.45f, 0f, 0f)) - side * 0.2f, new Vector3(0.06f, 1.1f, 0.06f), new Color(0.1f, 0.1f, 0.1f), Color.black, false);
+
+                // The rack against the other side wall, rifles stood in it.
+                Vector3 rack = centre + side * (width - 0.25f) + far * (depth - 3.5f);
+                Furniture("GunRack", "Gun Rack", parent, rack, -side, new Vector3(2.6f, 2f, 0.3f), new Color(0.3f, 0.22f, 0.14f));
+
+                if (!HasPropModel("GunRack"))
+                {
+                    for (int g = -2; g <= 2; g++)
+                        HideoutProp("Rifle", parent, rack + Vector3.up * 1.1f + far * (g * 0.45f) - side * 0.25f, new Vector3(0.06f, 1.1f, 0.06f), new Color(0.1f, 0.1f, 0.1f), Color.black, false);
+                }
                 break;
         }
 
@@ -405,7 +421,12 @@ public partial class FloorGenerator
         {
             for (int i = 0; i < 2; i++)
             {
-                Vector3 bunk = centre + side * s * (width - 1.2f) + far * (depth - 1.4f - i * 2.8f) - far * 0f;
+                // Head against the side wall, the ladder at the end towards the middle.
+                Vector3 bunk = centre + side * s * (width - 1.2f) + far * (depth - 1.4f - i * 2.8f);
+
+                if (PropModel("BunkBed", "Bunk", parent, bunk, -far * s, new Vector3(2f, 1.9f, 0.9f)) != null)
+                    continue;
+
                 Vector3 size = RotateSize(Quaternion.LookRotation(far), new Vector3(2f, 0.15f, 0.9f));
                 HideoutProp("Bunk", parent, bunk + Vector3.up * 0.45f, size, blanket, Color.black, true);
                 HideoutProp("Bunk", parent, bunk + Vector3.up * 1.45f, size, blanket, Color.black, true);
@@ -417,8 +438,13 @@ public partial class FloorGenerator
         Quaternion facing = Quaternion.LookRotation(-far);
 
         for (int i = -2; i <= 2; i++)
-            HideoutProp("Locker", parent, centre + far * (depth - 0.4f) + side * i * 0.75f + Vector3.up * 1f,
-                RotateSize(facing, new Vector3(0.7f, 2f, 0.6f)), i == 0 ? new Color(0.25f, 0.4f, 0.3f) : metal, i == 0 ? new Color(0.05f, 0.25f, 0.1f) : Color.black, true);
+        {
+            Vector3 locker = centre + far * (depth - 0.4f) + side * i * 0.75f;
+
+            if (PropModel(i == 0 ? "StashLocker" : "Locker", "Locker", parent, locker, -far, new Vector3(0.7f, 2f, 0.6f)) == null)
+                HideoutProp("Locker", parent, locker + Vector3.up * 1f, RotateSize(facing, new Vector3(0.7f, 2f, 0.6f)),
+                    i == 0 ? new Color(0.25f, 0.4f, 0.3f) : metal, i == 0 ? new Color(0.05f, 0.25f, 0.1f) : Color.black, true);
+        }
 
         GameObject stash = new GameObject("Stash");
         stash.transform.SetParent(parent, false);
@@ -446,9 +472,7 @@ public partial class FloorGenerator
             return;
         }
 
-        Quaternion rotation = Quaternion.LookRotation(facing);
-        HideoutProp("Empty Counter", room.transform, position + Vector3.up * 0.5f, RotateSize(rotation, new Vector3(2.4f, 1f, 0.7f)),
-            new Color(0.3f, 0.22f, 0.14f), Color.black, true);
+        Furniture("Counter", "Empty Counter", room.transform, position, facing, new Vector3(2.4f, 1.15f, 0.7f), new Color(0.3f, 0.22f, 0.14f));
 
         GameObject sign = new GameObject("Trade Post Sign");
         sign.transform.SetParent(room.transform, false);
@@ -503,6 +527,70 @@ public partial class FloorGenerator
     {
         Vector3 rotated = facing * size;
         return new Vector3(Mathf.Abs(rotated.x), Mathf.Abs(rotated.y), Mathf.Abs(rotated.z));
+    }
+
+    // A piece of furniture: its model if there is one (see PropModel), else a tinted block the
+    // same size. `position` is the floor point under its centre, `size` is in its own axes
+    // (width, height, depth) and `front` is the way it faces.
+    private GameObject Furniture(string model, string name, Transform parent, Vector3 position, Vector3 front, Vector3 size,
+        Color colour, bool solid = true, PrimitiveType shape = PrimitiveType.Cube)
+    {
+        GameObject prop = PropModel(model, name, parent, position, front, size, solid);
+
+        if (prop != null)
+            return prop;
+
+        return HideoutProp(name, parent, position + Vector3.up * size.y / 2f, RotateSize(Quaternion.LookRotation(front), size),
+            colour, Color.black, solid, shape);
+    }
+
+    private bool HasPropModel(string model)
+    {
+        return furnitureVisuals != null && furnitureVisuals.ModelFor(model) != null;
+    }
+
+    // A furniture model stood on the floor at `position`, facing `front`, stretched to fit `size`
+    // (its own width, height, depth) so it takes the same space the block did; solid ones get a
+    // box collider that size (the navmesh is built from colliders). Null without a model.
+    private GameObject PropModel(string model, string name, Transform parent, Vector3 position, Vector3 front, Vector3 size,
+        bool solid = true)
+    {
+        GameObject prefab = furnitureVisuals != null ? furnitureVisuals.ModelFor(model) : null;
+
+        if (prefab == null)
+            return null;
+
+        // Built at the world origin first, so the model's bounds are in the root's own space.
+        GameObject root = new GameObject(name);
+        GameObject body = Instantiate(prefab, root.transform);
+        body.name = "Model";
+
+        Renderer[] renderers = body.GetComponentsInChildren<Renderer>();
+
+        if (renderers.Length > 0)
+        {
+            Bounds bounds = renderers[0].bounds;
+
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+
+            Vector3 fit = new Vector3(size.x / Mathf.Max(bounds.size.x, 0.001f), size.y / Mathf.Max(bounds.size.y, 0.001f),
+                size.z / Mathf.Max(bounds.size.z, 0.001f));
+            body.transform.localScale = Vector3.Scale(body.transform.localScale, fit);
+            body.transform.localPosition = -Vector3.Scale(new Vector3(bounds.center.x, bounds.min.y, bounds.center.z), fit);
+        }
+
+        root.transform.SetParent(parent, true);
+        root.transform.SetPositionAndRotation(position, Quaternion.LookRotation(front, Vector3.up));
+
+        if (solid)
+        {
+            BoxCollider box = root.AddComponent<BoxCollider>();
+            box.center = Vector3.up * size.y / 2f;
+            box.size = size;
+        }
+
+        return root;
     }
 
     // A solid (or not) tinted block of the hideout's furniture, from the pickups' material.
@@ -671,13 +759,6 @@ public partial class FloorGenerator
             Vector3 offset = new Vector3((i - (treasureMaterials - 1) / 2f) * 1.1f, 0f, 2.8f);
             MaterialPickup.Spawn(PickMaterial((float)rng.NextDouble()), 1, room.transform.position + offset, room.transform);
         }
-    }
-
-    // A checkpoint: the materials carried are safe from here.
-    private void BankMaterials()
-    {
-        if (RunMaterials.Total > 0)
-            RunMaterials.Bank();
     }
 
     // Debug: one of each material in a row at a point.
