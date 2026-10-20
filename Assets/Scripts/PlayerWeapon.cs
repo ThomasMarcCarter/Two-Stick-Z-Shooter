@@ -207,6 +207,7 @@ public class PlayerWeapon : MonoBehaviour
         GameObject weapon = Instantiate(weaponPrefab, weaponHolder.position, weaponHolder.rotation, weaponHolder);
         equipped.Gun = weapon.GetComponent<Gun>();
         equipped.Prefab = weaponPrefab;
+        CharacterVisuals.DressGun(equipped.Gun);
 
         // Hide the one in hand (if it's the other slot) and bring the new one out.
         if (slot != ActiveSlot && Active.Gun != null)

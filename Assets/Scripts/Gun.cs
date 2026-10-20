@@ -121,6 +121,7 @@ public class Gun : MonoBehaviour
     public event System.Action AttachmentsChanged;
 
     public int PelletsPerShot => Mathf.Max(1, pelletsPerShot);
+    public Transform Muzzle => muzzle;
     public FireMode BaseFireMode => fireMode;
     public ReloadStyle Reloading => reloadStyle;
 
@@ -204,8 +205,11 @@ public class Gun : MonoBehaviour
 
     // The height the cursor aims at: about where guns are held (the muzzle), not ShotHeight. The
     // tracer is drawn level at the muzzle, so aiming at this height makes it run straight through
-    // the crosshair with the tilted camera; it's also roughly the middle of a zombie on screen.
-    public const float AimHeight = 1.13f;
+    // the crosshair; it's also roughly the middle of a zombie on screen. Sprites are drawn smaller
+    // and hold their guns lower (GunSprite puts the muzzle at this height).
+    public static float AimHeight => SpriteVisuals.Current != null ? SpriteAimHeight : ModelAimHeight;
+    public const float ModelAimHeight = 1.13f;
+    public const float SpriteAimHeight = 0.75f;
 
     // The name shown for a gun prefab: its asset name upper-cased, with words split where a
     // lower-case letter meets a capital ("DoubleBarrel" -> "DOUBLE BARREL", "AK47" unchanged).
@@ -251,8 +255,11 @@ public class Gun : MonoBehaviour
         if (reloadAudio != null)
             reloadVolume = reloadAudio.volume;
 
-        if (muzzle != null && muzzleFlashMaterial != null)
-            muzzleFlash = MuzzleFlash.Create(muzzle, muzzleFlashMaterial, muzzleFlashSize);
+        Material flame = SpriteVisuals.Current != null && SpriteVisuals.Current.muzzleFlame != null
+            ? SpriteVisuals.Current.muzzleFlame : muzzleFlashMaterial;
+
+        if (muzzle != null && flame != null)
+            muzzleFlash = MuzzleFlash.Create(muzzle, flame, muzzleFlashSize);
     }
 
     // Holstered (switched to the other slot) mid-reload: the coroutine stops with the object,
@@ -325,8 +332,13 @@ public class Gun : MonoBehaviour
         fromBody.y = 0f;
         Vector3 direction = mouseWorldPosition - spawn;
         direction.y = 0f;
-        Vector3 facing = transform.root.forward;
+        // The way the gun points: out of the body to the muzzle (a gun sprite turns to the
+        // cursor straight away, ahead of the body turning).
+        Vector3 facing = muzzle != null ? muzzle.position - transform.root.position : transform.root.forward;
         facing.y = 0f;
+
+        if (facing.sqrMagnitude < 0.0001f)
+            facing = transform.root.forward;
 
         if (direction.sqrMagnitude < 0.01f || Vector3.Dot(direction, fromBody) <= 0f || Vector3.Dot(direction, facing) <= 0f)
             direction = facing;

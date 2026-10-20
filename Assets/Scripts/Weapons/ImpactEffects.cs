@@ -150,8 +150,9 @@ public static class ImpactEffects
         Burst(blood, point, normal, 9, 1.5f, 4f, 0.3f, 0.5f, 0.12f, 0.22f, 60f, bright, dark);
         Burst(blood, point, incoming.normalized, 6, 1.5f, 3.5f, 0.25f, 0.45f, 0.1f, 0.18f, 35f, dark, bright);
 
-        // Goes with the zombie (and is destroyed with it).
-        Mark(point, normal, surface, FleshScorch, Random.Range(0.16f, 0.24f));
+        // Goes with the zombie (and is destroyed with it). Sprites have no surface to mark.
+        if (body == null || body.GetComponent<SpriteCharacter>() == null)
+            Mark(point, normal, surface, FleshScorch, Random.Range(0.16f, 0.24f));
     }
 
     // Where a shot along `incoming` through `point` meets the body's model (its "Model" child):
@@ -268,11 +269,14 @@ public static class ImpactEffects
 
         EnsureQuad();
 
+        // Hard-edged square particles with the sprite art.
+        Material pixel = SpriteVisuals.Current != null ? SpriteVisuals.Current.particle : null;
+
         if (sparks == null)
-            sparks = MakeSystem("Impact Sparks", materials.Sparks, 1.6f, true);
+            sparks = MakeSystem("Impact Sparks", pixel != null ? pixel : materials.Sparks, 1.6f, true);
 
         if (blood == null)
-            blood = MakeSystem("Impact Blood", materials.Blood, 4f, false);
+            blood = MakeSystem("Impact Blood", pixel != null ? pixel : materials.Blood, 4f, false);
     }
 
     // A world-space system that only ever emits on demand. Sparks are stretched along their

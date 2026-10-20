@@ -280,10 +280,15 @@ public partial class FloorGenerator
         enemy.Initialise(room, player, health, speed, contactDamage);
         enemy.SetKind(kind);
 
-        // Bosses get their own model in SpawnBoss.
-        if (CharacterVisuals.Current != null && name != "Boss")
-            CharacterVisuals.AttachToEnemy(enemy, CharacterVisuals.Current.For(kind), CharacterVisuals.StyleFor(kind));
+        // Bosses get their own model in SpawnBoss. Kinds with a sprite sheet are drawn as sprites
+        // when the sprite art is on.
         bool boss = name == "Boss";
+        SpriteSheet sprite = !boss && SpriteVisuals.Current != null ? SpriteVisuals.Current.For(kind) : null;
+
+        if (sprite != null)
+            CharacterVisuals.AttachSpriteToEnemy(enemy, sprite);
+        else if (CharacterVisuals.Current != null && !boss)
+            CharacterVisuals.AttachToEnemy(enemy, CharacterVisuals.Current.For(kind), CharacterVisuals.StyleFor(kind));
 
         if (kind == EnemyKind.Bloater)
             enemyObject.AddComponent<EnemyBloater>();

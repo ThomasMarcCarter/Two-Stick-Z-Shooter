@@ -151,8 +151,92 @@ public class Projectile : MonoBehaviour
             }
         }
 
+        // Enemies drawn as sprites are hit where they look to be (SpriteCharacter.Footprint).
+        SpriteCharacter sprite = NearestSprite(transform.position, step, distance, ref nearestDistance);
+
+        if (sprite != null)
+        {
+            Vector3 point = transform.position + step / distance * nearestDistance;
+            HitEnemy(sprite.Enemy, point, -step / distance);
+            return;
+        }
+
         if (nearest != null)
             Hit(nearest);
+    }
+
+    // The first sprite enemy whose footprint this step crosses before `nearestDistance`, which
+    // it shortens to where it's crossed.
+    private SpriteCharacter NearestSprite(Vector3 start, Vector3 step, float distance, ref float nearestDistance)
+    {
+        SpriteCharacter found = null;
+
+        foreach (SpriteCharacter sprite in SpriteCharacter.Enemies)
+        {
+            if (sprite == null || sprite.Enemy == null || sprite.transform.root == shooterRoot)
+                continue;
+
+            if (!sprite.Footprint(start.y, out Vector3 from, out Vector3 to, out float radius))
+                continue;
+
+            float along = ClosestAlong(start, step, from, to, out float gap) * distance;
+
+            if (gap < radius && along < nearestDistance)
+            {
+                nearestDistance = along;
+                found = sprite;
+            }
+        }
+
+        return found;
+    }
+
+    // Closest approach (across the floor) of the segment start..start+step to from..to: how far
+    // along the first (0 to 1) and how far apart they are there.
+    private static float ClosestAlong(Vector3 start, Vector3 step, Vector3 from, Vector3 to, out float gap)
+    {
+        Vector2 p = new Vector2(start.x, start.z), d1 = new Vector2(step.x, step.z);
+        Vector2 q = new Vector2(from.x, from.z), d2 = new Vector2(to.x - from.x, to.z - from.z);
+        Vector2 r = p - q;
+        float a = Vector2.Dot(d1, d1), e = Vector2.Dot(d2, d2), f = Vector2.Dot(d2, r);
+        float s, t;
+
+        if (a < 1e-8f)
+        {
+            s = 0f;
+            t = e > 1e-8f ? Mathf.Clamp01(f / e) : 0f;
+        }
+        else
+        {
+            float c = Vector2.Dot(d1, r);
+
+            if (e < 1e-8f)
+            {
+                t = 0f;
+                s = Mathf.Clamp01(-c / a);
+            }
+            else
+            {
+                float b = Vector2.Dot(d1, d2);
+                float denominator = a * e - b * b;
+                s = denominator > 1e-8f ? Mathf.Clamp01((b * f - c * e) / denominator) : 0f;
+                t = (b * s + f) / e;
+
+                if (t < 0f)
+                {
+                    t = 0f;
+                    s = Mathf.Clamp01(-c / a);
+                }
+                else if (t > 1f)
+                {
+                    t = 1f;
+                    s = Mathf.Clamp01((b - c) / a);
+                }
+            }
+        }
+
+        gap = Vector2.Distance(p + d1 * s, q + d2 * t);
+        return s;
     }
 
     // Triggers don't say where they were touched, so trace back along the bullet's path to the
@@ -197,13 +281,7 @@ public class Projectile : MonoBehaviour
         if (other.TryGetComponent(out Enemy enemy))
         {
             FindHit(other, out Vector3 point, out Vector3 normal);
-            ImpactEffects.FleshHit(point + Vector3.up * tracerLift, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
-
-            // The enemy's own voice reacts to the hit (EnemyVoice).
-            spent = true;
-            enemy.TakeDamage(damage);
-            LeaveTracer();
-            Destroy(gameObject);
+            HitEnemy(enemy, point, normal);
             return;
         }
 
@@ -256,6 +334,21 @@ public class Projectile : MonoBehaviour
             LeaveTracer();
             Destroy(gameObject);
         }
+    }
+
+    // Blood where it went in (drawn up at the tracer's height), and the damage.
+    private void HitEnemy(Enemy enemy, Vector3 point, Vector3 normal)
+    {
+        if (spent || enemy == null)
+            return;
+
+        ImpactEffects.FleshHit(point + Vector3.up * tracerLift, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
+
+        // The enemy's own voice reacts to the hit (EnemyVoice).
+        spent = true;
+        enemy.TakeDamage(damage);
+        LeaveTracer();
+        Destroy(gameObject);
     }
 
     private void PlayImpact(string key, AudioClip[] clips, float volume)

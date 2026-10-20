@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 993d172829287974291866135e10adfb, type: 3}
+  m_Name: SpriteVisuals
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteVisuals
+  spriteMaterial: {fileID: 2100000, guid: b63c6967c20154a4cbecd016812c4a38, type: 2}
+  player: {fileID: 11400000, guid: 51d4ee327b481a644a34df7e6e12d343, type: 2}
+  walker: {fileID: 11400000, guid: c9e61fa07573e2446af3e240cb39ed73, type: 2}
+  guns:
+  - gun: Pistol
+    sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}
+  floor: {fileID: 2100000, guid: 4b57af4cdbc02394597401faa6150a6f, type: 2}
+  floorVariant: {fileID: 2100000, guid: 78d4fdfcc8e906740b3d0f8342d7effe, type: 2}
+  corridorFloor: {fileID: 2100000, guid: d0657ef77c898444db2ca7ebbb08b1e7, type: 2}
+  wall: {fileID: 2100000, guid: 8116898d5618b54408596b42024cdac2, type: 2}
+  door: {fileID: 2100000, guid: b729cab1d5f39774e8445995578aec7c, type: 2}
+  particle: {fileID: 2100000, guid: fdbb028ac0342934f9a380cf11bc741f, type: 2}
+  muzzleFlame: {fileID: 2100000, guid: 508bfb5953e9a444f9bdb67acdffa6b5, type: 2}

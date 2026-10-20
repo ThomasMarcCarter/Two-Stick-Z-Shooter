@@ -60,6 +60,16 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private Material wallMaterial;
     [Tooltip("World units one repeat of the wall texture covers along a wall. Vertically it spans the wall's height once (baseboard, painted band, blockwork, and a cap strip at the top that wall tops are mapped to).")]
     [SerializeField] private float wallTextureLength = 4f;
+
+    [Header("Sprite Art (art pass)")]
+    [Tooltip("Draw the player, walkers and the pistol as pixel-art sprites, with pixel-art rooms and effects (Sprite Visuals). Off keeps the 3D models and textures.")]
+    [SerializeField] private bool spriteArt = true;
+    [SerializeField] private SpriteVisuals spriteVisuals;
+
+    // The pixel-art wall texture: 32 rows of face (the wall's full height) under 4 rows of cap.
+    private const float PixelWallFace = 32f / 36f;
+    private const float PixelWallCap = 34f / 36f;
+    private bool pixelWalls;
     [Tooltip("The steel frame posts either side of each doorway.")]
     [SerializeField] private Material wallTrimMaterial;
     [Tooltip("Corridor floors (steel deck plates), so they read apart from the rooms. Falls back to the floor material.")]
@@ -316,6 +326,7 @@ public partial class FloorGenerator : MonoBehaviour
 
     private void Awake()
     {
+        UseSpriteArt();
         EnemySenses.Use(enemySenses);
         AmmoVisuals.Use(ammoVisuals);
         ConsumableVisuals.Use(consumableVisuals);
@@ -327,6 +338,37 @@ public partial class FloorGenerator : MonoBehaviour
         // pickup has spawned.
         if (ammoMaterial != null)
             ConsumablePickup.DefaultMaterial = ammoMaterial;
+    }
+
+    // With the sprite art on: makes its visuals current (characters and guns with sheets become
+    // sprites) and swaps the room and effect materials for the pixel-art ones it has.
+    private void UseSpriteArt()
+    {
+        SpriteVisuals visuals = spriteArt ? spriteVisuals : null;
+        SpriteVisuals.Use(visuals);
+        pixelWalls = false;
+
+        if (visuals == null)
+            return;
+
+
+        if (visuals.floor != null)
+            floorMaterial = visuals.floor;
+
+        if (visuals.floorVariant != null)
+            floorVariants = new[] { visuals.floorVariant };
+
+        if (visuals.corridorFloor != null)
+            corridorFloorMaterial = visuals.corridorFloor;
+
+        if (visuals.door != null)
+            doorMaterial = visuals.door;
+
+        if (visuals.wall != null)
+        {
+            wallMaterial = visuals.wall;
+            pixelWalls = true;
+        }
     }
 
     // Keeps the live settings pointing at this copy if it's edited during Play.
@@ -1439,11 +1481,11 @@ public partial class FloorGenerator : MonoBehaviour
             Vector3 normal = normals[i];
 
             if (Mathf.Abs(normal.y) > 0.5f)
-                uvs[i] = new Vector2((world.x + world.z) / wallTextureLength, 0.985f);
+                uvs[i] = new Vector2((world.x + world.z) / wallTextureLength, pixelWalls ? PixelWallCap : 0.985f);
             else
             {
                 float along = Mathf.Abs(normal.x) > 0.5f ? world.z : world.x;
-                uvs[i] = new Vector2(along / wallTextureLength, Mathf.Clamp01(world.y / wallHeight) * 0.95f);
+                uvs[i] = new Vector2(along / wallTextureLength, Mathf.Clamp01(world.y / wallHeight) * (pixelWalls ? PixelWallFace : 0.95f));
             }
         }
 

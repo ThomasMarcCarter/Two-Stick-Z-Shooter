@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640, y: -360.00015}
+  m_AnchoredPosition: {x: -627.2001, y: -352.80002}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7320,6 +7320,8 @@ MonoBehaviour:
   floorTextureSize: 4
   wallMaterial: {fileID: 2100000, guid: cc20b43c208f03b4e9a9c64f51c4c5ae, type: 2}
   wallTextureLength: 4
+  spriteArt: 1
+  spriteVisuals: {fileID: 11400000, guid: f018d80981bc5214eb798881bdae9427, type: 2}
   wallTrimMaterial: {fileID: 2100000, guid: fec037202b4175b448ca90013d79309a, type: 2}
   corridorFloorMaterial: {fileID: 2100000, guid: b33a41830af98b04aa5e67c077cdcfe7, type: 2}
   hazardStripeMaterial: {fileID: 2100000, guid: 72f8140eef6072244b533f6f63bd208b, type: 2}
@@ -8550,7 +8552,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640, y: -360.00015}
+  m_AnchoredPosition: {x: -627.2001, y: -352.80002}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

@@ -8,6 +8,17 @@ using UnityEngine;
 // clamping is done on the floor point under the middle of the screen, so any tilt works.
 public class CameraFollow : MonoBehaviour
 {
+    // How tall a metre of height looks on screen against a metre across (the tilt foreshortens
+    // it); sprites stand stretched by the inverse so their pixels come out square.
+    public static float VerticalScale { get; private set; } = 1f;
+
+    // The way the view looks into the scene: moving something along it doesn't move it on screen.
+    public static Vector3 ViewDirection { get; private set; } = Vector3.down;
+
+    // How much the picture is stretched up the screen beyond the camera's own plane (always 1
+    // for this camera; sprites allow for other projections).
+    public static float ScreenStretch => 1f;
+
     [SerializeField] private Transform target;
     [SerializeField] private float smoothSpeed = 10f;
     [SerializeField] private float mouseLookAhead = 0.5f;
@@ -31,6 +42,8 @@ public class CameraFollow : MonoBehaviour
     private static void ResetSession()
     {
         shake = 0f;
+        VerticalScale = 1f;
+        ViewDirection = Vector3.down;
     }
 
     // Jolts the camera about, in world units, dying away over a moment. Stronger shakes win.
@@ -62,6 +75,13 @@ public class CameraFollow : MonoBehaviour
         Vector2 jolt = Random.insideUnitCircle * shake;
         shakeOffset = new Vector3(jolt.x, 0f, jolt.y);
         transform.position += shakeOffset;
+        UpdateViewInfo();
+    }
+
+    private void UpdateViewInfo()
+    {
+        VerticalScale = Mathf.Max(0.01f, Vector3.Dot(transform.up, Vector3.up));
+        ViewDirection = transform.forward;
     }
 
     // Jump straight to the player instead of sliding there, e.g. after moving to a new floor.
@@ -70,6 +90,7 @@ public class CameraFollow : MonoBehaviour
         shakeOffset = Vector3.zero;
         transform.rotation = Quaternion.Euler(90f - tilt, 0f, 0f);
         transform.position = DesiredPosition();
+        UpdateViewInfo();
     }
 
     private Vector3 DesiredPosition()

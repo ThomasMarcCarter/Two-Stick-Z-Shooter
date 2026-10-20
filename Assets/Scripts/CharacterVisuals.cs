@@ -106,7 +106,7 @@ public class CharacterVisuals : ScriptableObject
     // it doesn't catch on floor seams. Shots, blood and pushing all go by it.
     private static void FitHitbox(Enemy enemy, Renderer[] renderers)
     {
-        if (renderers.Length == 0 || !enemy.TryGetComponent(out BoxCollider box))
+        if (renderers.Length == 0 || !enemy.TryGetComponent(out BoxCollider _))
             return;
 
         Bounds whole = renderers[0].bounds;
@@ -127,11 +127,20 @@ public class CharacterVisuals : ScriptableObject
         if (!foundTorso)
             torso = whole;
 
+        FitCapsule(enemy, Mathf.Max(torso.extents.x, torso.extents.z), whole.max.y);
+    }
+
+    // The capsule itself: a radius and a top height in world metres, standing on the floor.
+    private static void FitCapsule(Enemy enemy, float worldRadius, float worldTop)
+    {
+        if (!enemy.TryGetComponent(out BoxCollider box))
+            return;
+
         Transform body = enemy.transform;
         float scale = Mathf.Max(0.01f, body.lossyScale.x);
-        float radius = Mathf.Max(torso.extents.x, torso.extents.z) / scale;
+        float radius = worldRadius / scale;
         float bottom = -0.42f;
-        float top = Mathf.Max(bottom + radius * 2f, body.InverseTransformPoint(new Vector3(body.position.x, whole.max.y, body.position.z)).y);
+        float top = Mathf.Max(bottom + radius * 2f, body.InverseTransformPoint(new Vector3(body.position.x, worldTop, body.position.z)).y);
 
         PhysicsMaterial material = box.sharedMaterial;
         Object.DestroyImmediate(box);
@@ -156,10 +165,56 @@ public class CharacterVisuals : ScriptableObject
         }
     }
 
-    // Puts the player model on the player's capsule (its pivot is the capsule's middle).
+    // Draws an enemy as a sprite (the sprite art pass) instead of a model: the block's renderer
+    // hides, an empty "Model" child turns to face where it's going (FaceMovement) and the
+    // sprite follows it, and the hitbox is a capsule of the sheet's body size.
+    public static void AttachSpriteToEnemy(Enemy enemy, SpriteSheet sheet)
+    {
+        if (enemy == null || sheet == null)
+            return;
+
+        Transform body = enemy.transform;
+        uint layers = 1u;
+
+        if (body.TryGetComponent(out Renderer own))
+        {
+            layers = own.renderingLayerMask;
+            own.enabled = false;
+        }
+
+        GameObject facing = new GameObject("Model");
+        facing.transform.SetParent(body, false);
+        facing.transform.localPosition = new Vector3(0f, -0.5f, 0f);
+        facing.AddComponent<FaceMovement>();
+
+        SpriteCharacter character = SpriteCharacter.Attach(body, sheet, facing.transform, layers);
+        enemy.SetBodyRenderers(new[] { character.Sprite.Renderer });
+        FitCapsule(enemy, sheet.bodyRadius, sheet.bodyHeight);
+    }
+
+    // A held gun as a sprite, if the sprite art has one for it (see GunSprite).
+    public static void DressGun(Gun gun)
+    {
+        if (gun == null || SpriteVisuals.Current == null)
+            return;
+
+        GunSprite.Attach(gun, SpriteVisuals.Current.ForGun(gun.name));
+    }
+
+    // Puts the player model on the player's capsule (its pivot is the capsule's middle), or the
+    // player's sprite with the sprite art on.
     public static void AttachToPlayer(Transform player, float floorOffset)
     {
-        if (Current == null || Current.player == null || player == null || player.Find("Model") != null)
+        if (player == null || player.Find("Model") != null || player.GetComponent<SpriteCharacter>() != null)
+            return;
+
+        if (SpriteVisuals.Current != null && SpriteVisuals.Current.player != null)
+        {
+            AttachSpriteToPlayer(player, SpriteVisuals.Current.player);
+            return;
+        }
+
+        if (Current == null || Current.player == null)
             return;
 
         Vector3 scale = player.lossyScale;
@@ -170,6 +225,32 @@ public class CharacterVisuals : ScriptableObject
             health.SetBodyRenderers(renderers);
 
         CharacterAnimator.Add(player.Find("Model"), CharacterAnimator.Style.Player);
+    }
+
+    private static void AttachSpriteToPlayer(Transform player, SpriteSheet sheet)
+    {
+        uint layers = 1u;
+
+        if (player.TryGetComponent(out Renderer own))
+        {
+            layers = own.renderingLayerMask;
+            own.enabled = false;
+        }
+
+        // Lit by the world's lights too (rendering layer 1): the ceiling lights and the glow round
+        // the player, which keep it readable in the dark. The models skip them to keep a hot spot
+        // off; SpriteLit caps each light's falloff, so they can't blow the sprite out.
+        SpriteCharacter character = SpriteCharacter.Attach(player, sheet, player, layers | 1u);
+
+        if (player.TryGetComponent(out PlayerHealth health))
+            health.SetBodyRenderers(new[] { character.Sprite.Renderer });
+
+        // Guns already in hand (the starting pistol is given before the floor is built).
+        if (player.TryGetComponent(out PlayerWeapon weapons))
+        {
+            DressGun(weapons.Main.Gun);
+            DressGun(weapons.Sidearm.Gun);
+        }
     }
 
     private static Renderer[] Attach(Transform body, GameObject model, Vector3 localPosition, Vector3 localScale)
