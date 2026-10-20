@@ -84,13 +84,8 @@ public class Crosshair : MaskableGraphic
         if (mainCamera == null || playerShooting == null)
             return circleRadius;
 
-        Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
-        Plane ground = new Plane(Vector3.up, Vector3.up * Gun.ShotHeight);
-
-        if (!ground.Raycast(ray, out float hit))
+        if (!Gun.PointerAimPoint(out Vector3 aim))
             return circleRadius;
-
-        Vector3 aim = ray.GetPoint(hit);
         Vector3 from = playerShooting.transform.position;
         Vector3 toAim = aim - from;
         toAim.y = 0f;

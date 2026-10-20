@@ -175,10 +175,7 @@ public class Enemy : MonoBehaviour
         bodyRenderers = own != null ? new[] { own } : new Renderer[0];
         health = maxHealth;
 
-        Collider body = GetComponent<Collider>();
-
-        if (body != null)
-            bodyRadius = Mathf.Max(body.bounds.extents.x, body.bounds.extents.z);
+        RefreshBodyRadius();
 
         // Spread the sight checks of a room's enemies over different frames.
         nextSightCheck = UnityEngine.Random.value * sightInterval;
@@ -261,6 +258,15 @@ public class Enemy : MonoBehaviour
 
     // The renderers its colour, glow and hit flash go on: its block, or the model that replaced
     // it (CharacterVisuals).
+    // Its radius from its collider, again after the collider changes (CharacterVisuals.FitHitbox).
+    public void RefreshBodyRadius()
+    {
+        Collider body = GetComponent<Collider>();
+
+        if (body != null)
+            bodyRadius = Mathf.Max(body.bounds.extents.x, body.bounds.extents.z);
+    }
+
     public void SetBodyRenderers(Renderer[] renderers)
     {
         bodyRenderers = renderers ?? new Renderer[0];

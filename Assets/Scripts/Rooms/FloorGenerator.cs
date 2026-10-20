@@ -43,6 +43,8 @@ public partial class FloorGenerator : MonoBehaviour
     [Tooltip("Floor size of one grid cell. Bigger rooms are made of several cells.")]
     [SerializeField] private Vector2 roomSize = new Vector2(16f, 10f);
     [SerializeField] private float wallHeight = 2f;
+    [Tooltip("How high walls and doors block things, above what's drawn: an invisible extension of their colliders, so thrown grenades and molotovs can't be lobbed over (a long throw peaks around 2.1 m) without tall walls hiding the floor from the tilted camera.")]
+    [SerializeField] private float wallBlockHeight = 6f;
     [SerializeField] private float wallThickness = 0.5f;
     [SerializeField] private float doorWidth = 2f;
     [SerializeField] private float corridorLength = 3f;
@@ -1349,6 +1351,7 @@ public partial class FloorGenerator : MonoBehaviour
 
         doorObject.tag = "Wall";
         doorObject.GetComponent<Collider>().sharedMaterial = slidePhysics;
+        RaiseCollider(doorObject);
         RoomDoor door = doorObject.AddComponent<RoomDoor>();
 
         Room from = roomsByCell[cell];
@@ -1396,7 +1399,20 @@ public partial class FloorGenerator : MonoBehaviour
         GameObject wall = CreateBlock(name, parent, localPosition, size, wallMaterial);
         wall.tag = "Wall";
         wall.GetComponent<Collider>().sharedMaterial = slidePhysics;
+        RaiseCollider(wall);
         ApplyWallUVs(wall);
+    }
+
+    // Stretches a floor-standing wall block's collider up to wallBlockHeight, leaving the block
+    // drawn at wallHeight (see wallBlockHeight).
+    private void RaiseCollider(GameObject block)
+    {
+        if (!block.TryGetComponent(out BoxCollider box) || wallBlockHeight <= wallHeight || wallHeight <= 0f)
+            return;
+
+        float scale = wallBlockHeight / wallHeight;
+        box.size = new Vector3(1f, scale, 1f);
+        box.center = new Vector3(0f, (scale - 1f) / 2f, 0f);
     }
 
     // Like ApplyWorldUVs, but for the painted wall texture: along each face it tiles by world

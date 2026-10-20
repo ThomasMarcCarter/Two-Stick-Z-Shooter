@@ -3323,10 +3323,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1.9
+  m_Radius: 0.28
+  m_Height: 1.66
   m_Direction: 1
-  m_Center: {x: 0, y: 0.05, z: 0}
+  m_Center: {x: 0, y: -0.07, z: 0}
 --- !u!23 &603282791
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3464,7 +3464,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerShooting
   rotationSpeed: 20
-  aimDeadZone: 0.75
+  aimDeadZone: 0.05
 --- !u!114 &603282797
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4339,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80002}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -6050,8 +6050,8 @@ MonoBehaviour:
   font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   margin: {x: 40, y: 36}
   width: 300
-  activeHeight: 92
-  holsteredHeight: 36
+  slotHeight: 92
+  stowedHeight: 36
   gap: 6
   lowAmmo: 0.25
   pickupNoticeTime: 2.5
@@ -7309,6 +7309,7 @@ MonoBehaviour:
   seed: 0
   roomSize: {x: 16, y: 10}
   wallHeight: 2
+  wallBlockHeight: 6
   wallThickness: 0.5
   doorWidth: 2
   corridorLength: 3
@@ -8541,7 +8542,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8549,7 +8550,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80002}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

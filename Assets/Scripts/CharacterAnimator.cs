@@ -513,25 +513,32 @@ public class CharacterAnimator : MonoBehaviour
         }
     }
 
-    // Arm positions through one attack (t from 0 to 1). Negative X raises a reaching arm.
+    // Arm positions through one attack (t from 0 to 1). Negative X raises a reaching arm. Each
+    // swing is built around the enemy's strike times (EnemyKinds.StrikeTimes), so the arms are
+    // coming down on the player at the moment the damage lands.
     private void AttackPose(float t)
     {
+        float[] strikes = EnemyKinds.StrikeTimes(enemy.Kind);
+
         switch (style)
         {
             case Style.Runner:
             {
-                // Alternating claws: one arm rakes down, then the other.
-                float left = Claw(Mathf.Repeat(t * 2f, 1f), t < 0.5f);
-                float right = Claw(Mathf.Repeat(t * 2f, 1f), t >= 0.5f);
-                Pose(armL, Quaternion.Euler(left, 0f, 0f));
-                Pose(armR, Quaternion.Euler(right, 0f, 0f));
+                // Alternating claws: one arm rakes down, then the other, each half of the swing
+                // around its own strike.
+                bool first = t < 0.5f;
+                float local = Mathf.Repeat(t * 2f, 1f);
+                float hit = strikes.Length > 1 ? Mathf.Repeat((first ? strikes[0] : strikes[1]) * 2f, 1f) : 0.47f;
+                Pose(armL, Quaternion.Euler(Swipe(local, hit, first), 0f, 0f));
+                Pose(armR, Quaternion.Euler(Swipe(local, hit, !first), 0f, 0f));
                 break;
             }
             case Style.Brute:
             {
-                // Both fists up over the head, then down together.
-                float up = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.45f, t));
-                float down = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 0.6f, t));
+                // Both fists up over the head, then down together onto the player.
+                float hit = strikes[0];
+                float up = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, hit - 0.1f, t));
+                float down = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(hit - 0.1f, hit + 0.05f, t));
                 float back = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.7f, 1f, t));
                 float angle = Mathf.Lerp(Mathf.Lerp(0f, -150f, up), -35f, down) * (1f - back);
                 Pose(armL, Quaternion.Euler(angle, 0f, -10f * up * (1f - back)));
@@ -540,16 +547,16 @@ public class CharacterAnimator : MonoBehaviour
             }
             case Style.Bloater:
             {
-                // Frantic flailing.
-                float flail = Mathf.Sin(t * Mathf.PI * 2f);
+                // Frantic flailing, arms flung furthest forward as the blow lands.
+                float flail = Mathf.Sin((t - strikes[0] + 0.25f) * Mathf.PI * 2f) * Mathf.Sin(t * Mathf.PI);
                 Pose(armL, Quaternion.Euler(-40f * flail, 0f, 25f * flail));
                 Pose(armR, Quaternion.Euler(40f * flail, 0f, -25f * flail));
                 break;
             }
             default:
             {
-                // Two-handed swipe: raise, then strike down and through.
-                float swing = Claw(t, true);
+                // Two-handed swipe: raise, then strike down at the player.
+                float swing = Swipe(t, strikes[0], true);
                 Pose(armL, Quaternion.Euler(swing, 8f, 0f));
                 Pose(armR, Quaternion.Euler(swing, -8f, 0f));
                 break;
@@ -557,21 +564,30 @@ public class CharacterAnimator : MonoBehaviour
         }
     }
 
-    // A single arm's swing: raise (wind-up), strike down past rest, recover. When not this arm's
-    // turn, it stays near rest.
-    private static float Claw(float t, bool active)
+    // A single arm's swing around its hit (both 0 to 1): raised high in front for the wind-up,
+    // then swept down so it's reaching out at the player (about 70 degrees forward) as the blow
+    // lands, finishing low in front, then back to rest. When not this arm's turn, it stays near
+    // rest.
+    private static float Swipe(float t, float hit, bool active)
     {
         if (!active)
             return 10f;
 
-        if (t < 0.4f)
-            return Mathf.Lerp(0f, -60f, Mathf.SmoothStep(0f, 1f, t / 0.4f));
+        float raised = Mathf.Max(0.05f, hit - SwipeLead);
+        float struck = Mathf.Min(0.95f, hit + SwipeFollow);
 
-        if (t < 0.55f)
-            return Mathf.Lerp(-60f, 45f, Mathf.SmoothStep(0f, 1f, (t - 0.4f) / 0.15f));
+        if (t < raised)
+            return Mathf.Lerp(0f, -140f, Mathf.SmoothStep(0f, 1f, t / raised));
 
-        return Mathf.Lerp(45f, 0f, Mathf.SmoothStep(0f, 1f, (t - 0.55f) / 0.45f));
+        if (t < struck)
+            return Mathf.Lerp(-140f, -40f, Mathf.SmoothStep(0f, 1f, (t - raised) / (struck - raised)));
+
+        return Mathf.Lerp(-40f, 0f, Mathf.SmoothStep(0f, 1f, (t - struck) / (1f - struck)));
     }
+
+    // How long before and after the hit (in swing time) the downstroke starts and ends.
+    private const float SwipeLead = 0.1f;
+    private const float SwipeFollow = 0.06f;
 
     private float AttackLean()
     {
@@ -580,10 +596,12 @@ public class CharacterAnimator : MonoBehaviour
         if (t < 0f)
             return 0f;
 
-        float windUp = Mathf.InverseLerp(0f, 0.4f, t);
-        float strike = Mathf.Sin(Mathf.Clamp01(Mathf.InverseLerp(0.4f, 0.8f, t)) * Mathf.PI);
+        // Rocks back for the wind-up, furthest forward as the (first) blow lands.
+        float hit = EnemyKinds.StrikeTimes(enemy.Kind)[0];
+        float windUp = Mathf.InverseLerp(0f, hit - SwipeLead, t);
+        float strike = Mathf.Sin(Mathf.Clamp01(Mathf.InverseLerp(hit - 0.2f, hit + 0.2f, t)) * Mathf.PI);
         float amount = style == Style.Brute ? 22f : style == Style.Bloater ? 6f : 14f;
-        return -amount * 0.4f * windUp * (1f - Mathf.InverseLerp(0.4f, 0.5f, t)) + amount * strike;
+        return -amount * 0.4f * windUp * (1f - Mathf.InverseLerp(hit - SwipeLead, hit, t)) + amount * strike;
     }
 
     // ---------- Bosses ----------
@@ -712,7 +730,7 @@ public class CharacterAnimator : MonoBehaviour
                 // Up on the player: hacks at them with the cleaver, on the enemy's attack clock
                 // (the hit lands on the downstroke).
                 float chop = enemy != null ? enemy.AttackTime : -1f;
-                float cleaver = chop >= 0f ? Claw(chop, true) * 1.6f : 0f;
+                float cleaver = chop >= 0f ? Swipe(chop, EnemyKinds.StrikeTimes(enemy.Kind)[0], true) * 1.15f : 0f;
                 Pose(armL, Quaternion.Euler(-sway * 18f - 50f * armLift, 0f, 0f));
                 Pose(armR, Quaternion.Euler(sway * 14f - 160f * armLift + cleaver, 0f, 12f * armLift));
                 break;

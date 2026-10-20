@@ -41,6 +41,7 @@ public class Projectile : MonoBehaviour
     private Vector3 lastPosition;
     private Transform shooterRoot;
     private bool spent;
+    private float tracerLift;
 
     private static readonly RaycastHit[] sweepHits = new RaycastHit[8];
 
@@ -91,10 +92,12 @@ public class Projectile : MonoBehaviour
 
     // bonusDamage: extra damage from the gun's attachments (a match barrel). tracerLift: how far
     // above the round its streak is drawn, so it comes out of a gun held higher than shots fly
-    // (see Gun.ShotHeight).
+    // (see Gun.ShotHeight and Gun.AimHeight). Wall and blood impacts are drawn at that height too,
+    // where the streak ends.
     public void Initialize(Vector3 direction, GameObject shooter, float speedMultiplier = 1f, int bonusDamage = 0, float tracerLift = 0f)
     {
         damage += bonusDamage;
+        this.tracerLift = tracerLift;
 
         if (tracer != null)
             tracer.transform.position = transform.position + Vector3.up * tracerLift;
@@ -194,7 +197,7 @@ public class Projectile : MonoBehaviour
         if (other.TryGetComponent(out Enemy enemy))
         {
             FindHit(other, out Vector3 point, out Vector3 normal);
-            ImpactEffects.FleshHit(point, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
+            ImpactEffects.FleshHit(point + Vector3.up * tracerLift, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
 
             // The enemy's own voice reacts to the hit (EnemyVoice).
             spent = true;
@@ -242,7 +245,7 @@ public class Projectile : MonoBehaviour
         {
             spent = true;
             FindHit(other, out Vector3 point, out Vector3 normal);
-            ImpactEffects.WallHit(point, normal, other.transform, EffectMaterials);
+            ImpactEffects.WallHit(point + Vector3.up * tracerLift, normal, other.transform, EffectMaterials);
 
             bool ricochet = Random.value < ricochetChance;
             AudioClip[] clips = ricochet

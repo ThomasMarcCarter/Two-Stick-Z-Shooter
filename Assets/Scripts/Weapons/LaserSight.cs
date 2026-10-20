@@ -75,6 +75,17 @@ public class LaserSight : MonoBehaviour
             return;
 
         direction.Normalize();
+
+        // Toward the point under the cursor, as shots go (see Gun.Fire), while that's ahead.
+        if (Gun.PointerAimPoint(out Vector3 aim))
+        {
+            Vector3 toAim = aim - probe;
+            toAim.y = 0f;
+
+            if (toAim.sqrMagnitude > 0.01f && Vector3.Dot(toAim.normalized, direction) > 0.5f)
+                direction = toAim.normalized;
+        }
+
         Vector3 end = start + direction * Range;
         Vector3 normal = -direction;
         float nearest = Range;

@@ -7,18 +7,17 @@ public class PlayerShooting : MonoBehaviour
 {
     private Gun equippedGun;
     [SerializeField] private float rotationSpeed = 20f;
-    [Tooltip("Ignore the cursor when it's this close to the player, where tiny movements swing the aim wildly.")]
-    [SerializeField] private float aimDeadZone = 0.25f;
+    [Tooltip("Ignore the cursor when it's this close to the player's centre (metres). Keep it tiny: inside it the player doesn't turn, and shots go the way they face (Gun.Fire).")]
+    [SerializeField] private float aimDeadZone = 0.05f;
 
-    private Camera mainCamera;
     private Rigidbody rb;
     private Quaternion targetRotation;
     private QuickBar quickBar;
+    private bool holdFire;
 
 
     private void Awake()
     {
-        mainCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         targetRotation = transform.rotation;
         quickBar = QuickBar.For(gameObject);
@@ -28,8 +27,16 @@ public class PlayerShooting : MonoBehaviour
 
     private void Update()
     {
+        // A click that closes a menu or screen (taking the last item from a crate, a menu
+        // button) is still held when control comes back: wait for it to be let go first.
         if (GameFlow.InputBlocked)
+        {
+            holdFire = true;
             return;
+        }
+
+        if (holdFire && !GameInput.Fire.IsPressed())
+            holdFire = false;
 
         if (equippedGun == null)
             return;
@@ -42,6 +49,9 @@ public class PlayerShooting : MonoBehaviour
         {
             equippedGun.TryReload();
         }
+
+        if (holdFire)
+            return;
 
         if (equippedGun.GetFireMode() == Gun.FireMode.Semi)
         {
@@ -76,16 +86,10 @@ public class PlayerShooting : MonoBehaviour
 
     private void CalculateAim()
     {
-        Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
-
-        // At the height shots fly, so what's under the cursor is what gets aimed at, whatever
-        // the camera's tilt.
-        Plane groundPlane = new Plane(Vector3.up, Vector3.up * Gun.ShotHeight);
-
-        if (!groundPlane.Raycast(ray, out float distance))
+        // The same point shots go to, so the player faces where they land, whatever the
+        // camera's tilt.
+        if (!Gun.PointerAimPoint(out Vector3 mouseWorldPosition))
             return;
-
-        Vector3 mouseWorldPosition = ray.GetPoint(distance);
 
         Vector3 direction = mouseWorldPosition - transform.position;
         direction.y = 0f;

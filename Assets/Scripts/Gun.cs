@@ -112,8 +112,6 @@ public class Gun : MonoBehaviour
     private float bloomAtShot;
     private float lastShotTime = -100f;
 
-    private Camera mainCamera;
-
     // Fitted attachments, one per slot (see WeaponAttachment). The stats below include them.
     private readonly List<WeaponAttachment> attachments = new List<WeaponAttachment>();
     private GameObject suppressorModel;
@@ -204,6 +202,11 @@ public class Gun : MonoBehaviour
     // and the laser sight finds its target at this height but is drawn from the muzzle.
     public const float ShotHeight = 0.51f;
 
+    // The height the cursor aims at: about where guns are held (the muzzle), not ShotHeight. The
+    // tracer is drawn level at the muzzle, so aiming at this height makes it run straight through
+    // the crosshair with the tilted camera; it's also roughly the middle of a zombie on screen.
+    public const float AimHeight = 1.13f;
+
     // The name shown for a gun prefab: its asset name upper-cased, with words split where a
     // lower-case letter meets a capital ("DoubleBarrel" -> "DOUBLE BARREL", "AK47" unchanged).
     // Shots don't use ammo (the hideout's shooting range). Set by the FloorGenerator per floor.
@@ -244,7 +247,6 @@ public class Gun : MonoBehaviour
     private void Awake()
     {
         currentAmmo = Random.Range(1, magazineSize + 1);
-        mainCamera = Camera.main;
 
         if (reloadAudio != null)
             reloadVolume = reloadAudio.volume;
@@ -289,19 +291,46 @@ public class Gun : MonoBehaviour
         Fire();
     }
 
+    // The point under the cursor at AimHeight, whatever the camera's tilt.
+    public static bool PointerAimPoint(out Vector3 point)
+    {
+        point = default;
+        Camera camera = Camera.main;
+
+        if (camera == null)
+            return false;
+
+        Ray ray = camera.ScreenPointToRay(GameInput.Pointer);
+        Plane aimPlane = new Plane(Vector3.up, Vector3.up * AimHeight);
+
+        if (!aimPlane.Raycast(ray, out float distance))
+            return false;
+
+        point = ray.GetPoint(distance);
+        return true;
+    }
+
     private void Fire()
     {
-        Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
-
-        Plane groundPlane = new Plane(Vector3.up, Vector3.up * ShotHeight);
-
-        if (!groundPlane.Raycast(ray, out float distance))
+        if (!PointerAimPoint(out Vector3 mouseWorldPosition))
             return;
 
-        Vector3 mouseWorldPosition = ray.GetPoint(distance);
+        Vector3 spawn = SpawnPoint();
 
-        Vector3 direction = mouseWorldPosition - transform.root.position;
+        // From where the round starts, so it flies through the point under the crosshair (the
+        // gun is held off to one side of the player). With the cursor between the player and
+        // the muzzle, or behind it, straight ahead the way the player faces, so a shot never
+        // leaves in a direction the player isn't pointing.
+        Vector3 fromBody = mouseWorldPosition - transform.root.position;
+        fromBody.y = 0f;
+        Vector3 direction = mouseWorldPosition - spawn;
         direction.y = 0f;
+        Vector3 facing = transform.root.forward;
+        facing.y = 0f;
+
+        if (direction.sqrMagnitude < 0.01f || Vector3.Dot(direction, fromBody) <= 0f || Vector3.Dot(direction, facing) <= 0f)
+            direction = facing;
+
         direction.Normalize();
 
         // The whole shot strays, more often a little than a lot (the average of two rolls).
@@ -313,7 +342,6 @@ public class Gun : MonoBehaviour
         lastShotTime = Time.time;
 
         int pellets = Mathf.Max(1, pelletsPerShot);
-        Vector3 spawn = SpawnPoint();
 
         for (int i = 0; i < pellets; i++)
         {

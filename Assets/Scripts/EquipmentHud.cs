@@ -1,14 +1,16 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using static MapMesh;
 
-// Bottom-left equipment panel in the radar's phosphor style. The gun in hand gets the big panel:
-// its silhouette, name, ammo count, spare rounds of its ammo type, a pip per round, and a reload
-// bar. It's highlighted so there's no mistaking it: a bright solid frame over a phosphor-tinted
-// fill, a selection bar down its left side and its slot name in bold (">> MAIN [1]"); it flashes
-// for a moment when the player switches. The holstered slot sits underneath, smaller,
-// unlit and faded right down. Picking up ammo flashes a short
+// Bottom-left equipment panel in the radar's phosphor style. The main gun is always on top and the
+// sidearm underneath; switching guns swaps which one is big and lit rather than their order. The
+// gun in hand gets the big panel: its silhouette, name, ammo count, spare rounds of its ammo type,
+// a pip per round and a reload bar, with a bright solid frame over a phosphor-tinted fill, a
+// selection bar down its left side and its slot name in bold (">> MAIN [1]"); it flashes for a
+// moment when the player switches. The other one shrinks to a small strip (icon, name, ammo on
+// one line), unlit and faded right down. Picking up ammo flashes a short
 // "+12 9MM" notice above the panel. Each slot shows the button that switches to it, following the
 // device in use and any rebinds. Frames, icons and pips are one mesh; the text is created at
 // runtime, so the component only needs adding to the Canvas. Also builds the quick-use bar
@@ -24,8 +26,11 @@ public class EquipmentHud : MaskableGraphic
     [Header("Layout")]
     [SerializeField] private Vector2 margin = new Vector2(40f, 36f);
     [SerializeField] private float width = 300f;
-    [SerializeField] private float activeHeight = 92f;
-    [SerializeField] private float holsteredHeight = 36f;
+    [Tooltip("Height of each gun's panel.")]
+    [FormerlySerializedAs("activeHeight")]
+    [SerializeField] private float slotHeight = 92f;
+    [Tooltip("Height of the panel of the gun not in hand.")]
+    [SerializeField] private float stowedHeight = 36f;
     [SerializeField] private float gap = 6f;
 
     [Header("Look")]
@@ -34,14 +39,22 @@ public class EquipmentHud : MaskableGraphic
     [Tooltip("How long the \"+12 9MM\" pickup notice stays up, in seconds.")]
     [SerializeField] private float pickupNoticeTime = 2.5f;
 
+    // The text on one gun's panel.
+    private class PanelText
+    {
+        public TMP_Text Slot;
+        public TMP_Text Name;
+        public TMP_Text Ammo;
+        public TMP_Text Status;
+    }
+
     private TMP_Text header;
-    private TMP_Text activeSlotLabel;
-    private TMP_Text activeName;
-    private TMP_Text activeAmmo;
-    private TMP_Text activeStatus;
-    private TMP_Text holsteredSlotLabel;
-    private TMP_Text holsteredInfo;
+    private readonly PanelText mainText = new PanelText();
+    private readonly PanelText sidearmText = new PanelText();
     private TMP_Text pickupNotice;
+
+    // How bright the panel of the gun not in hand is drawn.
+    private const float Unlit = 0.3f;
 
     private AmmoInventory ammo;
     private float pickupNoticeUntil;
@@ -81,7 +94,7 @@ public class EquipmentHud : MaskableGraphic
         rectTransform.anchorMin = rectTransform.anchorMax = Vector2.zero;
         rectTransform.pivot = Vector2.zero;
         rectTransform.anchoredPosition = margin;
-        rectTransform.sizeDelta = new Vector2(width, activeHeight + gap + holsteredHeight);
+        rectTransform.sizeDelta = new Vector2(width, slotHeight + gap + stowedHeight);
 
         BuildText();
 
@@ -110,6 +123,8 @@ public class EquipmentHud : MaskableGraphic
         {
             shownSlot = weapons.ActiveSlot;
             switchedAt = Time.unscaledTime;
+            Layout();
+            lastTexts = null;
         }
 
         UpdateText();
@@ -124,28 +139,82 @@ public class EquipmentHud : MaskableGraphic
 
     // ---------- Layout ----------
 
-    private Rect ActiveRect => new Rect(0f, holsteredHeight + gap, width, activeHeight);
-    private Rect HolsteredRect => new Rect(0f, 0f, width * 0.8f, holsteredHeight);
-    private Rect ActiveIconArea => new Rect(10f, ActiveRect.yMin + 24f, 104f, ActiveRect.height - 38f);
-    private Rect PipArea => new Rect(10f, ActiveRect.yMin + 8f, width - 20f, 7f);
-    private Rect HolsteredIconArea => new Rect(8f, 5f, 52f, holsteredHeight - 10f);
+    private bool InHand(Gun.Slot slot) => weapons != null && weapons.ActiveSlot == slot;
+    private float PanelHeight(Gun.Slot slot) => InHand(slot) ? slotHeight : stowedHeight;
+    private float PanelWidth(Gun.Slot slot) => InHand(slot) ? width : width * 0.8f;
+
+    private Rect PanelRect(Gun.Slot slot) => slot == Gun.Slot.Main
+        ? new Rect(0f, PanelHeight(Gun.Slot.Sidearm) + gap, PanelWidth(Gun.Slot.Main), PanelHeight(Gun.Slot.Main))
+        : new Rect(0f, 0f, PanelWidth(Gun.Slot.Sidearm), PanelHeight(Gun.Slot.Sidearm));
+
+    private static Rect IconArea(Rect panel, bool inHand) => inHand
+        ? new Rect(panel.xMin + 10f, panel.yMin + 24f, 104f, panel.height - 38f)
+        : new Rect(panel.xMin + 8f, panel.yMin + 5f, 52f, panel.height - 10f);
+
+    private Rect PipArea(Rect panel) => new Rect(panel.xMin + 10f, panel.yMin + 8f, width - 20f, 7f);
 
     private void BuildText()
     {
-        Color dim = Fade(UiColours.Phosphor, 0.6f);
-        Rect active = ActiveRect;
-        Rect holstered = HolsteredRect;
+        header = MakeText("Header", "> EQUIPMENT", 13, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
+        BuildPanelText(mainText, "Main");
+        BuildPanelText(sidearmText, "Sidearm");
+        pickupNotice = MakeText("Pickup Notice", "", 13, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
+        Layout();
+    }
 
-        header = MakeText("Header", "> EQUIPMENT", 13, new Rect(0f, active.yMax + 3f, width, 18f), UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
-        activeSlotLabel = MakeText("Active Slot", "", 11, new Rect(8f, active.yMax - 18f, width - 16f, 16f), UiColours.Phosphor, TextAlignmentOptions.TopLeft);
-        activeName = MakeText("Active Name", "", 16, new Rect(124f, active.yMax - 40f, width - 132f, 20f), UiColours.Phosphor, TextAlignmentOptions.Left);
-        activeAmmo = MakeText("Active Ammo", "", 26, new Rect(124f, active.yMin + 22f, width - 132f, 32f), UiColours.Phosphor, TextAlignmentOptions.Left);
-        activeStatus = MakeText("Active Status", "", 11, new Rect(124f, active.yMin + 16f, width - 132f, 14f), UiColours.Phosphor, TextAlignmentOptions.Right);
-        holsteredSlotLabel = MakeText("Holstered Slot", "", 10, new Rect(66f, holstered.yMax - 16f, holstered.width - 72f, 14f), Fade(UiColours.Phosphor, 0.25f), TextAlignmentOptions.TopLeft);
-        holsteredInfo = MakeText("Holstered Info", "", 13, new Rect(66f, 4f, holstered.width - 72f, 18f), Fade(UiColours.Phosphor, 0.3f), TextAlignmentOptions.BottomLeft);
+    private void BuildPanelText(PanelText text, string name)
+    {
+        text.Slot = MakeText(name + " Slot", "", 11, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.TopLeft);
+        text.Name = MakeText(name + " Name", "", 16, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.Left);
+        text.Ammo = MakeText(name + " Ammo", "", 26, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.Left);
+        text.Status = MakeText(name + " Status", "", 11, Rect.zero, UiColours.Phosphor, TextAlignmentOptions.Right);
+        text.Ammo.characterSpacing = 2f;
+    }
 
-        pickupNotice = MakeText("Pickup Notice", "", 13, new Rect(0f, active.yMax + 22f, width, 18f), UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
-        activeAmmo.characterSpacing = 2f;
+    // Puts the text where the panels are now: again whenever the gun in hand changes, as the
+    // panels change size.
+    private void Layout()
+    {
+        Rect top = PanelRect(Gun.Slot.Main);
+        Place(header, new Rect(0f, top.yMax + 3f, width, 18f));
+        Place(pickupNotice, new Rect(0f, top.yMax + 22f, width, 18f));
+        LayoutPanel(mainText, Gun.Slot.Main);
+        LayoutPanel(sidearmText, Gun.Slot.Sidearm);
+    }
+
+    private void LayoutPanel(PanelText text, Gun.Slot slot)
+    {
+        Rect panel = PanelRect(slot);
+        bool inHand = InHand(slot);
+        text.Ammo.gameObject.SetActive(inHand);
+        text.Status.gameObject.SetActive(inHand);
+
+        if (inHand)
+        {
+            Place(text.Slot, new Rect(8f, panel.yMax - 18f, width - 16f, 16f));
+            text.Slot.fontSize = 11;
+            Place(text.Name, new Rect(124f, panel.yMax - 40f, width - 132f, 20f));
+            text.Name.fontSize = 16;
+            text.Name.alignment = TextAlignmentOptions.Left;
+            Place(text.Ammo, new Rect(124f, panel.yMin + 22f, width - 132f, 32f));
+            Place(text.Status, new Rect(124f, panel.yMin + 16f, width - 132f, 14f));
+        }
+        else
+        {
+            // One line beside a small icon: "AK-47  30/30  +60".
+            Place(text.Slot, new Rect(66f, panel.yMax - 16f, panel.width - 72f, 14f));
+            text.Slot.fontSize = 10;
+            Place(text.Name, new Rect(66f, panel.yMin + 4f, panel.width - 72f, 18f));
+            text.Name.fontSize = 13;
+            text.Name.alignment = TextAlignmentOptions.BottomLeft;
+        }
+    }
+
+    private static void Place(TMP_Text text, Rect rect)
+    {
+        RectTransform r = text.rectTransform;
+        r.anchoredPosition = rect.position;
+        r.sizeDelta = rect.size;
     }
 
     protected override void OnDestroy()
@@ -192,35 +261,45 @@ public class EquipmentHud : MaskableGraphic
 
     private void UpdateText()
     {
-        PlayerWeapon.Equipped active = weapons.Active;
-        PlayerWeapon.Equipped holstered = weapons.Holstered;
-        Gun gun = active.Gun;
-
-        string activeLabel = SlotLabel(weapons.ActiveSlot);
-        string name = gun != null ? active.Name : "UNARMED";
-        string ammo = gun != null ? $"{gun.GetCurrentAmmo()}<size=60%> / {gun.GetMagazineSize()}</size>" : "--";
-        string status = StatusText(gun);
-        Gun.Slot otherSlot = weapons.ActiveSlot == Gun.Slot.Main ? Gun.Slot.Sidearm : Gun.Slot.Main;
-        string holsteredLabel = SlotLabel(otherSlot);
-        string holsteredText = holstered.Gun != null
-            ? $"{holstered.Name}  {holstered.Gun.GetCurrentAmmo()}/{holstered.Gun.GetMagazineSize()}  <alpha=#88>+{holstered.Gun.Reserve}"
-            : "-- EMPTY --";
-
         // Only touch the text when something changed; rebuilding TMP every frame is wasteful.
-        string all = activeLabel + name + ammo + status + holsteredLabel + holsteredText;
+        string all = PanelString(Gun.Slot.Main, weapons.Main) + "|" + PanelString(Gun.Slot.Sidearm, weapons.Sidearm);
 
         if (all == lastTexts)
             return;
 
         lastTexts = all;
-        activeSlotLabel.text = "<b>>> " + activeLabel + "</b>";
-        activeName.text = name;
-        activeAmmo.text = ammo;
-        activeAmmo.color = AmmoColour(gun);
-        activeStatus.text = status;
-        activeStatus.color = gun != null && !gun.IsReloading && (gun.GetCurrentAmmo() == 0 || gun.Reserve == 0) ? UiColours.Hostile : UiColours.Phosphor;
-        holsteredSlotLabel.text = holsteredLabel;
-        holsteredInfo.text = holsteredText;
+        FillPanelText(mainText, Gun.Slot.Main, weapons.Main);
+        FillPanelText(sidearmText, Gun.Slot.Sidearm, weapons.Sidearm);
+    }
+
+    private string PanelString(Gun.Slot slot, PlayerWeapon.Equipped equipped)
+    {
+        Gun gun = equipped.Gun;
+        bool active = slot == weapons.ActiveSlot;
+        string ammo = gun != null ? equipped.Name + gun.GetCurrentAmmo() + "/" + gun.GetMagazineSize() + "+" + gun.Reserve : "";
+        return active + SlotLabel(slot) + ammo + StatusText(gun, active);
+    }
+
+    private void FillPanelText(PanelText text, Gun.Slot slot, PlayerWeapon.Equipped equipped)
+    {
+        Gun gun = equipped.Gun;
+        bool active = slot == weapons.ActiveSlot;
+        float brightness = active ? 1f : Unlit;
+
+        text.Slot.text = active ? "<b>>> " + SlotLabel(slot) + "</b>" : SlotLabel(slot);
+        text.Slot.color = Fade(UiColours.Phosphor, brightness);
+
+        if (!active)
+            text.Name.text = gun != null ? $"{equipped.Name}  {gun.GetCurrentAmmo()}/{gun.GetMagazineSize()}  <alpha=#88>+{gun.Reserve}" : "-- EMPTY --";
+        else
+            text.Name.text = gun != null ? equipped.Name : "-- EMPTY --";
+
+        text.Name.color = Fade(UiColours.Phosphor, brightness);
+        text.Ammo.text = gun != null ? $"{gun.GetCurrentAmmo()}<size=60%> / {gun.GetMagazineSize()}</size>" : "";
+        text.Ammo.color = Fade(AmmoColour(gun), brightness);
+        text.Status.text = StatusText(gun, active);
+        Color status = gun != null && !gun.IsReloading && (gun.GetCurrentAmmo() == 0 || gun.Reserve == 0) ? UiColours.Hostile : UiColours.Phosphor;
+        text.Status.color = Fade(status, brightness);
     }
 
     private static string SlotLabel(Gun.Slot slot)
@@ -229,20 +308,26 @@ public class EquipmentHud : MaskableGraphic
         return (slot == Gun.Slot.Main ? "MAIN" : "SIDEARM") + "  [" + button + "]";
     }
 
-    private string StatusText(Gun gun)
+    // Warnings blink on the gun in hand and stay still on the other.
+    private string StatusText(Gun gun, bool active)
     {
         if (gun == null)
             return "";
 
+        bool show = !active || Blink();
+
         if (gun.IsReloading)
-            return Blink() ? "RELOADING" : "";
+            return show ? "RELOADING" : "";
 
         if (gun.GetCurrentAmmo() == 0)
         {
             if (gun.Reserve == 0)
-                return Blink() ? "OUT OF AMMO" : "";
+                return show ? "OUT OF AMMO" : "";
 
-            return Blink() ? "EMPTY // [" + GameInput.Label(GameInput.Reload) + "] RELOAD" : "";
+            if (!active)
+                return "EMPTY";
+
+            return show ? "EMPTY // [" + GameInput.Label(GameInput.Reload) + "] RELOAD" : "";
         }
 
         // Normally: which ammo it takes and how many spare rounds are left.
@@ -272,51 +357,70 @@ public class EquipmentHud : MaskableGraphic
             return;
 
         Vector2 origin = rectTransform.rect.min;
-        Gun gun = weapons.Active.Gun;
-        Gun holstered = weapons.Holstered.Gun;
-
-        // Active panel: lit up. A phosphor-tinted fill (brighter for a moment after switching), a
-        // solid bright frame, the radar's corner brackets and a selection bar down the left.
-        Rect active = Offset(ActiveRect, origin);
-        float flash = 1f - Mathf.Clamp01((Time.unscaledTime - switchedAt) / SwitchFlashTime);
-        FillRect(vh, active, new Color(0f, 0.07f, 0.03f, 0.85f));
-        FillRect(vh, active, Fade(UiColours.Phosphor, 0.05f + 0.25f * flash));
-        OutlineRect(vh, active, 2f, UiColours.Phosphor);
-        Brackets(vh, active, UiColours.Phosphor);
-        FillRect(vh, new Rect(active.xMin - 9f, active.yMin, 4f, active.height), UiColours.Phosphor);
-
-        if (gun != null)
-        {
-            WeaponSilhouette.Draw(vh, gun.HudIcon, Offset(ActiveIconArea, origin), UiColours.Phosphor);
-            DrawPips(vh, gun, Offset(PipArea, origin));
-        }
-
-        // Holstered panel: smaller, unlit and faded.
-        Rect slot = Offset(HolsteredRect, origin);
-        FillRect(vh, slot, new Color(0f, 0.04f, 0.02f, 0.5f));
-        OutlineRect(vh, slot, 1f, Fade(UiColours.Phosphor, 0.18f));
-
-        if (holstered != null)
-            WeaponSilhouette.Draw(vh, holstered.HudIcon, Offset(HolsteredIconArea, origin), Fade(UiColours.Phosphor, 0.22f));
+        DrawPanel(vh, Gun.Slot.Main, weapons.Main.Gun, origin);
+        DrawPanel(vh, Gun.Slot.Sidearm, weapons.Sidearm.Gun, origin);
     }
 
-    // One pip per round in the magazine, filled for rounds loaded; a thin bar shows reload progress.
+    private void DrawPanel(VertexHelper vh, Gun.Slot slot, Gun gun, Vector2 origin)
+    {
+        Rect panel = Offset(PanelRect(slot), origin);
+        bool active = slot == weapons.ActiveSlot;
+
+        if (active)
+        {
+            // In hand: lit up. A phosphor-tinted fill (brighter for a moment after switching), a
+            // solid bright frame, the radar's corner brackets and a selection bar down the left.
+            float flash = 1f - Mathf.Clamp01((Time.unscaledTime - switchedAt) / SwitchFlashTime);
+            FillRect(vh, panel, new Color(0f, 0.07f, 0.03f, 0.85f));
+            FillRect(vh, panel, Fade(UiColours.Phosphor, 0.05f + 0.25f * flash));
+            OutlineRect(vh, panel, 2f, UiColours.Phosphor);
+            Brackets(vh, panel, UiColours.Phosphor);
+            FillRect(vh, new Rect(panel.xMin - 9f, panel.yMin, 4f, panel.height), UiColours.Phosphor);
+        }
+        else
+        {
+            // Stowed: unlit and faded.
+            FillRect(vh, panel, new Color(0f, 0.04f, 0.02f, 0.5f));
+            OutlineRect(vh, panel, 1f, Fade(UiColours.Phosphor, 0.18f));
+        }
+
+        if (gun == null)
+            return;
+
+        float brightness = active ? 1f : Unlit;
+        WeaponSilhouette.Draw(vh, gun.HudIcon, IconArea(panel, active), Fade(UiColours.Phosphor, brightness));
+
+        if (active)
+            DrawPips(vh, gun, PipArea(panel));
+    }
+
+    // One pip per round in the magazine, filled for rounds loaded; a thin bar shows reload progress
+    // on the gun in hand. Pips and gaps are whole screen pixels wide, so with a big magazine (a
+    // drum or extended mag) every gap is the same, rather than some rounding to nothing and some
+    // to two pixels; the row is centred in what's left over.
     private void DrawPips(VertexHelper vh, Gun gun, Rect area)
     {
         int size = Mathf.Max(1, gun.GetMagazineSize());
         int loaded = gun.GetCurrentAmmo();
-        float pipGap = size > 20 ? 1f : 3f;
-        float pipWidth = (area.width - pipGap * (size - 1)) / size;
+        float scale = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
+        int areaPixels = Mathf.FloorToInt(area.width * scale);
+        int gapPixels = Mathf.Max(1, Mathf.RoundToInt((size > 20 ? 1f : 3f) * scale));
+        int pipPixels = Mathf.Max(1, (areaPixels - gapPixels * (size - 1)) / size);
+        int rowPixels = pipPixels * size + gapPixels * (size - 1);
+        float start = area.xMin + Mathf.Floor((areaPixels - rowPixels) / 2f) / scale;
+        float pipWidth = pipPixels / scale;
+        float step = (pipPixels + gapPixels) / scale;
         Color full = AmmoColour(gun);
+        Color empty = Fade(UiColours.Phosphor, 0.35f);
 
         for (int i = 0; i < size; i++)
         {
-            Rect pip = new Rect(area.xMin + i * (pipWidth + pipGap), area.yMin, pipWidth, area.height);
+            Rect pip = new Rect(start + i * step, area.yMin, pipWidth, area.height);
 
             if (i < loaded)
                 FillRect(vh, pip, full);
             else
-                OutlineRect(vh, pip, 1f, Fade(UiColours.Phosphor, 0.35f));
+                OutlineRect(vh, pip, Mathf.Min(1f, pipWidth / 2f), empty);
         }
 
         if (gun.IsReloading)

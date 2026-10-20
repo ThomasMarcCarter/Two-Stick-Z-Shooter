@@ -277,7 +277,13 @@ public partial class FloorGenerator
 
         Vector3 station = middle + back * (area.Depth - 1.3f);
         StationConsole.Create(Npcs.Station(area.Owner), station, inward, room.transform);
-        HideoutNpc.Create(area.Owner, station + inward * 2.2f + side * 1.8f, inward, room.transform);
+
+        // The medic stands by the far bed, seeing to it, well clear of the med station's front so
+        // talking to them and using the station don't get in each other's way.
+        if (area.Owner == NpcKind.Medic)
+            HideoutNpc.Create(area.Owner, station + inward * 3.2f - side * 1.7f, -side, room.transform);
+        else
+            HideoutNpc.Create(area.Owner, station + inward * 2.2f + side * 1.8f, inward, room.transform);
         DressArea(area.Owner, room, middle, back, side, area.Depth, area.Width);
     }
 

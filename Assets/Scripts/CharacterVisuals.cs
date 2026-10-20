@@ -85,7 +85,8 @@ public class CharacterVisuals : ScriptableObject
     }
 
     // Puts a model on an enemy's unit-cube body (scaled with it), feet on the floor, turning to
-    // face where it goes and (for the jointed zombie models) animated in the given style.
+    // face where it goes and (for the jointed zombie models) animated in the given style. The
+    // block's box collider is swapped for a capsule round the model (FitHitbox).
     public static void AttachToEnemy(Enemy enemy, GameObject model, CharacterAnimator.Style style)
     {
         if (enemy == null || model == null)
@@ -94,8 +95,54 @@ public class CharacterVisuals : ScriptableObject
         Renderer[] renderers = Attach(enemy.transform, model, new Vector3(0f, -0.5f, 0f), Vector3.one);
         enemy.SetBodyRenderers(renderers);
         Transform instance = enemy.transform.Find("Model");
+        FitHitbox(enemy, renderers);
         instance.gameObject.AddComponent<FaceMovement>();
         CharacterAnimator.Add(instance, style);
+    }
+
+    // An upright capsule as wide as the model's torso (reaching arms and weapons stick out of
+    // it) and as tall as the whole model, in place of the unit-cube block's box, which was wider
+    // than the body and only half as tall. It stops just short of the floor, as the box did, so
+    // it doesn't catch on floor seams. Shots, blood and pushing all go by it.
+    private static void FitHitbox(Enemy enemy, Renderer[] renderers)
+    {
+        if (renderers.Length == 0 || !enemy.TryGetComponent(out BoxCollider box))
+            return;
+
+        Bounds whole = renderers[0].bounds;
+        Bounds torso = whole;
+        bool foundTorso = false;
+
+        foreach (Renderer part in renderers)
+        {
+            whole.Encapsulate(part.bounds);
+
+            if (!foundTorso && part.name.StartsWith("Torso"))
+            {
+                torso = part.bounds;
+                foundTorso = true;
+            }
+        }
+
+        if (!foundTorso)
+            torso = whole;
+
+        Transform body = enemy.transform;
+        float scale = Mathf.Max(0.01f, body.lossyScale.x);
+        float radius = Mathf.Max(torso.extents.x, torso.extents.z) / scale;
+        float bottom = -0.42f;
+        float top = Mathf.Max(bottom + radius * 2f, body.InverseTransformPoint(new Vector3(body.position.x, whole.max.y, body.position.z)).y);
+
+        PhysicsMaterial material = box.sharedMaterial;
+        Object.DestroyImmediate(box);
+
+        CapsuleCollider capsule = enemy.gameObject.AddComponent<CapsuleCollider>();
+        capsule.sharedMaterial = material;
+        capsule.direction = 1;
+        capsule.radius = radius;
+        capsule.height = top - bottom;
+        capsule.center = new Vector3(0f, (top + bottom) / 2f, 0f);
+        enemy.RefreshBodyRadius();
     }
 
     public static CharacterAnimator.Style StyleFor(EnemyKind kind)
