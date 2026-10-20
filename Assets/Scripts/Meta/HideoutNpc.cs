@@ -56,7 +56,7 @@ public class HideoutNpc : MonoBehaviour, FloorPickups.IPickup
 
         CharacterAnimator animator = CharacterVisuals.AttachToNpc(root, kind);
 
-        if (animator == null && root.Find("Model") == null)
+        if (animator == null && root.Find("Model") == null && root.GetComponent<SpriteCharacter>() == null)
         {
             GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             capsule.name = "Model";

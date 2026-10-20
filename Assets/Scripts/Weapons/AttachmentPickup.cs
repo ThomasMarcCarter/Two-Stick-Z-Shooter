@@ -62,9 +62,40 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         pickup.Attachment = attachment;
         pickup.visual = kit.transform;
         pickup.bobOffset = Random.value * 10f;
+        AddGlow(root.transform, colour);
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
         pickup.label.Compactable = true;
+        ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Attachment(attachment.name), true);
         return pickup;
+    }
+
+    // A soft disc of its colour on the floor beneath it, like the other drops, so it shows up in
+    // the dark.
+    private static void AddGlow(Transform root, Color tint)
+    {
+        AmmoVisuals visuals = AmmoVisuals.Current;
+
+        if (visuals == null || visuals.glowMaterial == null)
+            return;
+
+        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        glow.name = "Glow";
+        Destroy(glow.GetComponent<Collider>());
+        glow.transform.SetParent(root, false);
+        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
+        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        glow.transform.localScale = Vector3.one * visuals.glowSize;
+
+        Renderer renderer = glow.GetComponent<Renderer>();
+        renderer.sharedMaterial = visuals.glowMaterial;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        Color colour = tint * visuals.glowStrength;
+        colour.a = 0.8f;
+        block.SetColor("_Color", colour);
+        renderer.SetPropertyBlock(block);
     }
 
     private static void Part(Transform parent, string name, Vector3 localPosition, Vector3 size, Material material, Color baseColour, Color emission)

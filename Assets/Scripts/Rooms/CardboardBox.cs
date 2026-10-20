@@ -7,7 +7,7 @@ using UnityEngine.AI;
 // over the smallest boxes and hit the rest, which take a few hits (more for bigger boxes): each
 // puffs cardboard debris, and the last crunches it flat, leaving a scrap of flattened cardboard.
 // A box stacked on top rests there under its own physics, and falls if the one below goes. One
-// that falls out of the level is removed.
+// that falls out of the level is removed. A boss's charge or acid crushes it at once (Smash).
 public class CardboardBox : MonoBehaviour
 {
     [Tooltip("Hits to break it. Bigger boxes take more.")]
@@ -95,6 +95,13 @@ public class CardboardBox : MonoBehaviour
         Break(direction, materials);
     }
 
+    // Hit by something heavy (a charging boss, a splash of acid): crushed flat at once.
+    public void Smash(Vector3 direction, ImpactEffects.Materials materials)
+    {
+        if (!broken)
+            Break(direction, materials);
+    }
+
     private void Break(Vector3 direction, ImpactEffects.Materials materials)
     {
         broken = true;
@@ -117,6 +124,8 @@ public class CardboardBox : MonoBehaviour
             // Just scenery: nothing to bump into.
             foreach (Collider part in remains.GetComponentsInChildren<Collider>())
                 Destroy(part);
+
+            ClutterSprites.DressAs(remains, "Box_Flattened");
         }
 
         Destroy(gameObject);

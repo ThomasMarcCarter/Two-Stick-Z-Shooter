@@ -5,7 +5,9 @@ using UnityEngine.AI;
 // have a light body you and the zombies knock about: they tip over and tumble, and long round
 // things (cans, bottles, cups) roll. Bullets that hit them knock them flying. Fixed props (barriers, cinder blocks, tyres) stay put as cover that zombies path around.
 // Some props break when shot (a glass bottle into a broken one, a cup crushed flat). Each has
-// a surface, which sets what a hit throws off and sounds like.
+// a surface, which sets what a hit throws off and sounds like. Anything that can tip and is
+// still standing is knocked over when the player or a zombie walks into it. A boss's charge or
+// acid (Smash) breaks it, throws it aside or, for fixed cover, wrecks it.
 public class Prop : MonoBehaviour
 {
     public enum Surface
@@ -30,10 +32,13 @@ public class Prop : MonoBehaviour
     [SerializeField] private float bulletImpulse = 0.6f;
     [Tooltip("Pushable only: free to tip over and tumble. Off keeps it upright (trash bags just slump along).")]
     [SerializeField] private bool canTip = true;
+    [Tooltip("Pushable, tippable props: how hard a bump from the player or a zombie spins a standing one over.")]
+    [SerializeField] private float toppleSpin = 9f;
 
     private int damage;
     private bool broken;
     private PhysicsMaterial physicsMaterial;
+    private Rigidbody tipBody;
 
     public Surface Material => surface;
 
@@ -65,6 +70,8 @@ public class Prop : MonoBehaviour
 
             if (canTip)
             {
+                tipBody = body;
+
                 // Free to fall over and tumble; light damping so a shove carries it far enough
                 // to topple, and round things keep rolling a little.
                 body.linearDamping = 0.6f;
@@ -90,6 +97,24 @@ public class Prop : MonoBehaviour
             obstacle.carving = true;
             obstacle.carveOnlyStationary = true;
         }
+    }
+
+    // Walked into while standing: tipped over away from whoever bumped it.
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (tipBody == null || collision.rigidbody == null || Vector3.Dot(transform.up, Vector3.up) < 0.7f)
+            return;
+
+        if (collision.rigidbody.GetComponent<PlayerMovement>() == null && collision.rigidbody.GetComponent<Enemy>() == null)
+            return;
+
+        Vector3 push = transform.position - collision.rigidbody.position;
+        push.y = 0f;
+
+        if (push.sqrMagnitude < 0.0001f)
+            return;
+
+        tipBody.AddTorque(Vector3.Cross(Vector3.up, push.normalized) * toppleSpin, ForceMode.VelocityChange);
     }
 
     // A box collider tumbles from face to face; something long and round (a can, a bottle, a
@@ -166,6 +191,34 @@ public class Prop : MonoBehaviour
         }
     }
 
+    // Hit by something heavy (a charging boss, a splash of acid): breaks if it has a broken
+    // version, a loose prop is thrown aside, and fixed cover (a barrier, tyres) is wrecked.
+    public void Smash(Vector3 point, Vector3 direction, ImpactEffects.Materials materials)
+    {
+        if (broken)
+            return;
+
+        if (brokenVersion != null)
+            damage = hitsToBreak - 1;
+
+        Hit(point, -direction, direction, materials);
+
+        if (broken || this == null)
+            return;
+
+        Rigidbody body = GetComponent<Rigidbody>();
+
+        if (body != null && !body.isKinematic)
+        {
+            body.AddForce(direction.normalized * 5f + Vector3.up * 2f, ForceMode.VelocityChange);
+            return;
+        }
+
+        broken = true;
+        ImpactEffects.Debris(point, Vector3.up + direction.normalized * 0.8f, 16, new Color(0.4f, 0.4f, 0.38f), new Color(0.18f, 0.18f, 0.17f), materials);
+        Destroy(gameObject);
+    }
+
     private static void PlaySound(string key, System.Func<int, AudioClip> make, Vector3 at, float volume)
     {
         SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips(key, 3, make)), at, volume, Random.Range(0.9f, 1.1f));
@@ -184,6 +237,8 @@ public class Prop : MonoBehaviour
 
         if (prop != null)
             prop.Configure(physicsMaterial);
+
+        ClutterSprites.Dress(remains);
 
         Rigidbody newBody = remains.GetComponent<Rigidbody>();
 

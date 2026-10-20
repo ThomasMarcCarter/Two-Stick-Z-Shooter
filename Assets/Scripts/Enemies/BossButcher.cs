@@ -5,7 +5,7 @@ using UnityEngine;
 // line at several times its speed, facing dead ahead (it can't turn once its aim locks).
 // Running into the player hurts and throws them; running into a wall stuns it for a couple of
 // seconds, during which it takes double damage. Sidestepping the charge so it hits the wall is
-// the way to beat it.
+// the way to beat it. Boxes, trash and furniture in its path are smashed (Smashable).
 [RequireComponent(typeof(Enemy))]
 public class BossButcher : MonoBehaviour, IBossMoves
 {
@@ -132,15 +132,24 @@ public class BossButcher : MonoBehaviour, IBossMoves
         if (phase != Phase.Charge)
             return;
 
-        // Into a wall: thud, and dazed.
+        // Boxes, trash and furniture in its way are smashed aside.
         Vector3 eye = Bosses.Flat(enemy.Body.position) + Vector3.up * 0.5f;
         float probe = bodyRadius + ChargeSpeed * Time.fixedDeltaTime + 0.15f;
 
-        if (Physics.SphereCast(eye, bodyRadius * 0.7f, chargeDirection, out RaycastHit hit, probe, ~0, QueryTriggerInteraction.Ignore)
-            && hit.collider.CompareTag("Wall"))
+        foreach (Collider part in Physics.OverlapSphere(eye + chargeDirection * probe * 0.5f, bodyRadius + 0.2f, ~0, QueryTriggerInteraction.Ignore))
         {
-            Slam();
-            return;
+            if (part.attachedRigidbody != enemy.Body)
+                Smashable.Break(part, part.ClosestPoint(eye), chargeDirection);
+        }
+
+        // Into a wall: thud, and dazed.
+        foreach (RaycastHit hit in Physics.SphereCastAll(eye, bodyRadius * 0.7f, chargeDirection, probe, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.collider.CompareTag("Wall"))
+            {
+                Slam();
+                return;
+            }
         }
 
         enemy.Body.linearVelocity = chargeDirection * ChargeSpeed;

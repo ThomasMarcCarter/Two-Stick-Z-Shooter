@@ -117,6 +117,12 @@ public class GunPickup : MonoBehaviour
             : transform.position + transform.up * modelHeight;
 
         model.position += target - bounds.center;
+
+        // With the sprite art: the gun's sprite, floating over the floor or on its wall mount.
+        SpriteSheet sheet = SpriteVisuals.Current != null && weaponPrefab != null ? SpriteVisuals.Current.ForGun(weaponPrefab.name) : null;
+
+        if (sheet != null)
+            ItemSprite.Apply(gameObject, sheet, Vector2Int.zero, onFloor, onFloor ? 0f : Mathf.Max(0f, target.y - 0.3f), frameOnFloor: onFloor);
     }
 
     // The box the prefab shows when there's no model. Its collider stays either way.
@@ -127,7 +133,7 @@ public class GunPickup : MonoBehaviour
             if (model != null && part.transform.IsChildOf(model))
                 continue;
 
-            if (part is MeshRenderer && part.GetComponent<MeshFilter>() != null)
+            if (part is MeshRenderer && part.GetComponent<MeshFilter>() != null && part.GetComponent<PixelSprite>() == null)
                 part.enabled = visible;
         }
     }

@@ -16,6 +16,10 @@ public static class FloorPickups
         bool CanTake { get; }
     }
 
+    // Height of a drop's coloured glow disc above the floor: over the flat litter sprites (which
+    // lie a centimetre or two up), so the clutter never hides it.
+    public const float GlowHeight = 0.05f;
+
     private static readonly List<IPickup> all = new List<IPickup>();
 
     // Statics outlive Play sessions with domain reload off.

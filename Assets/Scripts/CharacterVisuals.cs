@@ -75,6 +75,15 @@ public class CharacterVisuals : ScriptableObject
     // Returns the animator (null if there's no model for them).
     public static CharacterAnimator AttachToNpc(Transform root, NpcKind kind)
     {
+        // As a sprite with the sprite art on (no animator: the survivor scripts do without).
+        SpriteSheet sheet = SpriteVisuals.Current != null ? SpriteVisuals.Current.For(kind) : null;
+
+        if (sheet != null && root != null)
+        {
+            SpriteCharacter.Attach(root, sheet, root, 1u);
+            return null;
+        }
+
         GameObject model = Current != null ? Current.For(kind) : null;
 
         if (model == null || root == null)
@@ -188,6 +197,7 @@ public class CharacterVisuals : ScriptableObject
         facing.AddComponent<FaceMovement>();
 
         SpriteCharacter character = SpriteCharacter.Attach(body, sheet, facing.transform, layers);
+        enemy.SpriteBody = true;
         enemy.SetBodyRenderers(new[] { character.Sprite.Renderer });
         FitCapsule(enemy, sheet.bodyRadius, sheet.bodyHeight);
     }

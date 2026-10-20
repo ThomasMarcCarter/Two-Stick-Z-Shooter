@@ -24,6 +24,7 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
     private Renderer lamp;
     private Light glow;
     private bool opened;
+    private ItemSprite sprite;
     private bool vanishing;
     private float lidAngle;
 
@@ -103,6 +104,8 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
 
         label = PickupLabel.Create(transform, 1.6f);
         label.Compactable = true;
+
+        sprite = ItemSprite.Apply(gameObject, SpriteVisuals.Current != null ? SpriteVisuals.Current.supplyCrate : null, Vector2Int.zero, castsShadow: true);
     }
 
     private static Renderer Part(string name, Transform parent, Vector3 position, Vector3 size, Material material, Color colour,
@@ -240,6 +243,10 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
     private void Open()
     {
         opened = true;
+
+        if (sprite != null)
+            sprite.SetFrame(new Vector2Int(1, 0));
+
         CrateScreen.Open(this, playerWeapon);
     }
 

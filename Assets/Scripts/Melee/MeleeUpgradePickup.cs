@@ -63,6 +63,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
         AddGlow(root.transform, colour);
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
         pickup.label.Compactable = true;
+        ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Melee(upgrade), true);
         return pickup;
     }
 
@@ -98,7 +99,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
         glow.name = "Glow";
         Destroy(glow.GetComponent<Collider>());
         glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * 0.015f;
+        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
         glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         glow.transform.localScale = Vector3.one * visuals.glowSize;
 

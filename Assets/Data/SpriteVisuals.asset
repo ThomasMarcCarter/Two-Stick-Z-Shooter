@@ -15,9 +15,42 @@ MonoBehaviour:
   spriteMaterial: {fileID: 2100000, guid: b63c6967c20154a4cbecd016812c4a38, type: 2}
   player: {fileID: 11400000, guid: 51d4ee327b481a644a34df7e6e12d343, type: 2}
   walker: {fileID: 11400000, guid: c9e61fa07573e2446af3e240cb39ed73, type: 2}
+  runner: {fileID: 11400000, guid: efbd4101c514f324aae997d41fc2e761, type: 2}
+  brute: {fileID: 11400000, guid: 38a6da3ff5d59c44daa69678217fb797, type: 2}
+  bloater: {fileID: 11400000, guid: d31bf15cde8768f4eadfed56e9e580f0, type: 2}
+  screamer: {fileID: 11400000, guid: 51e7937af8653334e9d3fe54f64dd979, type: 2}
+  butcher: {fileID: 11400000, guid: f6aa8abe466d9ef489954a8363f60436, type: 2}
+  broodmother: {fileID: 11400000, guid: b4bbd692446e0004ba7be19bdd0be441, type: 2}
+  howler: {fileID: 11400000, guid: 844a350067dc593409dffc600eb592ad, type: 2}
+  mechanic: {fileID: 11400000, guid: 52068c9cb970017439278286a1cb7c3a, type: 2}
+  medic: {fileID: 11400000, guid: 2c4160cc026780a468b88123c2bd0778, type: 2}
+  quartermaster: {fileID: 11400000, guid: 804af694f2d8d6044b07ed19a48a6518, type: 2}
+  trader: {fileID: 11400000, guid: 9274defdec528544a987ef9f488cd1db, type: 2}
+  items: {fileID: 11400000, guid: 836e2ec9e8a13154a864df5dffe00629, type: 2}
+  supplyCrate: {fileID: 11400000, guid: 70af3724c8872674dad2a774c3720816, type: 2}
+  hatch: {fileID: 11400000, guid: 93fcc0b51182bc744a663d6f4d03965a, type: 2}
+  clutterBoxes: {fileID: 11400000, guid: 38a4b204c1e21674ab8ea68975846bbe, type: 2}
+  clutterSmall: {fileID: 11400000, guid: 1a7fdc08647ebaa41b28fc7c07943960, type: 2}
+  clutterFlat: {fileID: 11400000, guid: 5456c460880b67d4787671c8ba848e9a, type: 2}
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}
+  - gun: Shotgun
+    sheet: {fileID: 11400000, guid: 664da3d014221ec4fb4f754a68759594, type: 2}
+  - gun: AK47
+    sheet: {fileID: 11400000, guid: cef3f1908069cc247af23dcdebdc66a2, type: 2}
+  - gun: M4A1
+    sheet: {fileID: 11400000, guid: 8805f0057224d3e4c8c67a41ea61e299, type: 2}
+  - gun: MP5
+    sheet: {fileID: 11400000, guid: 2931f215e7410fb4787899175a1f9f2a, type: 2}
+  - gun: HuntingRifle
+    sheet: {fileID: 11400000, guid: d2ba3820ec7d62440b6794898e1b7406, type: 2}
+  - gun: DoubleBarrel
+    sheet: {fileID: 11400000, guid: db74b21fd6e3fa1489a30e061833fc0f, type: 2}
+  - gun: Uzi
+    sheet: {fileID: 11400000, guid: 6483fac4d4f0f51489f34b9e1d4a0fbe, type: 2}
+  - gun: Revolver
+    sheet: {fileID: 11400000, guid: 0712fdc33ea9b6345948c648f300e642, type: 2}
   floor: {fileID: 2100000, guid: 4b57af4cdbc02394597401faa6150a6f, type: 2}
   floorVariant: {fileID: 2100000, guid: 78d4fdfcc8e906740b3d0f8342d7effe, type: 2}
   corridorFloor: {fileID: 2100000, guid: d0657ef77c898444db2ca7ebbb08b1e7, type: 2}

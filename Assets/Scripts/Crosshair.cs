@@ -4,7 +4,8 @@ using UnityEngine.UI;
 // The aim cursor: a circle with four ticks and a dot. The circle shows how far shots can stray
 // at the cursor's distance (the gun's inaccuracy, bloom from firing, moving or sneaking, and
 // attachments like the laser sight), so it tightens as aim settles and widens in a firefight.
-// Each shot also kicks it out a little.
+// Each shot also kicks it out a little. In menus it's only a pointer: a small, steady circle
+// with no bloom.
 public class Crosshair : MaskableGraphic
 {
     [Header("Crosshair")]
@@ -68,8 +69,16 @@ public class Crosshair : MaskableGraphic
             recoilReturnSpeed * Time.deltaTime
         );
 
-        float target = gun != null ? SpreadRadius(gun.CurrentInaccuracy) : circleRadius;
-        spreadRadius = spreadRadius < 0f ? target : Mathf.Lerp(spreadRadius, target, 1f - Mathf.Exp(-spreadSmoothing * Time.unscaledDeltaTime));
+        if (GameFlow.InMenu)
+        {
+            currentExpansion = 0f;
+            spreadRadius = minRadius;
+        }
+        else
+        {
+            float target = gun != null ? SpreadRadius(gun.CurrentInaccuracy) : circleRadius;
+            spreadRadius = spreadRadius < 0f ? target : Mathf.Lerp(spreadRadius, target, 1f - Mathf.Exp(-spreadSmoothing * Time.unscaledDeltaTime));
+        }
 
         SetVerticesDirty();
     }

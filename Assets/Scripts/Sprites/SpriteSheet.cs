@@ -35,6 +35,8 @@ public class SpriteSheet : ScriptableObject
     [Header("Body (characters)")]
     [Tooltip("Hitbox radius in metres (see CharacterVisuals.FitHitbox).")]
     public float bodyRadius = 0.25f;
+    [Tooltip("Half the drawn body's width in metres, for bullets hitting the sprite (Projectile). 0 uses bodyRadius. Wide bosses are drawn wider than their physics body.")]
+    public float hitRadius;
     [Tooltip("Height of the drawn character in metres.")]
     public float bodyHeight = 1.75f;
     [Tooltip("Pixels above the pivot where a held gun's grip sits (the hands' height).")]
@@ -45,6 +47,8 @@ public class SpriteSheet : ScriptableObject
     [Header("Guns")]
     [Tooltip("The muzzle's pixel, from the bottom-left of the frame (guns only).")]
     public Vector2 muzzle = new Vector2(15f, 10f);
+
+    public float HitRadius => hitRadius > 0f ? hitRadius : bodyRadius;
 
     public Clip Find(string name)
     {

@@ -23,7 +23,7 @@ using UnityEngine.AI;
 // and the hit lands at the moment the arms come down, if the player is still in reach then, so
 // backing off during the wind-up dodges it. The model's swing (CharacterAnimator) is driven by
 // the same clock. A blow that staggers it cancels the swing. Bosses hurt on contact instead,
-// except the Butcher, whose cleaver chops use the same timed swing (AttackPeriodOverride).
+// except the Butcher's cleaver chops and the Howler's claws, which use the same timed swing (AttackPeriodOverride).
 [RequireComponent(typeof(Rigidbody))]
 public class Enemy : MonoBehaviour
 {
@@ -267,6 +267,13 @@ public class Enemy : MonoBehaviour
             bodyRadius = Mathf.Max(body.bounds.extents.x, body.bounds.extents.z);
     }
 
+    // Drawn as a sprite (CharacterVisuals.AttachSpriteToEnemy): the art has its own colours, so
+    // the kind's tint isn't laid over it, glows show faintly, and a hit flashes it white.
+    public bool SpriteBody { get; set; }
+
+    private const float SpriteGlow = 0.3f;
+    private static readonly Color SpriteFlash = new Color(0.8f, 0.8f, 0.8f);
+
     public void SetBodyRenderers(Renderer[] renderers)
     {
         bodyRenderers = renderers ?? new Renderer[0];
@@ -275,6 +282,18 @@ public class Enemy : MonoBehaviour
 
     private void ApplyTint()
     {
+        if (SpriteBody)
+        {
+            flashBlock ??= new MaterialPropertyBlock();
+            flashBlock.SetColor("_BaseColor", Color.white);
+            flashBlock.SetColor("_EmissionColor", emission * SpriteGlow);
+
+            foreach (Renderer renderer in bodyRenderers)
+                renderer.SetPropertyBlock(flashBlock);
+
+            return;
+        }
+
         if (tint == null)
         {
             foreach (Renderer renderer in bodyRenderers)
@@ -779,7 +798,7 @@ public class Enemy : MonoBehaviour
     {
         flashBlock ??= new MaterialPropertyBlock();
         flashBlock.SetColor("_BaseColor", Color.white);
-        flashBlock.SetColor("_EmissionColor", emission);
+        flashBlock.SetColor("_EmissionColor", SpriteBody ? SpriteFlash : emission);
 
         foreach (Renderer renderer in bodyRenderers)
             renderer.SetPropertyBlock(flashBlock);

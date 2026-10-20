@@ -8,13 +8,14 @@ using UnityEngine;
 // tracers and the flash come out of the drawn barrel and fly through the crosshair, and the
 // holder's flashlight goes there too, shining the way the gun points (and still landing the same
 // distance ahead). It stands upright just in front of its holder's sprite, or just behind when
-// they face away up the screen, casts no shadow (it would block the flashlight) and tips up
+// they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight) and tips up
 // while reloading. Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
 [DefaultExecutionOrder(260)]
 public class GunSprite : MonoBehaviour
 {
     private const float DepthGap = 0.15f;  // metres in front of / behind the holder's body
     private const float ReloadTip = 40f;   // degrees the gun tips up mid-reload
+    private const float FloorClearance = 0.05f;  // lowest the gun's quad may reach, in metres
 
     private Gun gun;
     private SpriteSheet sheet;
@@ -144,6 +145,13 @@ public class GunSprite : MonoBehaviour
 
         bool behind = character != null && character.CurrentFacing.Away;
         sprite.DepthOffset = toPlane + (behind ? DepthGap : -DepthGap);
+
+        // Pointing down the screen, a long gun's quad reaches below the floor, which hides the
+        // barrel: slide it toward the camera (no change on screen) until it clears the floor.
+        float lowest = gripWorld.y + view.y * sprite.DepthOffset - sprite.StandingDrop();
+
+        if (lowest < FloorClearance && view.y < -0.01f)
+            sprite.DepthOffset -= (FloorClearance - lowest) / -view.y;
     }
 
     // The point at Gun.AimHeight under a screen point.

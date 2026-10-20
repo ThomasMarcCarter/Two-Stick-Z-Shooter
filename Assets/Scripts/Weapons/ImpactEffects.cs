@@ -249,9 +249,27 @@ public static class ImpactEffects
     }
 
     // The materials from the last bullet that hit something, for effects that don't come from
-    // a bullet (a grenade's sparks). False until the first hit.
+    // a bullet (a grenade's sparks, a boss smashing a box). Before the first hit, a gun's bullet
+    // lends them; false only if there's no gun about at all.
     public static bool TryGetMaterials(out Materials materials)
     {
+        if (!haveKnown)
+        {
+            Gun gun = Object.FindFirstObjectByType<Gun>();
+            Projectile bullet = gun != null && gun.ProjectilePrefab != null ? gun.ProjectilePrefab.GetComponent<Projectile>() : null;
+
+            if (bullet != null)
+            {
+                Materials borrowed = bullet.EffectMaterials;
+
+                if (borrowed.Sparks != null && borrowed.Blood != null)
+                {
+                    known = borrowed;
+                    haveKnown = true;
+                }
+            }
+        }
+
         materials = known;
         return haveKnown;
     }

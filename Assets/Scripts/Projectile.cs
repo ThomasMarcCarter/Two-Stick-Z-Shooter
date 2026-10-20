@@ -260,7 +260,7 @@ public class Projectile : MonoBehaviour
         normal = -direction;
     }
 
-    private ImpactEffects.Materials EffectMaterials => new ImpactEffects.Materials
+    public ImpactEffects.Materials EffectMaterials => new ImpactEffects.Materials
     {
         Sparks = sparkMaterial,
         Blood = bloodMaterial,

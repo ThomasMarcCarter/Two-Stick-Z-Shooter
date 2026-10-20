@@ -61,6 +61,9 @@ public partial class FloorGenerator : MonoBehaviour
     [Tooltip("World units one repeat of the wall texture covers along a wall. Vertically it spans the wall's height once (baseboard, painted band, blockwork, and a cap strip at the top that wall tops are mapped to).")]
     [SerializeField] private float wallTextureLength = 4f;
 
+    [Tooltip("Walls on the south side of rooms and corridors (the side nearest the camera) aren't drawn, only their shadows, so they never hide the player. They still block.")]
+    [SerializeField] private bool hideSouthWalls = true;
+
     [Header("Sprite Art (art pass)")]
     [Tooltip("Draw the player, walkers and the pistol as pixel-art sprites, with pixel-art rooms and effects (Sprite Visuals). Off keeps the 3D models and textures.")]
     [SerializeField] private bool spriteArt = true;
@@ -110,6 +113,8 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private Vector2Int flattenedPerCell = new Vector2Int(2, 5);
     [Tooltip("Boxes are placed at a random size between these, times the model's own size.")]
     [SerializeField] private Vector2 boxScale = new Vector2(1.4f, 1.8f);
+    [Tooltip("No box comes out bigger than this along its longest side, in metres (the big models at the top of the scale range were huge).")]
+    [SerializeField] private float maxBoxSize = 1.1f;
     [SerializeField] private Vector2 flattenedScale = new Vector2(0.8f, 1.3f);
     [Tooltip("Friction for boxes, so they don't skate when shoved.")]
     [SerializeField] private PhysicsMaterial boxPhysics;
@@ -826,6 +831,11 @@ public partial class FloorGenerator : MonoBehaviour
         glow.intensity = 3f;
         glow.shadows = LightShadows.None;
 
+        // With the sprite art the hatch is drawn flat from above (FloorExit opens it), a little
+        // above the floor litter (up to ~2 cm) so a stray sheet or box remains goes under it.
+        if (!trophy && SpriteVisuals.Current != null)
+            ItemSprite.ApplyFlat(exit, SpriteVisuals.Current.hatch, Vector2Int.zero, HatchOpening + 0.6f, 0.03f);
+
         // The hideout's deploy hatch is waiting open.
         exit.AddComponent<FloorExit>().Initialise(this, kind, IsHideout ? 0f : exitArmDelay, spinning, doors);
     }
@@ -1218,15 +1228,17 @@ public partial class FloorGenerator : MonoBehaviour
             : direction.y > 0 ? block.yMax + wallThickness / 2f
             : block.yMin - wallThickness / 2f;
 
+        bool south = direction.y < 0;
+
         if (!doorway)
         {
-            CreateWallSpan(room.transform, alongX, across, start, end);
+            HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, end), south);
             return;
         }
 
         float middle = alongX ? block.center.x : block.center.y;
-        CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f);
-        CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end);
+        HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f), south);
+        HideIfSouth(CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end), south);
         CreateDoorFrame(room.transform, alongX, across, middle, new Vector3(-direction.x, 0f, -direction.y));
         CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
     }
@@ -1272,25 +1284,36 @@ public partial class FloorGenerator : MonoBehaviour
             {
                 GameObject post = CreateBlock("Door Frame", parent, ToLocal(parent, posts[i]), size, wallTrimMaterial);
                 Destroy(post.GetComponent<Collider>());
+                HideIfSouth(post, inward.z > 0.5f);
             }
         }
 
         DoorBeacon.Create(parent, posts[0], posts[1], wallHeight + 0.06f, inward, postWidth, wallThickness, ammoMaterial);
     }
 
-    private void CreateWallSpan(Transform parent, bool alongX, float across, float start, float end)
+    // A wall on the side nearest the camera: drawn only into the shadows (see hideSouthWalls).
+    private void HideIfSouth(GameObject wall, bool south)
+    {
+        if (wall == null || !south || !hideSouthWalls)
+            return;
+
+        foreach (Renderer part in wall.GetComponentsInChildren<Renderer>())
+            part.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+    }
+
+    private GameObject CreateWallSpan(Transform parent, bool alongX, float across, float start, float end)
     {
         float length = end - start;
 
         if (length <= 0.001f)
-            return;
+            return null;
 
         float middle = (start + end) / 2f;
         Vector3 world = alongX
             ? new Vector3(middle, wallHeight / 2f, across)
             : new Vector3(across, wallHeight / 2f, middle);
 
-        CreateWall("Wall", parent, ToLocal(parent, world), WallSize(alongX, length, wallThickness));
+        return CreateWall("Wall", parent, ToLocal(parent, world), WallSize(alongX, length, wallThickness));
     }
 
     // ---------- Navigation ----------
@@ -1407,8 +1430,9 @@ public partial class FloorGenerator : MonoBehaviour
         float sideOffset = doorWidth / 2f + wallThickness / 2f;
         Vector3 wallSize = WallSize(alongX, corridorLength, wallThickness);
 
-        CreateWall("Wall", corridor.transform, side * sideOffset + Vector3.up * wallHeight / 2f, wallSize);
-        CreateWall("Wall", corridor.transform, -side * sideOffset + Vector3.up * wallHeight / 2f, wallSize);
+        // The corridor's south wall (when it runs east-west) is hidden like the rooms' (hideSouthWalls).
+        HideIfSouth(CreateWall("Wall", corridor.transform, side * sideOffset + Vector3.up * wallHeight / 2f, wallSize), side.z < -0.5f);
+        HideIfSouth(CreateWall("Wall", corridor.transform, -side * sideOffset + Vector3.up * wallHeight / 2f, wallSize), side.z > 0.5f);
     }
 
     private void PlacePlayer()
@@ -1436,13 +1460,14 @@ public partial class FloorGenerator : MonoBehaviour
         return parent.InverseTransformPoint(world);
     }
 
-    private void CreateWall(string name, Transform parent, Vector3 localPosition, Vector3 size)
+    private GameObject CreateWall(string name, Transform parent, Vector3 localPosition, Vector3 size)
     {
         GameObject wall = CreateBlock(name, parent, localPosition, size, wallMaterial);
         wall.tag = "Wall";
         wall.GetComponent<Collider>().sharedMaterial = slidePhysics;
         RaiseCollider(wall);
         ApplyWallUVs(wall);
+        return wall;
     }
 
     // Stretches a floor-standing wall block's collider up to wallBlockHeight, leaving the block

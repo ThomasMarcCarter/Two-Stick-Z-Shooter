@@ -75,8 +75,21 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         FloorPickups.Unregister(this);
     }
 
+    private ItemSprite hatchSprite;
+    private bool spriteOpen;
+
     private void Update()
     {
+        // The hatch's sprite (sprite art) shows it open once it's ready to use.
+        if (hatchSprite == null)
+            hatchSprite = GetComponent<ItemSprite>();
+
+        if (hatchSprite != null && !spriteOpen && Armed)
+        {
+            spriteOpen = true;
+            hatchSprite.SetFrame(new Vector2Int(1, 0));
+        }
+
         if (visual != null && kind == Kind.Trophy)
         {
             visual.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);

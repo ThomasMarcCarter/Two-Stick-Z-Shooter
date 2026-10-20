@@ -46,6 +46,7 @@ public class MaterialPickup : MonoBehaviour
         AddGlow(root.transform, Materials.Colour(type));
         pickup.label = PickupLabel.Create(root.transform, 1.5f);
         pickup.label.Compactable = true;
+        ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Material(type), true);
         return pickup;
     }
 
@@ -162,7 +163,7 @@ public class MaterialPickup : MonoBehaviour
         glow.name = "Glow";
         Destroy(glow.GetComponent<Collider>());
         glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * 0.015f;
+        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
         glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         glow.transform.localScale = Vector3.one * visuals.glowSize;
 

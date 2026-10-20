@@ -4,7 +4,8 @@ using UnityEngine;
 // way its facing transform points (the player's aim; an enemy's FaceMovement "Model" child), in
 // eight directions, and plays "walk" while moving, stepping a frame per strideLength travelled so
 // the feet keep pace with the ground, "idle" when still, "attack" on the enemy's swing clock (so
-// the blow frame shows as the hit lands, like CharacterAnimator's swings) and "dead" once the
+// the blow frame shows as the hit lands, like CharacterAnimator's swings), "special" through a
+// boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves) and "dead" once the
 // player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
 // The tilted camera shows an upright sprite taller than the body it stands for, so shots test
 // against the sprite as it looks (Footprint, used by Projectile): what's under the sprite on
@@ -23,6 +24,9 @@ public class SpriteCharacter : MonoBehaviour
     private SpriteSheet.Clip walk;
     private SpriteSheet.Clip attack;
     private SpriteSheet.Clip dead;
+    private SpriteSheet.Clip special;
+    private IBossMoves boss;
+    private bool lookedForBoss;
     private Vector3 lastPosition;
     private float stride;
     private SpriteFacing.Facing facing;
@@ -61,7 +65,7 @@ public class SpriteCharacter : MonoBehaviour
         SpriteSheet sheet = sprite != null ? sprite.Sheet : null;
         Vector3 feet = new Vector3(transform.position.x, 0f, transform.position.z);
         from = to = new Vector3(feet.x, height, feet.z);
-        radius = sheet != null ? sheet.bodyRadius : 0.25f;
+        radius = sheet != null ? sheet.HitRadius : 0.25f;
 
         if (sheet == null || view.y > -0.01f)
             return false;
@@ -90,6 +94,7 @@ public class SpriteCharacter : MonoBehaviour
         character.walk = sheet.Find("walk");
         character.attack = sheet.Find("attack");
         character.dead = sheet.Find("dead");
+        character.special = sheet.Find("special");
         character.lastPosition = body.position;
 
         if (character.enemy != null && !enemies.Contains(character))
@@ -118,6 +123,19 @@ public class SpriteCharacter : MonoBehaviour
         }
 
         facing = SpriteFacing.For(facingSource.forward, camera.transform);
+
+        // Boss behaviours are added after the body, so look for one the first time round.
+        if (!lookedForBoss)
+        {
+            lookedForBoss = true;
+            boss = GetComponent<IBossMoves>();
+        }
+
+        if (boss != null && special != null && boss.Move != BossMove.None)
+        {
+            sprite.SetFrame(special, Mathf.Min(special.frames - 1, Mathf.FloorToInt(boss.MoveProgress * special.frames)), facing);
+            return;
+        }
 
         float swing = enemy != null ? enemy.AttackTime : -1f;
 

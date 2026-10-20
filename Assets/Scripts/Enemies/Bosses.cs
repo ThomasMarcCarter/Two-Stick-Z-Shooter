@@ -118,6 +118,10 @@ public static class Bosses
                 break;
             case BossKind.Howler:
                 boss.gameObject.AddComponent<BossHowler>().Configure(spawnMinion);
+
+                // Up close it claws with quick swings (so its attack animation plays).
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 0.8f;
                 break;
             default:
                 boss.gameObject.AddComponent<BossButcher>();

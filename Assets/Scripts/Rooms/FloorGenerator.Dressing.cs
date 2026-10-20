@@ -21,6 +21,7 @@ public partial class FloorGenerator
         List<Vector3> placed = new List<Vector3>(ClutterOf(room));
         List<Vector3> doorways = DoorwayPositions(room);
         List<Vector3> lootPoints = new List<Vector3>();
+        List<Vector3> hatch = HatchSpot(room);
 
         foreach (LootSpawnPoint point in room.GetComponentsInChildren<LootSpawnPoint>())
             lootPoints.Add(point.transform.position);
@@ -80,7 +81,7 @@ public partial class FloorGenerator
 
                 if (!IsClear(spot, doorways, 2.8f) || !IsClear(spot, PillarsOf(room), 2f) || !IsClear(spot, lootPoints, 1.5f)
                     || !IsClear(spot, placed, 2.2f) || Vector3.Distance(Flat(spot), Flat(centre)) < 2.8f
-                    || NearDoorRoute(spot, centre, doorways, 1.8f))
+                    || !IsClear(spot, hatch, HatchClearance + 0.6f) || NearDoorRoute(spot, centre, doorways, 1.8f))
                 {
                     continue;
                 }
@@ -99,7 +100,8 @@ public partial class FloorGenerator
                     Mathf.Lerp(-roomSize.x / 2f + 1f, roomSize.x / 2f - 1f, (float)rng.NextDouble()), 0f,
                     Mathf.Lerp(-roomSize.y / 2f + 1f, roomSize.y / 2f - 1f, (float)rng.NextDouble()));
 
-                if (!IsClear(sheet, doorways, 1.6f) || !IsClear(sheet, PillarsOf(room), 1.2f) || Vector3.Distance(Flat(sheet), Flat(centre)) < 1.5f)
+                if (!IsClear(sheet, doorways, 1.6f) || !IsClear(sheet, PillarsOf(room), 1.2f) || Vector3.Distance(Flat(sheet), Flat(centre)) < 1.5f
+                    || !IsClear(sheet, hatch, HatchClearance))
                     continue;
 
                 GameObject flat = Instantiate(flattenedBox, sheet, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f), room.transform);
@@ -110,6 +112,9 @@ public partial class FloorGenerator
 
                 foreach (Collider part in flat.GetComponentsInChildren<Collider>())
                     Destroy(part);
+
+                flat.name = flattenedBox.name;
+                SpriteClutter(flat);
             }
         }
 
@@ -161,7 +166,16 @@ public partial class FloorGenerator
 
         GameObject box = Instantiate(prefab, position, rotation, parent);
         box.name = prefab.name;
-        box.transform.localScale = Vector3.one * RandomRange(boxScale.x, boxScale.y);
+        float scale = RandomRange(boxScale.x, boxScale.y);
+        BoxCollider body = box.GetComponent<BoxCollider>();
+
+        if (body != null)
+        {
+            float longest = Mathf.Max(body.size.x, body.size.y, body.size.z);
+            scale = Mathf.Min(scale, maxBoxSize / Mathf.Max(0.01f, longest));
+        }
+
+        box.transform.localScale = Vector3.one * scale;
 
         CardboardBox cardboard = box.GetComponent<CardboardBox>();
 
@@ -171,7 +185,14 @@ public partial class FloorGenerator
             cardboard.EnablePhysics(boxPhysics);
         }
 
+        SpriteClutter(box);
         return box;
+    }
+
+    // With the sprite art: the prop drawn as its clutter sprite (ClutterSprites).
+    private static void SpriteClutter(GameObject prop)
+    {
+        ClutterSprites.Dress(prop);
     }
 
     private GameObject PickBox()
@@ -218,6 +239,25 @@ public partial class FloorGenerator
         return false;
     }
 
+    // How far litter keeps from the hatch's middle: its sprite is HatchOpening + 0.6 m across, so
+    // this clears its corners with a bit to spare (flat litter would draw over it otherwise).
+    private const float HatchClearance = 2.2f;
+
+    // Where the room's hatch is or will be: the middle of the boss room (it appears there once the
+    // boss is dead), or wherever an exit already stands (the hideout's deploy hatch).
+    private static List<Vector3> HatchSpot(Room room)
+    {
+        List<Vector3> spots = new List<Vector3>();
+
+        if (room.Type == RoomType.Boss)
+            spots.Add(room.transform.position);
+
+        foreach (FloorExit exit in room.GetComponentsInChildren<FloorExit>())
+            spots.Add(exit.transform.position);
+
+        return spots;
+    }
+
     private List<Vector3> ClutterOf(Room room)
     {
         return clutter.TryGetValue(room, out List<Vector3> list) ? list : new List<Vector3>();
@@ -244,6 +284,7 @@ public partial class FloorGenerator
     {
         List<Vector3> doorways = DoorwayPositions(room);
         List<Vector3> lootPoints = new List<Vector3>();
+        List<Vector3> hatch = HatchSpot(room);
 
         foreach (LootSpawnPoint point in room.GetComponentsInChildren<LootSpawnPoint>())
             lootPoints.Add(point.transform.position);
@@ -272,7 +313,7 @@ public partial class FloorGenerator
                 {
                     Vector3 spot = RandomFloorPoint(centre, 0.6f);
 
-                    if (!IsClear(spot, doorways, 1.4f) || !IsClear(spot, PillarsOf(room), 0.9f))
+                    if (!IsClear(spot, doorways, 1.4f) || !IsClear(spot, PillarsOf(room), 0.9f) || !IsClear(spot, hatch, HatchClearance))
                         continue;
 
                     GameObject flat = PlaceTrash(room.transform, floorLitter[rng.Next(floorLitter.Length)], spot,
@@ -306,7 +347,8 @@ public partial class FloorGenerator
                     Vector3 spot = centre + outward * (halfExtent - 1.1f) + along * RandomRange(-halfLength + 1.2f, halfLength - 1.2f);
 
                     if (!IsClear(spot, doorways, 3f) || !IsClear(spot, PillarsOf(room), 2f) || !IsClear(spot, lootPoints, 1.6f)
-                        || !IsClear(spot, taken, 2.2f) || Vector3.Distance(Flat(spot), Flat(centre)) < 3f)
+                        || !IsClear(spot, taken, 2.2f) || Vector3.Distance(Flat(spot), Flat(centre)) < 3f
+                        || !IsClear(spot, hatch, HatchClearance + 0.6f))
                     {
                         continue;
                     }
@@ -329,7 +371,7 @@ public partial class FloorGenerator
                     Vector3 spot = rng.NextDouble() < 0.6 ? RandomWallPoint(cell, centre, 0.5f) : RandomFloorPoint(centre, 0.8f);
 
                     if (!IsClear(spot, doorways, 1.8f) || !IsClear(spot, PillarsOf(room), 1f) || !IsClear(spot, lootPoints, 0.9f)
-                        || !IsClear(spot, taken, 1f))
+                        || !IsClear(spot, taken, 1f) || !IsClear(spot, hatch, HatchClearance))
                     {
                         continue;
                     }
@@ -393,6 +435,10 @@ public partial class FloorGenerator
         item.name = prefab.name;
         item.transform.localScale = Vector3.one * RandomRange(trashScale.x, trashScale.y);
 
+        // With the sprite art, the pack's oversized bottles and cups come down to size.
+        if (SpriteVisuals.Current != null)
+            item.transform.localScale *= ClutterSprites.SizeFactor(prefab.name);
+
         // Rest the lowest point on the floor (it may be on its side).
         Bounds bounds = new Bounds(item.transform.position, Vector3.zero);
         bool any = false;
@@ -423,6 +469,7 @@ public partial class FloorGenerator
             box.EnablePhysics(boxPhysics);
         }
 
+        SpriteClutter(item);
         return item;
     }
 

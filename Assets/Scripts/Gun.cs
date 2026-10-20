@@ -122,6 +122,7 @@ public class Gun : MonoBehaviour
 
     public int PelletsPerShot => Mathf.Max(1, pelletsPerShot);
     public Transform Muzzle => muzzle;
+    public GameObject ProjectilePrefab => projectilePrefab;
     public FireMode BaseFireMode => fireMode;
     public ReloadStyle Reloading => reloadStyle;
 

@@ -29,6 +29,7 @@ public class Thrown : MonoBehaviour
         thrown.fuseAt = Time.time + GrenadeFuse;
         thrown.model = ConsumableModel.Build(type, root.transform, ConsumablePickup.DefaultMaterial, 0.9f);
         thrown.model.localPosition = Vector3.down * 0.12f;
+        ItemSprite.ApplyFlying(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Consumable(type));
         thrown.spin = Random.onUnitSphere * 540f;
 
         // Further throws take a little longer and go a little higher.

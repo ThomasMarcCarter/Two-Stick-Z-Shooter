@@ -211,6 +211,9 @@ public partial class FloorGenerator
         obstacle.size = piece.Size;
         obstacle.carving = true;
 
+        // A boss's charge or acid wrecks it.
+        furniture.AddComponent<Smashable>();
+
         taken.AddRange(footprint);
         return true;
     }

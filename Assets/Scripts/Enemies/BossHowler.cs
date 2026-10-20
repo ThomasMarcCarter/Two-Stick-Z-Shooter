@@ -5,7 +5,8 @@ using UnityEngine;
 // of fire. Every so often, while it can see the player, it rears up glowing violet and howls:
 // a shockwave that throws the player back (and hurts if they're close), a noise the whole floor
 // hears, and zombies clawing in from the edges of the room. Below half health it howls more
-// often and calls more. Hit it while it rears up, then get clear.
+// often and calls more. Hit it while it rears up, then get clear. Up close it claws with quick
+// timed swings (Enemy's swing attack, set up in Bosses.Equip).
 [RequireComponent(typeof(Enemy))]
 public class BossHowler : MonoBehaviour, IBossMoves
 {

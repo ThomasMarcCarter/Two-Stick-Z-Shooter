@@ -3,7 +3,8 @@ using UnityEngine;
 
 // A puddle of acid from the Broodmother: a sickly green glow on the floor with bubbles popping
 // in it for a few seconds, burning the player while they stand in it (the hit's knockback pushes
-// them out). Zombies wade through it unharmed. Fades over its last second.
+// them out). Zombies wade through it unharmed. Fades over its last second. The splash breaks
+// boxes, trash and furniture where it lands (Smashable).
 public class AcidPool : MonoBehaviour
 {
     public const float Radius = 1.5f;
@@ -28,6 +29,9 @@ public class AcidPool : MonoBehaviour
         GameObject root = new GameObject("Acid Pool");
         root.transform.SetParent(room, true);
         root.transform.position = new Vector3(position.x, 0f, position.z);
+
+        // The splash eats through boxes and furniture where it lands.
+        Smashable.BreakAround(root.transform.position + Vector3.up * 0.3f, Radius * 0.7f);
 
         AcidPool pool = root.AddComponent<AcidPool>();
         pool.started = Time.time;

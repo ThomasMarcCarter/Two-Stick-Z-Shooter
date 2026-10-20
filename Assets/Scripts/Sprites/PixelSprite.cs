@@ -12,6 +12,8 @@ using UnityEngine;
 //   which keeps its pixels square at any angle. The quad lies parallel to the screen, or with
 //   Standing it stands upright like a character's (stretched up by the camera's squash), so a
 //   held gun sits parallel to its holder's body instead of cutting through it.
+//   Flat (floor litter): lying on the floor under what it follows, turned with it, like a decal.
+// Upright and Flat sprites are drawn at Scale (a prop's sprite sized to the prop).
 // Positions can be snapped to the art pixel grid (Snap, off: the camera moves smoothly).
 // DepthOffset slides it along the view (CameraFollow.ViewDirection), which an orthographic camera
 // doesn't see but the depth test does: a gun goes in front of or behind its holder that way. Frames are picked with SetFrame and set in the mesh's UVs (not a
@@ -21,7 +23,7 @@ public class PixelSprite : MonoBehaviour
 {
     public const float PixelsPerUnit = 16f;
 
-    public enum Mode { Upright, Facing }
+    public enum Mode { Upright, Facing, Flat }
 
     private static readonly Dictionary<Texture, Material> materials = new Dictionary<Texture, Material>();
     private static readonly int ShadowSquashId = Shader.PropertyToID("_SpriteShadowSquash");
@@ -57,6 +59,9 @@ public class PixelSprite : MonoBehaviour
     public float Scale { get; set; } = 1f;
     public float DepthOffset { get; set; }
     public bool MirrorY { get; set; }
+
+    // Upright: metres above the floor it stands at (a floating pickup, a wall mount).
+    public float Lift { get; set; }
     public bool Standing { get; set; }
     public Renderer Renderer => meshRenderer;
     public SpriteSheet Sheet => sheet;
@@ -161,8 +166,10 @@ public class PixelSprite : MonoBehaviour
         float stretch = mode == Mode.Upright ? 1f / squash : 1f;
         Shader.SetGlobalFloat(ShadowSquashId, squash);
 
-        if (mode == Mode.Upright && !Mathf.Approximately(stretch, builtStretch))
+        if (mode == Mode.Upright && (!Mathf.Approximately(stretch, builtStretch) || Scale != builtScale))
             BuildMesh(stretch);
+        else if (mode == Mode.Flat && (builtStretch != 1f || Scale != builtScale))
+            BuildMesh(1f);
         else if (mode == Mode.Facing)
             BuildFacingMesh();
 
@@ -172,8 +179,14 @@ public class PixelSprite : MonoBehaviour
         if (mode == Mode.Upright)
         {
             Vector3 feet = Follow != null ? Follow.position : transform.position;
-            position = new Vector3(feet.x, 0f, feet.z);
+            position = new Vector3(feet.x, Lift, feet.z);
             rotation = Quaternion.Euler(0f, view.eulerAngles.y, 0f);
+        }
+        else if (mode == Mode.Flat)
+        {
+            Vector3 at = Follow != null ? Follow.position : transform.position;
+            position = new Vector3(at.x, Lift + 0.006f, at.z);
+            rotation = Quaternion.Euler(90f, Follow != null ? Follow.eulerAngles.y : 0f, 0f);
         }
         else
         {
@@ -209,23 +222,8 @@ public class PixelSprite : MonoBehaviour
         builtMirrorY = MirrorY;
         builtStretch = stretch;
 
-        float ppu = Mathf.Max(1f, sheet.pixelsPerUnit);
-        float x0 = -sheet.pivot.x / ppu, x1 = (sheet.frameWidth - sheet.pivot.x) / ppu;
-        float y0 = -sheet.pivot.y / ppu, y1 = (sheet.frameHeight - sheet.pivot.y) / ppu;
-        Vector2[] corners = { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x0, y1), new Vector2(x1, y1) };
-        float radians = Angle * Mathf.Deg2Rad;
-        float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
-
         for (int i = 0; i < 4; i++)
-        {
-            Vector2 c = corners[i] * Scale;
-
-            if (MirrorY)
-                c.y = -c.y;
-
-            Vector2 turned = new Vector2(c.x * cos - c.y * sin, c.x * sin + c.y * cos);
-            vertices[i] = new Vector3(turned.x, turned.y / Mathf.Max(0.01f, stretch), 0f);
-        }
+            vertices[i] = FacingCorner(i, stretch);
 
         bool first = mesh.vertexCount == 0;
         mesh.vertices = vertices;
@@ -240,6 +238,39 @@ public class PixelSprite : MonoBehaviour
         mesh.RecalculateBounds();
     }
 
+    // One corner of the facing quad, in its own space: mirrored, scaled and turned as it should
+    // look on screen, then squashed by the screen stretch.
+    private Vector3 FacingCorner(int i, float stretch)
+    {
+        float ppu = Mathf.Max(1f, sheet.pixelsPerUnit);
+        Vector2 c = new Vector2(
+            (i % 2 == 0 ? -sheet.pivot.x : sheet.frameWidth - sheet.pivot.x) / ppu,
+            (i < 2 ? -sheet.pivot.y : sheet.frameHeight - sheet.pivot.y) / ppu) * Scale;
+
+        if (MirrorY)
+            c.y = -c.y;
+
+        float radians = Angle * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+        return new Vector3(c.x * cos - c.y * sin, (c.x * sin + c.y * cos) / Mathf.Max(0.01f, stretch), 0f);
+    }
+
+    // A Standing facing sprite: how far its lowest corner reaches below Position, in metres of
+    // height, at the current Angle/Scale/MirrorY (so it can be kept out of the floor).
+    public float StandingDrop()
+    {
+        if (sheet == null)
+            return 0f;
+
+        float stretch = Mathf.Max(0.25f, CameraFollow.VerticalScale);
+        float lowest = 0f;
+
+        for (int i = 0; i < 4; i++)
+            lowest = Mathf.Min(lowest, FacingCorner(i, stretch).y);
+
+        return -lowest;
+    }
+
     // To the nearest art pixel across and up the screen.
     public static Vector3 SnapToPixels(Vector3 position, Transform view, float pixelsPerUnit = PixelsPerUnit)
     {
@@ -252,7 +283,8 @@ public class PixelSprite : MonoBehaviour
     private void BuildMesh(float stretch)
     {
         builtStretch = stretch;
-        float ppu = Mathf.Max(1f, sheet.pixelsPerUnit);
+        builtScale = Scale;
+        float ppu = Mathf.Max(1f, sheet.pixelsPerUnit) / Mathf.Max(0.01f, Scale);
         float x0 = -sheet.pivot.x / ppu;
         float x1 = (sheet.frameWidth - sheet.pivot.x) / ppu;
         float y0 = -sheet.pivot.y / ppu * stretch;

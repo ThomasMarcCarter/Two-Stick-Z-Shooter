@@ -62,7 +62,11 @@ public partial class FloorGenerator
         float speed = bossSpeed * Bosses.SpeedMultiplier(kind);
         Enemy boss = SpawnEnemy(room, room.transform.position, Bosses.Size(kind), health, speed, bossContactDamage, "Boss", EnemyKind.Walker);
         boss.Heavy = true;
-        if (CharacterVisuals.Current != null)
+        SpriteSheet bossSprite = SpriteVisuals.Current != null ? SpriteVisuals.Current.For(kind) : null;
+
+        if (bossSprite != null)
+            CharacterVisuals.AttachSpriteToEnemy(boss, bossSprite);
+        else if (CharacterVisuals.Current != null)
             CharacterVisuals.AttachToEnemy(boss, CharacterVisuals.Current.For(kind), Bosses.AnimationStyle(kind));
 
         Bosses.Equip(boss, kind, (position, minionKind) => SpawnMinion(room, position, minionKind));
