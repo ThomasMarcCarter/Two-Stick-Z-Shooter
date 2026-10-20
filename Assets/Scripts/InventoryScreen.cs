@@ -53,7 +53,6 @@ public partial class InventoryScreen : MonoBehaviour
     [SerializeField] private float cursorSpeed = 700f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private Vector2 size = new Vector2(820f, 470f);
 
     private const float CardHeight = 104f;
@@ -146,7 +145,7 @@ public partial class InventoryScreen : MonoBehaviour
 
         canvas = GetComponentInParent<Canvas>();
 
-        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource = GameAudio.Route(gameObject.AddComponent<AudioSource>());
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
         audioSource.ignoreListenerPause = true;
@@ -379,9 +378,9 @@ public partial class InventoryScreen : MonoBehaviour
         CallbackGraphic drawing = panel.AddComponent<CallbackGraphic>();
         drawing.Draw = DrawPanel;
 
-        Color dim = Fade(phosphor, 0.55f);
+        Color dim = Fade(UiColours.Phosphor, 0.55f);
 
-        MakeText(panel.transform, "> INVENTORY", 26, new Rect(Left, Top - 34f, 400f, 34f), phosphor, TextAlignmentOptions.Left, 10f);
+        MakeText(panel.transform, "> INVENTORY", 26, new Rect(Left, Top - 34f, 400f, 34f), UiColours.Phosphor, TextAlignmentOptions.Left, 10f);
         hint = MakeText(panel.transform, "", 12, new Rect(Right - 360f, Top - 30f, 360f, 20f), dim, TextAlignmentOptions.Right);
         MakeText(panel.transform, "WEAPONS", 13, new Rect(Left, Top - 60f, 300f, 20f), dim, TextAlignmentOptions.Left);
         MakeText(panel.transform, "BACKPACK", 13, new Rect(Middle + 14f, Top - 60f, 200f, 20f), dim, TextAlignmentOptions.Left);
@@ -393,7 +392,7 @@ public partial class InventoryScreen : MonoBehaviour
         for (int i = 0; i < QuickBar.SlotCount; i++)
         {
             Rect slot = QuickSlotRect(i);
-            quickMain[i] = MakeText(panel.transform, "", 14, new Rect(slot.xMin + 2f, slot.yMin + 17f, slot.width - 4f, 20f), phosphor, TextAlignmentOptions.Center, 2f);
+            quickMain[i] = MakeText(panel.transform, "", 14, new Rect(slot.xMin + 2f, slot.yMin + 17f, slot.width - 4f, 20f), UiColours.Phosphor, TextAlignmentOptions.Center, 2f);
             quickSub[i] = MakeLabel(panel.transform, new Rect(slot.xMin + 2f, slot.yMin + 6f, slot.width - 4f, 12f), dim);
         }
 
@@ -405,7 +404,7 @@ public partial class InventoryScreen : MonoBehaviour
         {
             Rect card = CardRect(i);
             cardLabels[i] = MakeText(panel.transform, "", 11, new Rect(card.xMin + 10f, card.yMax - 22f, card.width - 20f, 16f), dim, TextAlignmentOptions.Left);
-            cardNames[i] = MakeText(panel.transform, "", 18, new Rect(card.xMin + 170f, card.yMax - 52f, card.width - 180f, 24f), phosphor, TextAlignmentOptions.Left);
+            cardNames[i] = MakeText(panel.transform, "", 18, new Rect(card.xMin + 170f, card.yMax - 52f, card.width - 180f, 24f), UiColours.Phosphor, TextAlignmentOptions.Left);
             cardDetails[i] = MakeText(panel.transform, "", 12, new Rect(card.xMin + 170f, card.yMin + 10f, card.width - 180f, 42f), dim, TextAlignmentOptions.TopLeft);
             cardDetails[i].textWrappingMode = TextWrappingModes.Normal;
 
@@ -418,7 +417,7 @@ public partial class InventoryScreen : MonoBehaviour
 
         // Melee: its stats and upgrades, under the sidearm.
         Rect lastBar = ModBarRect(1);
-        meleeStats = MakeText(panel.transform, "", 11, new Rect(Left, lastBar.yMin - 22f, Middle - 14f - Left, 18f), phosphor, TextAlignmentOptions.Left, 3f);
+        meleeStats = MakeText(panel.transform, "", 11, new Rect(Left, lastBar.yMin - 22f, Middle - 14f - Left, 18f), UiColours.Phosphor, TextAlignmentOptions.Left, 3f);
         meleeStats.richText = true;
         meleeUpgrades = MakeText(panel.transform, "", 10, new Rect(Left, lastBar.yMin - 38f, Middle - 14f - Left, 16f), dim, TextAlignmentOptions.Left, 3f);
         meleeUpgrades.richText = true;
@@ -426,7 +425,7 @@ public partial class InventoryScreen : MonoBehaviour
         for (int i = 0; i < Backpack.CellCount; i++)
         {
             Rect cell = CellRect(i);
-            cellMain[i] = MakeText(panel.transform, "", 15, new Rect(cell.xMin + 2f, cell.yMin + 22f, cell.width - 4f, 22f), phosphor, TextAlignmentOptions.Center, 2f);
+            cellMain[i] = MakeText(panel.transform, "", 15, new Rect(cell.xMin + 2f, cell.yMin + 22f, cell.width - 4f, 22f), UiColours.Phosphor, TextAlignmentOptions.Center, 2f);
             cellSub[i] = MakeLabel(panel.transform, new Rect(cell.xMin + 2f, cell.yMin + 9f, cell.width - 4f, 12f), dim);
         }
 
@@ -447,10 +446,10 @@ public partial class InventoryScreen : MonoBehaviour
         drawing.Draw = DrawOverlay;
 
         float cell = CellSize;
-        ghostMain = MakeText(overlay, "", 15, new Rect(0f, 0f, cell * 0.9f, 22f), phosphor, TextAlignmentOptions.Center, 2f);
-        ghostSub = MakeLabel(overlay, new Rect(0f, 0f, cell * 0.9f, 12f), Fade(phosphor, 0.7f));
+        ghostMain = MakeText(overlay, "", 15, new Rect(0f, 0f, cell * 0.9f, 22f), UiColours.Phosphor, TextAlignmentOptions.Center, 2f);
+        ghostSub = MakeLabel(overlay, new Rect(0f, 0f, cell * 0.9f, 12f), Fade(UiColours.Phosphor, 0.7f));
 
-        tooltipText = MakeText(overlay, "", 14, new Rect(0f, 0f, 260f, 80f), phosphor, TextAlignmentOptions.TopLeft, 3f);
+        tooltipText = MakeText(overlay, "", 14, new Rect(0f, 0f, 260f, 80f), UiColours.Phosphor, TextAlignmentOptions.TopLeft, 3f);
         tooltipText.richText = true;
         tooltipRect = tooltipText.rectTransform;
     }

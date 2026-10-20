@@ -17,9 +17,6 @@ public class Minimap : MaskableGraphic
     [SerializeField] private float pixelsPerUnit = 3f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color background = new Color(0f, 0.07f, 0.03f, 0.85f);
-    [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [SerializeField] private float gridSpacing = 16f;
     [SerializeField] private float pulseInterval = 1.2f;
 
@@ -54,7 +51,7 @@ public class Minimap : MaskableGraphic
         if (room == null)
             status = "NO SIGNAL";
         else if (room.IsLocked)
-            status = $"<color=#{ColorUtility.ToHtmlStringRGB(hostile)}>! ALERT</color>  HOSTILES {room.Enemies.Count}";
+            status = $"<color=#{ColorUtility.ToHtmlStringRGB(UiColours.Hostile)}>! ALERT</color>  HOSTILES {room.Enemies.Count}";
         else
             status = room.Type == RoomType.Boss ? "AREA CLEAR  // BOSS DOWN" : "AREA CLEAR";
 
@@ -78,7 +75,7 @@ public class Minimap : MaskableGraphic
             ? new Vector2(player.position.x, player.position.z) * pixelsPerUnit
             : Vector2.zero;
 
-        AddRect(vh, bounds, background);
+        AddRect(vh, bounds, UiColours.RadarBackground);
         DrawGrid(vh, bounds, centre, playerMap);
         DrawRings(vh, centre, radius);
 
@@ -100,7 +97,7 @@ public class Minimap : MaskableGraphic
     private void DrawGrid(VertexHelper vh, Rect bounds, Vector2 centre, Vector2 playerMap)
     {
         // Grid is fixed to the world, so it scrolls as the player moves.
-        Color gridColour = Fade(phosphor, 0.07f);
+        Color gridColour = Fade(UiColours.Phosphor, 0.07f);
         Vector2 origin = centre - playerMap;
 
         for (float x = bounds.xMin + Mathf.Repeat(origin.x - bounds.xMin, gridSpacing); x < bounds.xMax; x += gridSpacing)
@@ -112,13 +109,13 @@ public class Minimap : MaskableGraphic
 
     private void DrawRings(VertexHelper vh, Vector2 centre, float radius)
     {
-        Color ringColour = Fade(phosphor, 0.18f);
+        Color ringColour = Fade(UiColours.Phosphor, 0.18f);
 
         Ring(vh, centre, radius / 3f, 1f, ringColour);
         Ring(vh, centre, radius * 2f / 3f, 1f, ringColour);
         Ring(vh, centre, radius, 1f, ringColour);
 
-        Color crossColour = Fade(phosphor, 0.12f);
+        Color crossColour = Fade(UiColours.Phosphor, 0.12f);
         AddRect(vh, new Rect(centre.x - radius, centre.y - 0.5f, radius * 2f, 1f), crossColour);
         AddRect(vh, new Rect(centre.x - 0.5f, centre.y - radius, 1f, radius * 2f), crossColour);
     }
@@ -137,11 +134,11 @@ public class Minimap : MaskableGraphic
             float fillAlpha = isCurrent ? 0.28f : room.Visited ? 0.12f : 0.03f;
 
             foreach (Rect block in room.Blocks)
-                AddRect(vh, MapRect(block, centre, playerMap), Fade(phosphor, fillAlpha));
+                AddRect(vh, MapRect(block, centre, playerMap), Fade(UiColours.Phosphor, fillAlpha));
 
             Color outline = room.IsLocked && Blink()
-                ? hostile
-                : Fade(phosphor, room.Visited ? 0.9f : 0.35f);
+                ? UiColours.Hostile
+                : Fade(UiColours.Phosphor, room.Visited ? 0.9f : 0.35f);
 
             float thickness = isCurrent ? 2f : 1f;
 
@@ -155,7 +152,7 @@ public class Minimap : MaskableGraphic
     // Corridors running east or north only, so each one is drawn once.
     private void DrawCorridors(VertexHelper vh, Room room, Vector2 centre, Vector2 playerMap)
     {
-        Color colour = Fade(phosphor, 0.5f);
+        Color colour = Fade(UiColours.Phosphor, 0.5f);
 
         foreach (RoomConnection connection in room.Connections)
         {
@@ -193,9 +190,9 @@ public class Minimap : MaskableGraphic
             Vector2 position = MapPoint(room.transform.position, centre, playerMap);
 
             if (MapSymbols.PinToEdge(clip, edgeInset, position, out Vector2 pinned, out Vector2 direction))
-                MapSymbols.DrawEdgeMarker(vh, room.Type, pinned, direction, 8f, phosphor, hostile);
+                MapSymbols.DrawEdgeMarker(vh, room.Type, pinned, direction, 8f, UiColours.Phosphor, UiColours.Hostile);
             else
-                MapSymbols.DrawMarker(vh, room.Type, position, 10f, phosphor, hostile);
+                MapSymbols.DrawMarker(vh, room.Type, position, 10f, UiColours.Phosphor, UiColours.Hostile);
         }
     }
 
@@ -212,7 +209,7 @@ public class Minimap : MaskableGraphic
                 Vector2 at = MapPoint(hatch.Position, centre, playerMap);
 
                 if (InsideClip(at, 7f))
-                    MapSymbols.DrawHatch(vh, at, 11f, phosphor);
+                    MapSymbols.DrawHatch(vh, at, 11f, UiColours.Phosphor);
             }
         }
 
@@ -221,7 +218,7 @@ public class Minimap : MaskableGraphic
             Vector2 position = MapPoint(marker.Position, centre, playerMap);
 
             if (InsideClip(position, 7f))
-                MapSymbols.DrawStation(vh, marker.Station, position, 11f, phosphor, marker.Abandoned);
+                MapSymbols.DrawStation(vh, marker.Station, position, 11f, UiColours.Phosphor, marker.Abandoned);
         }
     }
 
@@ -243,14 +240,14 @@ public class Minimap : MaskableGraphic
                 continue;
 
             float blipSize = enemy.transform.localScale.x > 1.5f ? 9f : 5f;
-            AddRect(vh, new Rect(blip - Vector2.one * blipSize / 2f, Vector2.one * blipSize), hostile);
+            AddRect(vh, new Rect(blip - Vector2.one * blipSize / 2f, Vector2.one * blipSize), UiColours.Hostile);
         }
     }
 
     private void DrawPlayer(VertexHelper vh, Vector2 centre)
     {
         float pulse = Mathf.Repeat(Time.time, pulseInterval) / pulseInterval;
-        Ring(vh, centre, 4f + pulse * 22f, 1.5f, Fade(phosphor, (1f - pulse) * 0.6f));
+        Ring(vh, centre, 4f + pulse * 22f, 1.5f, Fade(UiColours.Phosphor, (1f - pulse) * 0.6f));
 
         // Arrow pointing where the player is aiming.
         Vector2 forward = new Vector2(player.forward.x, player.forward.z);
@@ -258,9 +255,9 @@ public class Minimap : MaskableGraphic
         Vector2 side = new Vector2(-forward.y, forward.x);
 
         int index = vh.currentVertCount;
-        vh.AddVert(centre + forward * 8f, phosphor, Vector2.zero);
-        vh.AddVert(centre - forward * 5f + side * 5f, phosphor, Vector2.zero);
-        vh.AddVert(centre - forward * 5f - side * 5f, phosphor, Vector2.zero);
+        vh.AddVert(centre + forward * 8f, UiColours.Phosphor, Vector2.zero);
+        vh.AddVert(centre - forward * 5f + side * 5f, UiColours.Phosphor, Vector2.zero);
+        vh.AddVert(centre - forward * 5f - side * 5f, UiColours.Phosphor, Vector2.zero);
         vh.AddTriangle(index, index + 1, index + 2);
     }
 
@@ -269,10 +266,10 @@ public class Minimap : MaskableGraphic
         Room room = floor != null ? floor.CurrentRoom : null;
         bool alert = room != null && room.IsLocked;
 
-        Outline(vh, bounds, 1f, alert && Blink() ? hostile : Fade(phosphor, 0.5f));
+        Outline(vh, bounds, 1f, alert && Blink() ? UiColours.Hostile : Fade(UiColours.Phosphor, 0.5f));
 
         // Heavier corner brackets.
-        Color bracket = alert ? hostile : phosphor;
+        Color bracket = alert ? UiColours.Hostile : UiColours.Phosphor;
         const float length = 14f;
         const float thickness = 3f;
 

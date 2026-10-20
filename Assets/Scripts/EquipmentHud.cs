@@ -29,8 +29,6 @@ public class EquipmentHud : MaskableGraphic
     [SerializeField] private float gap = 6f;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [Tooltip("At or below this fraction of a magazine the ammo turns red.")]
     [SerializeField, Range(0f, 1f)] private float lowAmmo = 0.25f;
     [Tooltip("How long the \"+12 9MM\" pickup notice stays up, in seconds.")]
@@ -92,7 +90,7 @@ public class EquipmentHud : MaskableGraphic
         // menu, transitions, the full map) cover it too, rather than it landing on top of them.
         if (weapons != null)
         {
-            QuickBarHud bar = QuickBarHud.Create(transform.parent, weapons, font, phosphor, margin + new Vector2(width + 20f, 0f));
+            QuickBarHud bar = QuickBarHud.Create(transform.parent, weapons, font, UiColours.Phosphor, margin + new Vector2(width + 20f, 0f));
             bar.transform.SetSiblingIndex(transform.GetSiblingIndex() + 1);
         }
     }
@@ -134,19 +132,19 @@ public class EquipmentHud : MaskableGraphic
 
     private void BuildText()
     {
-        Color dim = Fade(phosphor, 0.6f);
+        Color dim = Fade(UiColours.Phosphor, 0.6f);
         Rect active = ActiveRect;
         Rect holstered = HolsteredRect;
 
-        header = MakeText("Header", "> EQUIPMENT", 13, new Rect(0f, active.yMax + 3f, width, 18f), phosphor, TextAlignmentOptions.BottomLeft);
-        activeSlotLabel = MakeText("Active Slot", "", 11, new Rect(8f, active.yMax - 18f, width - 16f, 16f), phosphor, TextAlignmentOptions.TopLeft);
-        activeName = MakeText("Active Name", "", 16, new Rect(124f, active.yMax - 40f, width - 132f, 20f), phosphor, TextAlignmentOptions.Left);
-        activeAmmo = MakeText("Active Ammo", "", 26, new Rect(124f, active.yMin + 22f, width - 132f, 32f), phosphor, TextAlignmentOptions.Left);
-        activeStatus = MakeText("Active Status", "", 11, new Rect(124f, active.yMin + 16f, width - 132f, 14f), phosphor, TextAlignmentOptions.Right);
-        holsteredSlotLabel = MakeText("Holstered Slot", "", 10, new Rect(66f, holstered.yMax - 16f, holstered.width - 72f, 14f), Fade(phosphor, 0.25f), TextAlignmentOptions.TopLeft);
-        holsteredInfo = MakeText("Holstered Info", "", 13, new Rect(66f, 4f, holstered.width - 72f, 18f), Fade(phosphor, 0.3f), TextAlignmentOptions.BottomLeft);
+        header = MakeText("Header", "> EQUIPMENT", 13, new Rect(0f, active.yMax + 3f, width, 18f), UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
+        activeSlotLabel = MakeText("Active Slot", "", 11, new Rect(8f, active.yMax - 18f, width - 16f, 16f), UiColours.Phosphor, TextAlignmentOptions.TopLeft);
+        activeName = MakeText("Active Name", "", 16, new Rect(124f, active.yMax - 40f, width - 132f, 20f), UiColours.Phosphor, TextAlignmentOptions.Left);
+        activeAmmo = MakeText("Active Ammo", "", 26, new Rect(124f, active.yMin + 22f, width - 132f, 32f), UiColours.Phosphor, TextAlignmentOptions.Left);
+        activeStatus = MakeText("Active Status", "", 11, new Rect(124f, active.yMin + 16f, width - 132f, 14f), UiColours.Phosphor, TextAlignmentOptions.Right);
+        holsteredSlotLabel = MakeText("Holstered Slot", "", 10, new Rect(66f, holstered.yMax - 16f, holstered.width - 72f, 14f), Fade(UiColours.Phosphor, 0.25f), TextAlignmentOptions.TopLeft);
+        holsteredInfo = MakeText("Holstered Info", "", 13, new Rect(66f, 4f, holstered.width - 72f, 18f), Fade(UiColours.Phosphor, 0.3f), TextAlignmentOptions.BottomLeft);
 
-        pickupNotice = MakeText("Pickup Notice", "", 13, new Rect(0f, active.yMax + 22f, width, 18f), phosphor, TextAlignmentOptions.BottomLeft);
+        pickupNotice = MakeText("Pickup Notice", "", 13, new Rect(0f, active.yMax + 22f, width, 18f), UiColours.Phosphor, TextAlignmentOptions.BottomLeft);
         activeAmmo.characterSpacing = 2f;
     }
 
@@ -220,7 +218,7 @@ public class EquipmentHud : MaskableGraphic
         activeAmmo.text = ammo;
         activeAmmo.color = AmmoColour(gun);
         activeStatus.text = status;
-        activeStatus.color = gun != null && !gun.IsReloading && (gun.GetCurrentAmmo() == 0 || gun.Reserve == 0) ? hostile : phosphor;
+        activeStatus.color = gun != null && !gun.IsReloading && (gun.GetCurrentAmmo() == 0 || gun.Reserve == 0) ? UiColours.Hostile : UiColours.Phosphor;
         holsteredSlotLabel.text = holsteredLabel;
         holsteredInfo.text = holsteredText;
     }
@@ -254,9 +252,9 @@ public class EquipmentHud : MaskableGraphic
     private Color AmmoColour(Gun gun)
     {
         if (gun == null)
-            return Fade(phosphor, 0.5f);
+            return Fade(UiColours.Phosphor, 0.5f);
 
-        return gun.GetCurrentAmmo() <= Mathf.FloorToInt(gun.GetMagazineSize() * lowAmmo) ? hostile : phosphor;
+        return gun.GetCurrentAmmo() <= Mathf.FloorToInt(gun.GetMagazineSize() * lowAmmo) ? UiColours.Hostile : UiColours.Phosphor;
     }
 
     private static bool Blink()
@@ -282,24 +280,24 @@ public class EquipmentHud : MaskableGraphic
         Rect active = Offset(ActiveRect, origin);
         float flash = 1f - Mathf.Clamp01((Time.unscaledTime - switchedAt) / SwitchFlashTime);
         FillRect(vh, active, new Color(0f, 0.07f, 0.03f, 0.85f));
-        FillRect(vh, active, Fade(phosphor, 0.05f + 0.25f * flash));
-        OutlineRect(vh, active, 2f, phosphor);
-        Brackets(vh, active, phosphor);
-        FillRect(vh, new Rect(active.xMin - 9f, active.yMin, 4f, active.height), phosphor);
+        FillRect(vh, active, Fade(UiColours.Phosphor, 0.05f + 0.25f * flash));
+        OutlineRect(vh, active, 2f, UiColours.Phosphor);
+        Brackets(vh, active, UiColours.Phosphor);
+        FillRect(vh, new Rect(active.xMin - 9f, active.yMin, 4f, active.height), UiColours.Phosphor);
 
         if (gun != null)
         {
-            WeaponSilhouette.Draw(vh, gun.HudIcon, Offset(ActiveIconArea, origin), phosphor);
+            WeaponSilhouette.Draw(vh, gun.HudIcon, Offset(ActiveIconArea, origin), UiColours.Phosphor);
             DrawPips(vh, gun, Offset(PipArea, origin));
         }
 
         // Holstered panel: smaller, unlit and faded.
         Rect slot = Offset(HolsteredRect, origin);
         FillRect(vh, slot, new Color(0f, 0.04f, 0.02f, 0.5f));
-        OutlineRect(vh, slot, 1f, Fade(phosphor, 0.18f));
+        OutlineRect(vh, slot, 1f, Fade(UiColours.Phosphor, 0.18f));
 
         if (holstered != null)
-            WeaponSilhouette.Draw(vh, holstered.HudIcon, Offset(HolsteredIconArea, origin), Fade(phosphor, 0.22f));
+            WeaponSilhouette.Draw(vh, holstered.HudIcon, Offset(HolsteredIconArea, origin), Fade(UiColours.Phosphor, 0.22f));
     }
 
     // One pip per round in the magazine, filled for rounds loaded; a thin bar shows reload progress.
@@ -318,13 +316,13 @@ public class EquipmentHud : MaskableGraphic
             if (i < loaded)
                 FillRect(vh, pip, full);
             else
-                OutlineRect(vh, pip, 1f, Fade(phosphor, 0.35f));
+                OutlineRect(vh, pip, 1f, Fade(UiColours.Phosphor, 0.35f));
         }
 
         if (gun.IsReloading)
         {
             Rect bar = new Rect(area.xMin, area.yMin - 4f, area.width * gun.ReloadProgress, 2f);
-            FillRect(vh, bar, phosphor);
+            FillRect(vh, bar, UiColours.Phosphor);
         }
     }
 

@@ -1,10 +1,20 @@
 using UnityEngine;
 
+// The game camera: follows the player at a fixed height, leaning a little towards the cursor,
+// kept inside the current room so it never shows the void past the walls, and shaken by
+// explosions and heavy hits. Works with the orthographic camera the game uses (Gungeon-style:
+// the camera's size sets how much floor is in view) and with a perspective one. It can lean back
+// from straight down by `tilt` degrees to show the faces of the walls; all the following and
+// clamping is done on the floor point under the middle of the screen, so any tilt works.
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] private Transform target;
     [SerializeField] private float smoothSpeed = 10f;
     [SerializeField] private float mouseLookAhead = 0.5f;
+
+    [Tooltip("Degrees the camera leans back from looking straight down (0 = straight down). "
+        + "More shows more of the walls' faces and less of the floor's depth.")]
+    [SerializeField, Range(0f, 60f)] private float tilt = 0f;
 
     [Tooltip("Optional. When set, the camera stays inside the current room's area.")]
     [SerializeField] private FloorGenerator floor;
@@ -36,6 +46,9 @@ public class CameraFollow : MonoBehaviour
 
     private void LateUpdate()
     {
+        // Set every frame, so the tilt can be tried out live in the Inspector.
+        transform.rotation = Quaternion.Euler(90f - tilt, 0f, 0f);
+
         // The shake is taken off before following, so it never drags the camera anywhere.
         transform.position -= shakeOffset;
 
@@ -55,6 +68,7 @@ public class CameraFollow : MonoBehaviour
     public void SnapToTarget()
     {
         shakeOffset = Vector3.zero;
+        transform.rotation = Quaternion.Euler(90f - tilt, 0f, 0f);
         transform.position = DesiredPosition();
     }
 
@@ -65,25 +79,45 @@ public class CameraFollow : MonoBehaviour
         // that fed the camera's own motion back into itself and dragged the aim around.
         Vector3 lookAhead = GetCursorOffset();
 
-        Vector3 desiredPosition = target.position + lookAhead * mouseLookAhead;
+        Vector3 focus = ClampToRoom(target.position + lookAhead * mouseLookAhead);
+        focus.y = 0f;
 
-        desiredPosition.y = transform.position.y;
-        return ClampToRoom(desiredPosition);
+        // The camera sits at its height, back from the floor point it looks at by the tilt.
+        float height = transform.position.y;
+        return focus + new Vector3(0f, height, -height * Mathf.Tan(tilt * Mathf.Deg2Rad));
     }
 
-    private Vector3 ClampToRoom(Vector3 position)
+    private Vector3 ClampToRoom(Vector3 focus)
     {
         if (floor == null || !floor.TryGetCameraArea(target.position, out Rect area))
-            return position;
+            return focus;
 
-        // Ground-plane half extents the camera can see, assuming it looks straight down.
-        float halfHeight = transform.position.y * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-        float halfWidth = halfHeight * cam.aspect;
+        Vector2 half = HalfViewOnFloor();
+        focus.x = ClampAxis(focus.x, area.xMin + half.x, area.xMax - half.x);
+        focus.z = ClampAxis(focus.z, area.yMin + half.y, area.yMax - half.y);
+        return focus;
+    }
 
-        position.x = ClampAxis(position.x, area.xMin + halfWidth, area.xMax - halfWidth);
-        position.z = ClampAxis(position.z, area.yMin + halfHeight, area.yMax - halfHeight);
+    // How far the view reaches across the floor either side of the screen's middle (x across,
+    // y up the screen). A tilt stretches the view up the screen across more floor.
+    private Vector2 HalfViewOnFloor()
+    {
+        float lean = Mathf.Cos(tilt * Mathf.Deg2Rad);
+        float halfHeight;
 
-        return position;
+        if (cam.orthographic)
+        {
+            halfHeight = cam.orthographicSize / lean;
+        }
+        else
+        {
+            // Looking straight down (near enough for a small tilt).
+            float distance = transform.position.y / lean;
+            halfHeight = distance * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) / lean;
+        }
+
+        float halfWidth = (cam.orthographic ? cam.orthographicSize : halfHeight * lean) * cam.aspect;
+        return new Vector2(halfWidth, halfHeight);
     }
 
     // If the area is smaller than the view on this axis, centre on it instead.
@@ -93,7 +127,7 @@ public class CameraFollow : MonoBehaviour
     }
 
     // Ground-plane offset from the point under the screen centre to the point under the cursor.
-    // For a camera looking straight down this doesn't change as the camera moves.
+    // This doesn't change as the camera moves, whatever its projection or tilt.
     private Vector3 GetCursorOffset()
     {
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);

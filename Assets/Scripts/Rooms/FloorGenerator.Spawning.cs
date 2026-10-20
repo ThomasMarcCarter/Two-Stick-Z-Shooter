@@ -151,14 +151,14 @@ public partial class FloorGenerator
     // Some combat rooms have an ammo crate, somewhere clear of the doorways and the enemies.
     private void SpawnAmmoCrate(Room room, List<Vector3> enemies)
     {
-        if (room.Type != RoomType.Normal || ammoMaterial == null || rng.NextDouble() >= ammoCrateChance)
+        if (room.Type != RoomType.Normal || ammoMaterial == null || rng.NextDouble() >= Drops.ammoCrateChance)
             return;
 
         if (!TryFindSpawnPoint(room, DoorwayPositions(room), enemies, out Vector3 position))
             return;
 
         AmmoType type = PickAmmoType((float)rng.NextDouble(), (float)rng.NextDouble());
-        AmmoPickup.Spawn(type, DropAmount(type, crateMultiplier, (float)rng.NextDouble()), position, room.transform, ammoMaterial, true);
+        AmmoPickup.Spawn(type, DropAmount(type, Drops.crateMultiplier, (float)rng.NextDouble()), position, room.transform, ammoMaterial, true);
     }
 
     // A dead enemy sometimes leaves ammo (a boss's goes in its supply crate instead).
@@ -175,7 +175,7 @@ public partial class FloorGenerator
     private AmmoType PickAmmoType(float biasRoll, float pickRoll)
     {
         List<AmmoType> held = HeldAmmoTypes();
-        List<AmmoType> pool = held.Count > 0 && biasRoll < heldGunAmmoBias ? held : new List<AmmoType>(AmmoInfo.All);
+        List<AmmoType> pool = held.Count > 0 && biasRoll < Drops.heldGunAmmoBias ? held : new List<AmmoType>(AmmoInfo.All);
         return pool[Mathf.Min(pool.Count - 1, (int)(pickRoll * pool.Count))];
     }
 

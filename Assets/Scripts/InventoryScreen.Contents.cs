@@ -204,7 +204,7 @@ public partial class InventoryScreen
 
             if (quick == null)
             {
-                tooltipAccent = Fade(phosphor, 0.5f);
+                tooltipAccent = Fade(UiColours.Phosphor, 0.5f);
                 return $"QUICK SLOT {spot.Index + 1}\n<alpha=#88><size=85%>EMPTY // DRAG A CONSUMABLE HERE</size>";
             }
 
@@ -222,7 +222,7 @@ public partial class InventoryScreen
 
             if (fitted == null)
             {
-                tooltipAccent = Fade(phosphor, 0.5f);
+                tooltipAccent = Fade(UiColours.Phosphor, 0.5f);
                 return $"{WeaponAttachment.SlotName(ModSlots[spot.Slot])} SLOT\n<alpha=#88><size=85%>EMPTY // DRAG A MOD HERE TO FIT IT</size>";
             }
 

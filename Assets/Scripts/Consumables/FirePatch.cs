@@ -86,7 +86,7 @@ public class FirePatch : MonoBehaviour
         fire.glow.range = Radius * 3.5f;
         fire.glow.shadows = LightShadows.None;
 
-        fire.crackle = root.AddComponent<AudioSource>();
+        fire.crackle = GameAudio.Route(root.AddComponent<AudioSource>());
         fire.crackle.clip = SoundFX.Pick(SoundFX.Clips("fire.loop", 1, i => ProceduralAudio.FireLoop()));
         fire.crackle.loop = true;
         fire.crackle.spatialBlend = 1f;

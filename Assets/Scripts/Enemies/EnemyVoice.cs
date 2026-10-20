@@ -36,7 +36,7 @@ public class EnemyVoice : MonoBehaviour
     {
         enemy = GetComponent<Enemy>();
 
-        source = gameObject.AddComponent<AudioSource>();
+        source = GameAudio.Route(gameObject.AddComponent<AudioSource>());
         source.playOnAwake = false;
         source.spatialBlend = 1f;
         source.rolloffMode = AudioRolloffMode.Linear;

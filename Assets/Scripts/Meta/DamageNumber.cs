@@ -45,6 +45,9 @@ public class DamageNumber : MonoBehaviour
         if (camera != null)
             transform.rotation = camera.transform.rotation;
 
+        // Hidden under menus and screens, like the other labels over the world.
+        text.enabled = !GameFlow.ScreenOverWorld;
+
         Color colour = text.color;
         colour.a = 1f - Mathf.Pow(age / Life, 2f);
         text.color = colour;

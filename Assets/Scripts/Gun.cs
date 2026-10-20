@@ -293,7 +293,7 @@ public class Gun : MonoBehaviour
     {
         Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
 
-        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+        Plane groundPlane = new Plane(Vector3.up, Vector3.up * ShotHeight);
 
         if (!groundPlane.Raycast(ray, out float distance))
             return;

@@ -85,7 +85,7 @@ public class Crosshair : MaskableGraphic
             return circleRadius;
 
         Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
-        Plane ground = new Plane(Vector3.up, Vector3.zero);
+        Plane ground = new Plane(Vector3.up, Vector3.up * Gun.ShotHeight);
 
         if (!ground.Raycast(ray, out float hit))
             return circleRadius;

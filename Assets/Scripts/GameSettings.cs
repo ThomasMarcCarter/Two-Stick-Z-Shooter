@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Audio and video options, saved to PlayerPrefs and applied when the game starts and whenever
-// one changes (from the settings screen's AUDIO / VIDEO page). Master x Effects sets the audio
-// listener's volume, which every sound effect goes through; the music ignores the listener and
-// uses Master x Music instead (MusicPlayer), so the two can be set apart without a mixer.
+// one changes (from the settings screen's AUDIO / VIDEO page). The three volumes are the faders
+// of the game's audio mixer (GameAudio): master over the effects and music groups.
 // Display mode and resolution only apply in a build; the editor's Game view ignores them.
 public static class GameSettings
 {
@@ -22,7 +21,7 @@ public static class GameSettings
     public static int FrameCap { get; private set; }      // 0 = unlimited
     public static CrtLevel Crt { get; private set; }
 
-    // Music volume after the master volume.
+    // Music volume after the master volume (for the music when there's no mixer to do it).
     public static float MusicLevel => MasterVolume * MusicVolume;
 
     public static event Action Changed;
@@ -83,7 +82,7 @@ public static class GameSettings
         if (!loaded)
             Load();
 
-        AudioListener.volume = MasterVolume * EffectsVolume;
+        GameAudio.SetVolumes(MasterVolume, EffectsVolume, MusicVolume);
         QualitySettings.vSyncCount = VSync ? 1 : 0;
         Application.targetFrameRate = VSync || FrameCap <= 0 ? -1 : FrameCap;
 

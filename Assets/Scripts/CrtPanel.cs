@@ -2,10 +2,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Shared builders for the code-built CRT panels (station screens, supply crates): a full-screen
-// root on the HUD canvas just below the Crosshair (the menu cursor, which has to draw on top), a
-// dark panel with a thin phosphor frame, text placed from the panel's top or bottom edge, and
-// phosphor CrtButtons.
+// Shared builders for the code-built CRT screens: a full-screen root on the HUD canvas just below
+// the Crosshair (the menu cursor, which has to draw on top), a dark panel with a thin phosphor
+// frame, text placed from the panel's top or bottom edge, and phosphor CrtButtons (the station
+// and crate screens). Under them, general builders any screen can lay out its own way: a rect,
+// a label and a button on a rect (the main menu, settings and radio messages).
 public static class CrtPanel
 {
     // A full-screen root on the HUD canvas, below the Crosshair, or null without a HUD.
@@ -55,8 +56,7 @@ public static class CrtPanel
         fill.color = UiColours.PanelBackground;
         fill.raycastTarget = false;
 
-        Color phosphor = UiColours.Phosphor;
-        Color frame = new Color(phosphor.r, phosphor.g, phosphor.b, 0.6f);
+        Color frame = UiColours.WithAlpha(UiColours.Phosphor, 0.6f);
         FrameEdge(panel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1.5f), frame);
         FrameEdge(panel.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1.5f), frame);
         FrameEdge(panel.transform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1.5f, 0f), frame);
@@ -85,15 +85,39 @@ public static class CrtPanel
     public static TMP_Text MakeText(Transform panel, TMP_FontAsset font, string name, string text, float size, Vector2 position, float edge,
         Vector2 box, Color colour, float spacing, TextAlignmentOptions alignment)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = panel.gameObject.layer;
-        go.transform.SetParent(panel, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, edge);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = box;
+        Vector2 anchor = new Vector2(0.5f, edge);
+        RectTransform rect = MakeRect(panel, name, anchor, new Vector2(0.5f, 0.5f), position, box);
+        return MakeLabel(rect, font, text, size, colour, spacing, alignment);
+    }
 
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
+    // A phosphor button, anchored to the panel's top edge (the caller positions it).
+    public static CrtButton MakeButton(Transform panel, TMP_FontAsset font, string name, Vector2 size, TextAlignmentOptions alignment)
+    {
+        RectTransform rect = MakeRect(panel, name, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), Vector2.zero, size);
+        return MakeButton(rect, font, 16f, 4f, alignment, 10f);
+    }
+
+    // ---------- General builders (any layout: menus, settings, HUD notices) ----------
+
+    // An empty child of `parent` on its layer, anchored at `anchor` with its pivot at `pivot`.
+    public static RectTransform MakeRect(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.layer = parent.gameObject.layer;
+        go.transform.SetParent(parent, false);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.pivot = pivot;
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+        return rect;
+    }
+
+    // A one-line, rich-text label on `rect` that clicks pass through.
+    public static TextMeshProUGUI MakeLabel(RectTransform rect, TMP_FontAsset font, string text, float size, Color colour, float spacing,
+        TextAlignmentOptions alignment)
+    {
+        TextMeshProUGUI label = rect.gameObject.AddComponent<TextMeshProUGUI>();
         label.font = font;
         label.fontSize = size;
         label.color = colour;
@@ -106,44 +130,28 @@ public static class CrtPanel
         return label;
     }
 
-    // A phosphor button, anchored to the panel's top edge (the caller positions it).
-    public static CrtButton MakeButton(Transform panel, TMP_FontAsset font, string name, Vector2 size, TextAlignmentOptions alignment)
+    // Makes `rect` a phosphor CrtButton: a faint green fill (`fill` alpha) that brightens on hover
+    // (`hover`), its label inset `inset` pixels from the sides, green turning white on hover.
+    public static CrtButton MakeButton(RectTransform rect, TMP_FontAsset font, float fontSize, float spacing, TextAlignmentOptions alignment,
+        float inset, float fill = 0.08f, float hover = 0.35f)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = panel.gameObject.layer;
-        go.transform.SetParent(panel, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.sizeDelta = size;
-
-        Image image = go.AddComponent<Image>();
+        Image image = rect.gameObject.AddComponent<Image>();
         image.raycastTarget = false;
 
-        GameObject labelObject = new GameObject("Label", typeof(RectTransform));
-        labelObject.layer = panel.gameObject.layer;
-        labelObject.transform.SetParent(go.transform, false);
-        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+        RectTransform labelRect = MakeRect(rect, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         labelRect.anchorMin = Vector2.zero;
         labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = new Vector2(10f, 0f);
-        labelRect.offsetMax = new Vector2(-10f, 0f);
+        labelRect.offsetMin = new Vector2(inset, 0f);
+        labelRect.offsetMax = new Vector2(-inset, 0f);
 
-        TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
-        label.font = font;
-        label.fontSize = 16;
-        label.characterSpacing = 4f;
+        TextMeshProUGUI label = MakeLabel(labelRect, font, "", fontSize, Color.white, spacing, alignment);
         label.lineSpacing = 6f;
-        label.alignment = alignment;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.richText = true;
-        label.raycastTarget = false;
 
-        Color phosphor = UiColours.Phosphor;
-        CrtButton button = go.AddComponent<CrtButton>();
+        CrtButton button = rect.gameObject.AddComponent<CrtButton>();
         button.Setup(image, label,
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.08f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.35f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.85f),
+            UiColours.WithAlpha(UiColours.Phosphor, fill),
+            UiColours.WithAlpha(UiColours.Phosphor, hover),
+            UiColours.WithAlpha(UiColours.Phosphor, 0.85f),
             Color.white);
         return button;
     }

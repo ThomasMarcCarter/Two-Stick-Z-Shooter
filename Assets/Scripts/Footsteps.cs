@@ -60,7 +60,7 @@ public class Footsteps : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        source = gameObject.AddComponent<AudioSource>();
+        source = GameAudio.Route(gameObject.AddComponent<AudioSource>());
         source.playOnAwake = false;
         ApplySourceSettings();
 

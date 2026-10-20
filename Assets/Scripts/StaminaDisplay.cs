@@ -11,8 +11,6 @@ public class StaminaDisplay : MaskableGraphic
     [SerializeField] private PlayerStamina stamina;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [Tooltip("Fill colour while not sprinting, as a fraction of full brightness.")]
     [SerializeField, Range(0f, 1f)] private float idleBrightness = 0.7f;
 
@@ -68,7 +66,7 @@ public class StaminaDisplay : MaskableGraphic
             tag.font = TMP_Settings.defaultFontAsset;
             tag.fontSize = 12;
             tag.characterSpacing = 6f;
-            tag.color = phosphor;
+            tag.color = UiColours.Phosphor;
             tag.alignment = TextAlignmentOptions.Left;
             tag.textWrappingMode = TextWrappingModes.NoWrap;
             tag.raycastTarget = false;
@@ -92,7 +90,7 @@ public class StaminaDisplay : MaskableGraphic
         bool exhausted = playing && stamina.Exhausted;
         bool sprinting = playing && stamina.IsSprinting;
 
-        Color tone = exhausted ? hostile : phosphor;
+        Color tone = exhausted ? UiColours.Hostile : UiColours.Phosphor;
         Color fill = sprinting || exhausted ? tone : tone * idleBrightness;
         fill.a = 1f;
 

@@ -28,8 +28,6 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private string subtitle = "> TERMINAL READY // AWAITING OPERATOR";
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color background = new Color(0f, 0.025f, 0.012f, 1f);
     [SerializeField] private Vector2 buttonSize = new Vector2(340f, 42f);
 
     private GameObject backdrop;
@@ -41,6 +39,9 @@ public class MainMenu : MonoBehaviour
     private TMP_Text notice;
     private CrtMenu menu;
     private CrtMenu profileMenu;
+
+    // Text and buttons are anchored and pivoted in the middle of their group.
+    private static readonly Vector2 Centre = new Vector2(0.5f, 0.5f);
     private CrtButton[] profileButtons;
     private CrtButton[] wipeButtons;
     private int confirmingWipe;   // profile waiting for a second press of its wipe button, or 0
@@ -279,17 +280,17 @@ public class MainMenu : MonoBehaviour
         backdropRect.anchorMax = Vector2.one;
         backdropRect.offsetMin = backdropRect.offsetMax = Vector2.zero;
         Image fill = backdrop.AddComponent<Image>();
-        fill.color = background;
+        fill.color = UiColours.MenuBackground;
         fill.raycastTarget = false;
 
         panel = MakeGroup("Panel", backdrop.transform);
         mainPage = MakeGroup("Main", panel.transform);
         profilePage = MakeGroup("Profiles", panel.transform);
 
-        Color dim = new Color(phosphor.r, phosphor.g, phosphor.b, 0.55f);
+        Color dim = UiColours.WithAlpha(UiColours.Phosphor, 0.55f);
         string heading = string.IsNullOrEmpty(title) ? Application.productName : title;
 
-        MakeText("Title", panel.transform, heading.ToUpperInvariant(), 54, new Vector2(0f, 175f), new Vector2(700f, 70f), phosphor, 14f);
+        MakeText("Title", panel.transform, heading.ToUpperInvariant(), 54, new Vector2(0f, 175f), new Vector2(700f, 70f), UiColours.Phosphor, 14f);
         subtitleText = MakeText("Subtitle", panel.transform, subtitle, 15, new Vector2(0f, 122f), new Vector2(700f, 24f), dim, 6f);
         profileLine = MakeText("Profile", mainPage.transform, "", 13, new Vector2(0f, 90f), new Vector2(700f, 22f), dim, 4f);
 
@@ -327,7 +328,7 @@ public class MainMenu : MonoBehaviour
 
         notice = MakeText("Notice", panel.transform, "", 13, new Vector2(0f, -195f), new Vector2(700f, 22f), dim, 4f);
         MakeText("Version", panel.transform, $"BUILD {Application.version}", 11, new Vector2(0f, -240f), new Vector2(700f, 18f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.3f), 4f);
+            UiColours.WithAlpha(UiColours.Phosphor, 0.3f), 4f);
     }
 
     // A centred 700 x 520 area to lay things out in.
@@ -344,60 +345,16 @@ public class MainMenu : MonoBehaviour
 
     private TMP_Text MakeText(string name, Transform parent, string text, float size, Vector2 position, Vector2 boxSize, Color colour, float spacing)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(parent, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchoredPosition = position;
-        rect.sizeDelta = boxSize;
-
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
-        label.font = TMP_Settings.defaultFontAsset;
-        label.fontSize = size;
-        label.color = colour;
-        label.characterSpacing = spacing;
-        label.alignment = TextAlignmentOptions.Center;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.raycastTarget = false;
-        label.text = text;
-        return label;
+        RectTransform rect = CrtPanel.MakeRect(parent, name, Centre, Centre, position, boxSize);
+        return CrtPanel.MakeLabel(rect, TMP_Settings.defaultFontAsset, text, size, colour, spacing, TextAlignmentOptions.Center);
     }
 
     private CrtButton MakeButton(string text, Transform parent, Vector2 position, Vector2 size)
     {
-        GameObject go = new GameObject(string.IsNullOrEmpty(text) ? "Button" : text, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(parent, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-
-        Image image = go.AddComponent<Image>();
-        image.raycastTarget = false;
-
-        GameObject labelObject = new GameObject("Label", typeof(RectTransform));
-        labelObject.layer = gameObject.layer;
-        labelObject.transform.SetParent(go.transform, false);
-        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
-
-        TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
-        label.font = TMP_Settings.defaultFontAsset;
-        label.fontSize = 17;
-        label.characterSpacing = 8f;
-        label.alignment = TextAlignmentOptions.Center;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.raycastTarget = false;
-        label.text = text;
-
-        CrtButton button = go.AddComponent<CrtButton>();
-        button.Setup(image, label,
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.08f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.35f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.85f),
-            Color.white);
+        RectTransform rect = CrtPanel.MakeRect(parent, string.IsNullOrEmpty(text) ? "Button" : text, Centre, Centre, position, size);
+        CrtButton button = CrtPanel.MakeButton(rect, TMP_Settings.defaultFontAsset, 17f, 8f, TextAlignmentOptions.Center, 0f);
+        button.Label.lineSpacing = 0f;
+        button.Label.text = text;
         return button;
     }
 }

@@ -85,23 +85,10 @@ public class RadioMessage : MonoBehaviour
 
     private TMP_Text MakeText(string name, TMP_FontAsset font, float size, float y, float height, Color colour)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(transform, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(0f, y);
-        rect.sizeDelta = new Vector2(640f, height);
-
-        TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
-        text.font = font;
-        text.fontSize = size;
-        text.color = colour;
-        text.characterSpacing = 4f;
-        text.alignment = TextAlignmentOptions.Top;
-        text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.raycastTarget = false;
-        text.richText = false;
+        Vector2 top = new Vector2(0.5f, 1f);
+        RectTransform rect = CrtPanel.MakeRect(transform, name, top, top, new Vector2(0f, y), new Vector2(640f, height));
+        TMP_Text text = CrtPanel.MakeLabel(rect, font, "", size, colour, 4f, TextAlignmentOptions.Top);
+        text.richText = false;    // typed out a character at a time
         return text;
     }
 
@@ -111,7 +98,7 @@ public class RadioMessage : MonoBehaviour
             return;
 
         // Out of the way under full-screen menus; the clock keeps running.
-        bool covered = InventoryScreen.IsOpen || PauseMenu.IsOpen || MainMenu.IsOpen || DeathScreen.IsShowing;
+        bool covered = GameFlow.ScreenOverWorld;
         float now = Time.unscaledTime;
         int shown = Mathf.Min(body.text.Length, Mathf.FloorToInt((now - startedAt) * CharactersPerSecond));
 

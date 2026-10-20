@@ -20,7 +20,6 @@ public class SettingsMenu : MonoBehaviour
     [SerializeField] private TMP_FontAsset font;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
     [SerializeField] private float rowHeight = 30f;
 
     public bool IsOpen { get; private set; }
@@ -49,6 +48,9 @@ public class SettingsMenu : MonoBehaviour
     private readonly RectTransform[] pageRoots = new RectTransform[2];
     private int page;
     private RectTransform building;
+
+    // Cells are laid out down and across from the page's top-left corner.
+    private static readonly Vector2 TopLeft = new Vector2(0f, 1f);
 
     private List<Cell[]> grid => pages[page];
 
@@ -284,14 +286,14 @@ public class SettingsMenu : MonoBehaviour
 
     private void AddSection(ref float y, string title)
     {
-        Color dim = new Color(phosphor.r, phosphor.g, phosphor.b, 0.55f);
+        Color dim = UiColours.WithAlpha(UiColours.Phosphor, 0.55f);
         MakeText(title + " Section", "> " + title, new Vector2(0f, y), new Vector2(240f, rowHeight), dim, TextAlignmentOptions.Left);
         y -= rowHeight + 4f;
     }
 
     private void AddOption(ref float y, string name, Func<string> value, Action<int> step)
     {
-        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), phosphor, TextAlignmentOptions.Left);
+        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), UiColours.Phosphor, TextAlignmentOptions.Left);
         Cell cell = new Cell { Value = value, Step = step };
         cell.Button = MakeButton(name + " Value", "", new Vector2(250f, y), new Vector2(410f, rowHeight));
         grid.Add(new[] { cell });
@@ -316,7 +318,7 @@ public class SettingsMenu : MonoBehaviour
 
     private void AddHeader(ref float y)
     {
-        Color dim = new Color(phosphor.r, phosphor.g, phosphor.b, 0.55f);
+        Color dim = UiColours.WithAlpha(UiColours.Phosphor, 0.55f);
         MakeText("Header Action", "ACTION", new Vector2(0f, y), new Vector2(240f, rowHeight), dim, TextAlignmentOptions.Left);
         MakeText("Header Keyboard", "KEYBOARD / MOUSE", new Vector2(250f, y), new Vector2(200f, rowHeight), dim, TextAlignmentOptions.Center);
         MakeText("Header Controller", "CONTROLLER", new Vector2(460f, y), new Vector2(200f, rowHeight), dim, TextAlignmentOptions.Center);
@@ -325,7 +327,7 @@ public class SettingsMenu : MonoBehaviour
 
     private void AddRow(ref float y, string name, Cell keyboard, Cell controller)
     {
-        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), phosphor, TextAlignmentOptions.Left);
+        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), UiColours.Phosphor, TextAlignmentOptions.Left);
         BuildCell(keyboard, name + " Keyboard", new Vector2(250f, y));
         BuildCell(controller, name + " Controller", new Vector2(460f, y));
         grid.Add(new[] { keyboard, controller });
@@ -347,7 +349,7 @@ public class SettingsMenu : MonoBehaviour
 
         if (cell.Action == null)
         {
-            cell.Text = MakeText(name, cell.FixedText, position, size, new Color(phosphor.r, phosphor.g, phosphor.b, 0.35f), TextAlignmentOptions.Center);
+            cell.Text = MakeText(name, cell.FixedText, position, size, UiColours.WithAlpha(UiColours.Phosphor, 0.35f), TextAlignmentOptions.Center);
             return;
         }
 
@@ -356,49 +358,19 @@ public class SettingsMenu : MonoBehaviour
 
     private CrtButton MakeButton(string name, string text, Vector2 position, Vector2 size)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(building, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-
-        Image image = go.AddComponent<Image>();
-        image.raycastTarget = false;
-
-        TMP_Text label = MakeText("Label", text, Vector2.zero, size, phosphor, TextAlignmentOptions.Center, rect);
-
-        CrtButton button = go.AddComponent<CrtButton>();
-        button.Setup(image, label,
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.12f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.4f),
-            new Color(phosphor.r, phosphor.g, phosphor.b, 0.85f),
-            Color.white);
+        RectTransform rect = CrtPanel.MakeRect(building, name, TopLeft, TopLeft, position, size);
+        CrtButton button = CrtPanel.MakeButton(rect, font, 14f, 4f, TextAlignmentOptions.Center, 0f, 0.12f, 0.4f);
+        button.Label.textWrappingMode = TextWrappingModes.Normal;
+        button.Label.lineSpacing = 0f;
+        button.Label.text = text;
         return button;
     }
 
-    private TMP_Text MakeText(string name, string text, Vector2 position, Vector2 size, Color colour,
-        TextAlignmentOptions alignment, RectTransform parent = null)
+    private TMP_Text MakeText(string name, string text, Vector2 position, Vector2 size, Color colour, TextAlignmentOptions alignment)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(parent != null ? parent : building, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
-        label.font = font;
-        label.fontSize = 14;
-        label.color = colour;
-        label.characterSpacing = 4;
-        label.alignment = alignment;
-        label.raycastTarget = false;
-        label.text = text;
+        RectTransform rect = CrtPanel.MakeRect(building, name, TopLeft, TopLeft, position, size);
+        TMP_Text label = CrtPanel.MakeLabel(rect, font, text, 14f, colour, 4f, alignment);
+        label.textWrappingMode = TextWrappingModes.Normal;
         return label;
     }
 

@@ -1474,8 +1474,6 @@ MonoBehaviour:
   player: {fileID: 603282793}
   pixelsPerUnit: 3.5
   gridSpacing: 16
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
 --- !u!222 &215269003
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2016,8 +2014,6 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   playerHealth: {fileID: 603282798}
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
   segmentGap: 5
   lowHealth: 2
   hitFlashTime: 0.25
@@ -2315,6 +2311,10 @@ MonoBehaviour:
   hideoutButton: {fileID: 2003188744}
   mainMenuButton: {fileID: 214490454}
   notice: {fileID: 465031290}
+  delay: 1.4
+  slowMotion: 0.4
+  fadeTime: 0.6
+  backdropAlpha: 0.6
 --- !u!1 &465031288
 GameObject:
   m_ObjectHideFlags: 0
@@ -2642,7 +2642,6 @@ MonoBehaviour:
   rowContainer: {fileID: 371294683}
   status: {fileID: 658148984}
   font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
   rowHeight: 30
 --- !u!1 &505803242
 GameObject:
@@ -4176,7 +4175,6 @@ MonoBehaviour:
   minimapGap: 24
   expandTime: 0.18
   cursorSpeed: 700
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
   size: {x: 780, y: 450}
 --- !u!1 &748976044
 GameObject:
@@ -4341,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000041219806}
+  m_LocalPosition: {x: 0, y: 0, z: -0.000033011805}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4349,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2001, y: -352.80008}
+  m_AnchoredPosition: {x: -627.2, y: -352.80002}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -5162,8 +5160,6 @@ MonoBehaviour:
   settings: {fileID: 0}
   title: Two-Stick Z Shooter
   subtitle: '> TERMINAL READY // AWAITING OPERATOR'
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  background: {r: 0, g: 0.025, b: 0.012, a: 1}
   buttonSize: {x: 340, y: 42}
 --- !u!1 &976720705
 GameObject:
@@ -6057,8 +6053,6 @@ MonoBehaviour:
   activeHeight: 92
   holsteredHeight: 36
   gap: 6
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
   lowAmmo: 0.25
   pickupNoticeTime: 2.5
 --- !u!222 &1292455179
@@ -6603,8 +6597,6 @@ MonoBehaviour:
   player: {fileID: 603282793}
   pixelsPerUnit: 8
   gridSpacing: 32
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
 --- !u!222 &1434291168
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7299,10 +7291,6 @@ MonoBehaviour:
   - {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
   - {fileID: 1053666970914164882, guid: 92c76f7b7f1319249b3e548478591e5f, type: 3}
   sealedDoorTint: {r: 0.55, g: 0.12, b: 0.08, a: 1}
-  enemyMaterialChance: 0.06
-  roomMaterialChance: 0.35
-  bossMaterials: 3
-  treasureMaterials: 2
   survivorChance: 0.25
   distressCallDelay: 3
   totalFloors: 3
@@ -7537,30 +7525,6 @@ MonoBehaviour:
   furnitureVisuals: {fileID: 11400000, guid: f43fbf84295bbbd4da735e99e4201379, type: 2}
   roomThemeChance: 0.7
   furniturePerCell: {x: 1, y: 3}
-  enemyAmmoDropChance: 0.3
-  ammoCrateChance: 0.4
-  crateMultiplier: 2.5
-  heldGunAmmoBias: 0.75
-  medkitChance: 0.3
-  largeMedkitChance: 0.15
-  supplyChance: 0.3
-  supplyOdds:
-  - type: 5
-    weight: 3
-    minFloor: 1
-  - type: 3
-    weight: 2
-    minFloor: 1
-  - type: 4
-    weight: 2
-    minFloor: 1
-  - type: 2
-    weight: 1.5
-    minFloor: 1
-  meleeUpgradeChance: 0.12
-  bossMeleeUpgrades: 1
-  treasureMeleeUpgrades: 1
-  treasureSupplies: 0300000001000000i
   roomClearedSound: {fileID: 0}
   roomClearedVolume: 0.45
   pickupPrefab: {fileID: 8820733638236343572, guid: 28d7fb57f98dc11439500aadc959bbdf, type: 3}
@@ -7753,9 +7717,6 @@ MonoBehaviour:
     laser: 1
     weight: 1
     minFloor: 1
-  treasureAttachments: 2
-  bossAttachments: 2
-  attachmentFitBias: 0.7
   lootTable: {fileID: 11400000, guid: 40693bb652b891145824b9531f136bf3, type: 2}
   floorPointsLargeRoom: 2
   wallPointsPerRoom: 2
@@ -8149,9 +8110,6 @@ MonoBehaviour:
   player: {fileID: 603282793}
   statusText: {fileID: 1881018839}
   pixelsPerUnit: 3
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  background: {r: 0, g: 0.07, b: 0.03, a: 0.85}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
   gridSpacing: 16
   pulseInterval: 1.2
 --- !u!222 &1635015333
@@ -8411,8 +8369,6 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   stamina: {fileID: 603282800}
-  phosphor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  hostile: {r: 1, g: 0.25, b: 0.2, a: 1}
   idleBrightness: 0.7
 --- !u!222 &1685774811
 CanvasRenderer:
@@ -8585,7 +8541,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000041219806}
+  m_LocalPosition: {x: 0, y: 0, z: -0.000033011805}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8593,7 +8549,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2001, y: -352.80008}
+  m_AnchoredPosition: {x: -627.2, y: -352.80002}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442
@@ -9253,8 +9209,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 55
-  orthographic: 0
-  orthographic size: 6
+  orthographic: 1
+  orthographic size: 5.2
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -9278,7 +9234,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1858697496}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
   m_LocalPosition: {x: 0, y: 10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -9344,6 +9300,7 @@ MonoBehaviour:
   target: {fileID: 603282793}
   smoothSpeed: 10
   mouseLookAhead: 0.2
+  tilt: 30
   floor: {fileID: 1558234085}
   shakeDecay: 2.5
 --- !u!114 &1858697502
@@ -10042,7 +9999,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -160, y: -16}
+  m_AnchoredPosition: {x: -160.00006, y: -16}
   m_SizeDelta: {x: -400, y: -112}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1915024120

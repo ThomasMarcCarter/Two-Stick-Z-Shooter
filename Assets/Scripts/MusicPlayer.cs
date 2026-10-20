@@ -5,8 +5,9 @@ using UnityEngine;
 // plays; the tension layer fades in while the player is in a locked combat room (fully for the
 // boss) and out once it's cleared or a menu/end screen is up. Created in code when the game
 // starts and kept across scene reloads, so a new run doesn't restart the track. Its sources
-// ignore the listener's volume and use GameSettings.MusicLevel (master x music), so the
-// effects volume doesn't touch it. The clips are built on a worker thread to avoid a hitch.
+// play through the mixer's Music group, so the music volume is that group's fader (without the
+// mixer they set GameSettings.MusicLevel themselves). The clips are built on a worker thread to
+// avoid a hitch.
 public class MusicPlayer : MonoBehaviour
 {
     private const float AmbientLevel = 0.55f;
@@ -48,6 +49,11 @@ public class MusicPlayer : MonoBehaviour
         tensionData = Task.Run(() => ProceduralMusic.Tension(seed + 1));
     }
 
+    private void Start()
+    {
+        GameAudio.Reapply();
+    }
+
     private AudioSource MakeSource(string label)
     {
         AudioSource source = gameObject.AddComponent<AudioSource>();
@@ -58,7 +64,7 @@ public class MusicPlayer : MonoBehaviour
         source.ignoreListenerPause = true;    // keeps playing (quietly) behind the pause menu
         source.volume = 0f;
         source.name = label;
-        return source;
+        return GameAudio.Route(source, true);
     }
 
     private void Update()
@@ -83,7 +89,7 @@ public class MusicPlayer : MonoBehaviour
         tensionMix = Mathf.MoveTowards(tensionMix, target, FadeSpeed * Time.unscaledDeltaTime);
 
         float paused = Time.timeScale == 0f && !MainMenu.IsOpen ? 0.5f : 1f;
-        float level = GameSettings.MusicLevel * paused;
+        float level = (GameAudio.Music != null ? 1f : GameSettings.MusicLevel) * paused;
         ambient.volume = level * AmbientLevel * (1f - tensionMix * 0.35f);
         tension.volume = level * tensionMix;
 

@@ -74,7 +74,7 @@ public static class SoundFX
         GameObject go = new GameObject("SFX " + clip.name);
         go.transform.position = position;
 
-        AudioSource source = go.AddComponent<AudioSource>();
+        AudioSource source = GameAudio.Route(go.AddComponent<AudioSource>());
         source.clip = clip;
         source.volume = volume;
         source.pitch = pitch;

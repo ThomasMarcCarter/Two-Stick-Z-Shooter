@@ -64,38 +64,6 @@ public partial class FloorGenerator
             MeleeUpgradePickup.Spawn(all[i], position + right * ((i - (all.Length - 1) / 2f) * 1.1f), parent, ammoMaterial);
     }
 
-    // Weighted pick among the supplies allowed on this floor; null if there are none.
-    private ConsumableType? PickSupply(float roll)
-    {
-        float total = 0f;
-
-        foreach (SupplyOdds odds in supplyOdds)
-        {
-            if (odds.weight > 0f && FloorNumber >= odds.minFloor)
-                total += odds.weight;
-        }
-
-        if (total <= 0f)
-            return null;
-
-        float target = roll * total;
-        ConsumableType? last = null;
-
-        foreach (SupplyOdds odds in supplyOdds)
-        {
-            if (odds.weight <= 0f || FloorNumber < odds.minFloor)
-                continue;
-
-            last = odds.type;
-            target -= odds.weight;
-
-            if (target <= 0f)
-                return odds.type;
-        }
-
-        return last;
-    }
-
     // Debug: a consumable at a point, in whichever room it's in (or loose if none).
     public void SpawnConsumable(ConsumableType type, int amount, Vector3 position)
     {
@@ -286,23 +254,23 @@ public partial class FloorGenerator
                 crate.Add(CrateItem.ForGun(weapon, gun.GetMagazineSize()));
         }
 
-        foreach (WeaponAttachment attachment in PickAttachments(treasureAttachments, () => (float)rng.NextDouble()))
+        foreach (WeaponAttachment attachment in PickAttachments(Drops.treasureAttachments, () => (float)rng.NextDouble()))
             crate.Add(CrateItem.ForAttachment(attachment));
 
         // One at a time, so each pick knows about the ones already in the crate.
-        for (int i = 0; i < treasureMeleeUpgrades; i++)
+        for (int i = 0; i < Drops.treasureMeleeUpgrades; i++)
         {
             if (PickMeleeUpgrade((float)rng.NextDouble()) is MeleeUpgrade upgrade)
                 crate.Add(CrateItem.ForMeleeUpgrade(upgrade));
         }
 
-        if (treasureSupplies != null)
+        if (Drops.treasureSupplies != null)
         {
-            foreach (ConsumableType supply in treasureSupplies)
+            foreach (ConsumableType supply in Drops.treasureSupplies)
                 crate.Add(CrateItem.ForConsumable(supply, 1));
         }
 
-        for (int i = 0; i < treasureMaterials; i++)
+        for (int i = 0; i < Drops.treasureMaterials; i++)
             crate.Add(CrateItem.ForMaterial(PickMaterial((float)rng.NextDouble()), 1));
     }
 
@@ -321,18 +289,18 @@ public partial class FloorGenerator
             types.Add(AmmoInfo.All[UnityEngine.Random.Range(0, AmmoInfo.All.Length)]);
 
         foreach (AmmoType type in types)
-            crate.Add(CrateItem.ForAmmo(type, DropAmount(type, crateMultiplier, UnityEngine.Random.value)));
+            crate.Add(CrateItem.ForAmmo(type, DropAmount(type, Drops.crateMultiplier, UnityEngine.Random.value)));
 
-        foreach (WeaponAttachment attachment in PickAttachments(bossAttachments, () => UnityEngine.Random.value))
+        foreach (WeaponAttachment attachment in PickAttachments(Drops.bossAttachments, () => UnityEngine.Random.value))
             crate.Add(CrateItem.ForAttachment(attachment));
 
-        for (int i = 0; i < bossMeleeUpgrades; i++)
+        for (int i = 0; i < Drops.bossMeleeUpgrades; i++)
         {
             if (PickMeleeUpgrade(UnityEngine.Random.value) is MeleeUpgrade upgrade)
                 crate.Add(CrateItem.ForMeleeUpgrade(upgrade));
         }
 
-        for (int i = 0; i < bossMaterials; i++)
+        for (int i = 0; i < Drops.bossMaterials; i++)
             crate.Add(CrateItem.ForMaterial(PickMaterial(UnityEngine.Random.value), 1));
     }
 
@@ -438,7 +406,7 @@ public partial class FloorGenerator
 
         for (int n = 0; n < count; n++)
         {
-            bool preferFitting = roll() < attachmentFitBias;
+            bool preferFitting = roll() < Drops.attachmentFitBias;
             List<WeaponAttachment> pool = new List<WeaponAttachment>();
 
             foreach (WeaponAttachment attachment in attachments)

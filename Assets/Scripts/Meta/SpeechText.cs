@@ -103,8 +103,8 @@ public class SpeechText : MonoBehaviour
         if (!speaking)
             return;
 
-        // Out of the way while the inventory or a station screen is up.
-        canvas.enabled = !InventoryScreen.IsOpen && !StationScreen.IsOpen;
+        // Out of the way while a menu or screen is up (the station screen hides it too).
+        canvas.enabled = !GameFlow.ScreenOverWorld;
 
         int shown = Mathf.Min(text.text.Length, Mathf.FloorToInt((Time.time - startedAt) * CharactersPerSecond));
 

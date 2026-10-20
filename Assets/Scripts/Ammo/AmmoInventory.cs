@@ -41,7 +41,7 @@ public class AmmoInventory : MonoBehaviour
         foreach (StartingAmmo start in startingAmmo)
             Backpack.AddAmmo(start.Type, start.Amount, true);
 
-        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource = GameAudio.Route(gameObject.AddComponent<AudioSource>());
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
 

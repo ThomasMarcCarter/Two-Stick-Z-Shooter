@@ -78,7 +78,9 @@ public class PlayerShooting : MonoBehaviour
     {
         Ray ray = mainCamera.ScreenPointToRay(GameInput.Pointer);
 
-        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+        // At the height shots fly, so what's under the cursor is what gets aimed at, whatever
+        // the camera's tilt.
+        Plane groundPlane = new Plane(Vector3.up, Vector3.up * Gun.ShotHeight);
 
         if (!groundPlane.Raycast(ray, out float distance))
             return;

@@ -97,8 +97,8 @@ public class InputDriver : MonoBehaviour
         if (player == null || cam == null)
             return new Vector2(Screen.width, Screen.height) / 2f;
 
-        // The ground point under the player, since aiming is worked out on the ground plane.
-        Vector3 ground = new Vector3(player.position.x, 0f, player.position.z);
+        // The player at shot height, since aiming is worked out on that plane.
+        Vector3 ground = new Vector3(player.position.x, Gun.ShotHeight, player.position.z);
         Vector2 playerOnScreen = cam.WorldToScreenPoint(ground);
 
         return playerOnScreen + aimDirection * (Screen.height * aimRadius);

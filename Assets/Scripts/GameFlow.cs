@@ -25,6 +25,15 @@ public static class GameFlow
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
         || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen;
 
+    // A full-screen menu or screen is up over the game (pause and the settings under it, the
+    // main menu, map, inventory, a station or crate, the end screens). Everything drawn over the
+    // world except the HUD (pickup and station labels, speech, damage numbers, radio messages)
+    // hides while it's true, so nothing shows through on top of it.
+    public static bool ScreenOverWorld =>
+        MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
+        || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen
+        || InventoryScreen.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen;
+
     // A menu or screen is up that doesn't use a cursor on a controller.
     public static bool InMenu =>
         MainMenu.IsOpen || PauseMenu.IsOpen || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen

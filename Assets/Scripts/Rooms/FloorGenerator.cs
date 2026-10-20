@@ -195,51 +195,6 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float roomThemeChance = 0.7f;
     [Tooltip("Furniture pieces per cell of a themed room (min, max).")]
     [SerializeField] private Vector2Int furniturePerCell = new Vector2Int(1, 3);
-    [Tooltip("Chance an enemy drops ammo when it dies. Bosses always drop.")]
-    [SerializeField, Range(0f, 1f)] private float enemyAmmoDropChance = 0.3f;
-    [Tooltip("Chance a combat room has an ammo crate in it.")]
-    [SerializeField, Range(0f, 1f)] private float ammoCrateChance = 0.4f;
-    [Tooltip("How many times a normal drop a crate (or a boss drop) holds.")]
-    [SerializeField] private float crateMultiplier = 2.5f;
-    [Tooltip("Chance a drop is for one of the player's current guns, rather than any type.")]
-    [SerializeField, Range(0f, 1f)] private float heldGunAmmoBias = 0.75f;
-
-    [Header("Health")]
-    [Tooltip("Chance a medkit drops when a combat room is cleared.")]
-    [SerializeField, Range(0f, 1f)] private float medkitChance = 0.3f;
-    [Tooltip("Of those, the chance it's a large medkit (+2) rather than small (+1).")]
-    [SerializeField, Range(0f, 1f)] private float largeMedkitChance = 0.15f;
-
-    [Header("Supplies")]
-    [Tooltip("Chance a cleared combat room also leaves a grenade, molotov, bottle or adrenaline.")]
-    [SerializeField, Range(0f, 1f)] private float supplyChance = 0.3f;
-    [Tooltip("Relative odds of each kind of supply drop.")]
-    [SerializeField] private SupplyOdds[] supplyOdds =
-    {
-        new SupplyOdds { type = ConsumableType.Bottle, weight = 3f, minFloor = 1 },
-        new SupplyOdds { type = ConsumableType.Grenade, weight = 2f, minFloor = 1 },
-        new SupplyOdds { type = ConsumableType.Molotov, weight = 2f, minFloor = 1 },
-        new SupplyOdds { type = ConsumableType.Adrenaline, weight = 1.5f, minFloor = 1 }
-    };
-    [Header("Melee Upgrades")]
-    [Tooltip("Chance a cleared combat room also leaves a melee upgrade.")]
-    [SerializeField, Range(0f, 1f)] private float meleeUpgradeChance = 0.12f;
-    [Tooltip("Melee upgrades the boss drops.")]
-    [SerializeField] private int bossMeleeUpgrades = 1;
-    [Tooltip("Melee upgrades the treasure room always has.")]
-    [SerializeField] private int treasureMeleeUpgrades = 1;
-
-    [Tooltip("Consumables the treasure room always has, besides its weapon and attachments.")]
-    [SerializeField] private ConsumableType[] treasureSupplies = { ConsumableType.Grenade, ConsumableType.LargeMedkit };
-
-    [Serializable]
-    private struct SupplyOdds
-    {
-        public ConsumableType type;
-        [Min(0f)] public float weight;
-        [Min(1)] public int minFloor;
-    }
-
     [Header("Room Cleared Sound")]
     [Tooltip("Played when the last enemy in a room dies. Leave empty to use a generated chime.")]
     [SerializeField] private AudioClip roomClearedSound;
@@ -252,15 +207,10 @@ public partial class FloorGenerator : MonoBehaviour
     [Header("Attachments")]
     [Tooltip("Every weapon attachment that can turn up, with its stats and drop odds.")]
     [SerializeField] private WeaponAttachment[] attachments = WeaponAttachment.Defaults();
-    [Tooltip("Attachments always waiting in the treasure room, either side of its weapon.")]
-    [SerializeField, Min(0)] private int treasureAttachments = 2;
-    [Tooltip("Attachments the boss always drops.")]
-    [SerializeField, Min(0)] private int bossAttachments = 2;
-    [Tooltip("Chance each one is picked from those that fit a gun the player is carrying, rather than any.")]
-    [SerializeField, Range(0f, 1f)] private float attachmentFitBias = 0.7f;
 
     [Header("Loot")]
-    [Tooltip("What loot spawn points can give, and their chances. No loot spawns if empty.")]
+    [Tooltip("What loot spawn points can give, and every drop chance and count (enemy, room-clear, boss and treasure drops). "
+        + "Without one, loot points stay empty and the other drops use the defaults.")]
     [SerializeField] private LootTable lootTable;
     [Tooltip("Combat rooms of one cell get one floor point; bigger rooms get this many.")]
     [SerializeField, Min(0)] private int floorPointsLargeRoom = 2;
@@ -314,7 +264,23 @@ public partial class FloorGenerator : MonoBehaviour
     private bool runPerksApplied;
 
     // The ammo drop chance after the hideout's Scavenger upgrade.
-    private float EnemyAmmoDropChance => Mathf.Clamp01(enemyAmmoDropChance + 0.1f * MetaProgress.Level(MetaUpgrade.Scavenger));
+    private float EnemyAmmoDropChance => Mathf.Clamp01(Drops.enemyAmmoDropChance + 0.1f * MetaProgress.Level(MetaUpgrade.Scavenger));
+
+    // The drop chances and counts: the assigned loot table, or one with the default values.
+    private LootTable fallbackDrops;
+    private LootTable Drops
+    {
+        get
+        {
+            if (lootTable != null)
+                return lootTable;
+
+            if (fallbackDrops == null)
+                fallbackDrops = ScriptableObject.CreateInstance<LootTable>();
+
+            return fallbackDrops;
+        }
+    }
     public Vector2 RoomSize => roomSize;
     public float WallThickness => wallThickness;
 
@@ -646,18 +612,18 @@ public partial class FloorGenerator : MonoBehaviour
         toCentre.y = 0f;
         position += Vector3.ClampMagnitude(toCentre, 1f);
 
-        if (UnityEngine.Random.value < medkitChance)
+        if (UnityEngine.Random.value < Drops.medkitChance)
         {
-            bool large = UnityEngine.Random.value < largeMedkitChance;
+            bool large = UnityEngine.Random.value < Drops.largeMedkitChance;
             ConsumablePickup.Spawn(large ? ConsumableType.LargeMedkit : ConsumableType.Medkit, 1, InsideRoom(room, position), room.transform, ammoMaterial);
         }
 
         Vector3 side = Vector3.Cross(Vector3.up, toCentre.sqrMagnitude > 0.01f ? toCentre.normalized : Vector3.forward);
 
-        if (UnityEngine.Random.value < supplyChance && PickSupply(UnityEngine.Random.value) is ConsumableType supply)
+        if (UnityEngine.Random.value < Drops.supplyChance && Drops.PickSupply(FloorNumber, UnityEngine.Random.value) is ConsumableType supply)
             ConsumablePickup.Spawn(supply, 1, InsideRoom(room, position + side * 0.9f), room.transform, ammoMaterial);
 
-        if (UnityEngine.Random.value < meleeUpgradeChance)
+        if (UnityEngine.Random.value < Drops.meleeUpgradeChance)
             SpawnMeleeUpgrade(InsideRoom(room, position - side * 0.9f), room.transform, UnityEngine.Random.value);
 
         DropRoomMaterial(room, position);

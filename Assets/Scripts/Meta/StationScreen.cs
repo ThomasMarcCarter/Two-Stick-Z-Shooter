@@ -18,7 +18,7 @@ public class StationScreen : MonoBehaviour
     private static readonly Color Phosphor = UiColours.Phosphor;
     private static readonly Color Background = UiColours.PanelBackground;
     private const float PanelWidth = 900f;
-    private static readonly Vector2 RowSize = new Vector2(820f, 62f);
+    private const float RowWidth = 820f;
 
     public static bool IsOpen { get; private set; }
 
@@ -151,6 +151,9 @@ public class StationScreen : MonoBehaviour
 
     private int RowCount => trading ? TraderStock.Offers.Length : upgrades.Length;
 
+    // Upgrade rows have three lines (next level, current level, cost); the trader's have two.
+    private Vector2 RowSize => new Vector2(RowWidth, trading ? 62f : 80f);
+
     private void Trade(int index)
     {
         string blocked = TraderStock.BlockedReason(index, backpack);
@@ -197,9 +200,12 @@ public class StationScreen : MonoBehaviour
             string now = $"<alpha=#88>NOW: {MetaUpgrades.Describe(upgrade, level)}";
             string next = cost < 0 ? "<alpha=#66>MAXED" : $"NEXT: {MetaUpgrades.Describe(upgrade, level + 1)}";
 
+            // The descriptions all start in the right-hand column, so a long one can't run into
+            // the next (the name column is too narrow for them).
             rows[i].Label.text =
                 $"<pos=1%>{MetaUpgrades.Name(upgrade)}<pos=20%>{pips}<pos=30%><size=80%>{next}</size>\n"
-                + $"<size=70%><pos=1%>{now}<alpha=#FF><pos=30%>{CostLine(upgrade, level + 1, cost)}</size>";
+                + $"<size=70%><pos=30%>{now}</size>\n"
+                + $"<size=70%><alpha=#FF><pos=30%>{CostLine(upgrade, level + 1, cost)}</size>";
         }
     }
 
@@ -292,7 +298,8 @@ public class StationScreen : MonoBehaviour
         while (rows.Count < count)
             rows.Add(MakeButton("Upgrade " + rows.Count, RowSize, TextAlignmentOptions.Left));
 
-        const float top = 140f;
+        // From the panel's top edge to the first row's top edge, under the banked materials.
+        const float top = 109f;
         float step = RowSize.y + 10f;
 
         for (int i = 0; i < rows.Count; i++)
@@ -301,10 +308,14 @@ public class StationScreen : MonoBehaviour
             rows[i].gameObject.SetActive(used);
 
             if (used)
-                rows[i].GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -top - i * step);
+            {
+                RectTransform rect = rows[i].GetComponent<RectTransform>();
+                rect.sizeDelta = RowSize;
+                rect.anchoredPosition = new Vector2(0f, -top - RowSize.y / 2f - i * step);
+            }
         }
 
-        float closeY = top + count * step + 4f;
+        float closeY = top + count * step + 35f;
         closeButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -closeY);
         panel.GetComponent<RectTransform>().sizeDelta = new Vector2(PanelWidth, closeY + 40f + 90f);
 

@@ -10,8 +10,6 @@ public class HealthDisplay : MaskableGraphic
     [SerializeField] private PlayerHealth playerHealth;
 
     [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
     [SerializeField] private float segmentGap = 4f;
     [Tooltip("At or below this much health the bar turns red.")]
     [SerializeField] private int lowHealth = 2;
@@ -73,7 +71,7 @@ public class HealthDisplay : MaskableGraphic
         int health = playerHealth != null && Application.isPlaying ? playerHealth.Health : max;
 
         bool flashing = Time.unscaledTime < flashUntil;
-        Color full = flashing ? Color.white : health <= lowHealth ? hostile : phosphor;
+        Color full = flashing ? Color.white : health <= lowHealth ? UiColours.Hostile : UiColours.Phosphor;
 
         float width = (bounds.width - segmentGap * (max - 1)) / max;
 
@@ -87,8 +85,8 @@ public class HealthDisplay : MaskableGraphic
             }
             else
             {
-                FillRect(vh, segment, Fade(full == Color.white ? phosphor : full, 0.08f));
-                OutlineRect(vh, segment, 1f, Fade(full == Color.white ? phosphor : full, 0.45f));
+                FillRect(vh, segment, Fade(full == Color.white ? UiColours.Phosphor : full, 0.08f));
+                OutlineRect(vh, segment, 1f, Fade(full == Color.white ? UiColours.Phosphor : full, 0.45f));
             }
         }
     }

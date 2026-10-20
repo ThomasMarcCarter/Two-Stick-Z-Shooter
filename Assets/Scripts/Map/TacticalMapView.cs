@@ -16,12 +16,9 @@ public class TacticalMapView : MaskableGraphic
     [SerializeField] private float pixelsPerUnit = 8f;
     [SerializeField] private float gridSpacing = 32f;
 
-    [Header("Look")]
-    [SerializeField] private Color phosphor = UiColours.Phosphor;
-    [SerializeField] private Color hostile = new Color(1f, 0.25f, 0.2f, 1f);
-
-    public Color Phosphor => phosphor;
-    public Color Hostile => hostile;
+    // The map legend and the full-screen map's readout draw in the same colours.
+    public Color Phosphor => UiColours.Phosphor;
+    public Color Hostile => UiColours.Hostile;
 
     // Map-space offset of the world origin from the centre of the view, in pixels.
     public Vector2 Pan { get; set; }
@@ -136,12 +133,12 @@ public class TacticalMapView : MaskableGraphic
         if (player != null)
             DrawPlayerMarker(vh);
 
-        OutlineRect(vh, bounds, 1.5f, Fade(phosphor, 0.6f));
+        OutlineRect(vh, bounds, 1.5f, Fade(UiColours.Phosphor, 0.6f));
     }
 
     private void DrawGrid(VertexHelper vh, Rect bounds)
     {
-        Color gridColour = Fade(phosphor, 0.06f);
+        Color gridColour = Fade(UiColours.Phosphor, 0.06f);
         Vector2 origin = bounds.center + Pan;
 
         for (float x = bounds.xMin + Mathf.Repeat(origin.x - bounds.xMin, gridSpacing); x < bounds.xMax; x += gridSpacing)
@@ -158,23 +155,23 @@ public class TacticalMapView : MaskableGraphic
         MapRoomState state = MapSymbols.StateOf(room);
 
         // The hideout gets neither a status mark nor a spawn marker: its stations are its icons.
-        MapSymbols.DrawRoomShape(vh, blockBuffer, edgeBuffer, anchor, state, phosphor, hostile, !floor.IsHideout);
+        MapSymbols.DrawRoomShape(vh, blockBuffer, edgeBuffer, anchor, state, UiColours.Phosphor, UiColours.Hostile, !floor.IsHideout);
 
         if (room == floor.CurrentRoom)
-            MapSymbols.DrawEdges(vh, edgeBuffer, 3f, state == MapRoomState.Hostile ? hostile : phosphor);
+            MapSymbols.DrawEdges(vh, edgeBuffer, 3f, state == MapRoomState.Hostile ? UiColours.Hostile : UiColours.Phosphor);
 
         if (room == Selected)
         {
             // Brighter fill plus a pulsing frame just outside the room.
             float pulse = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 5f);
-            MapSymbols.FillBlocks(vh, blockBuffer, Fade(phosphor, 0.15f));
-            MapSymbols.DrawEdgesOutside(vh, edgeBuffer, 5f, 2f, Fade(phosphor, pulse));
+            MapSymbols.FillBlocks(vh, blockBuffer, Fade(UiColours.Phosphor, 0.15f));
+            MapSymbols.DrawEdgesOutside(vh, edgeBuffer, 5f, 2f, Fade(UiColours.Phosphor, pulse));
         }
 
         float iconSize = Mathf.Min(anchor.width, anchor.height) * 0.22f;
 
         if (!floor.IsHideout)
-            MapSymbols.DrawMarker(vh, room.Type, anchor.center, iconSize, phosphor, hostile);
+            MapSymbols.DrawMarker(vh, room.Type, anchor.center, iconSize, UiColours.Phosphor, UiColours.Hostile);
 
         // Item markers along the bottom-left corner, only once the room has been explored:
         // "+" for weapons, a cartridge for ammo, then a medkit.
@@ -185,18 +182,18 @@ public class TacticalMapView : MaskableGraphic
 
             if (itemCounts.TryGetValue(room, out int weapons) && weapons > 0)
             {
-                MapSymbols.DrawItems(vh, slot, size, phosphor);
+                MapSymbols.DrawItems(vh, slot, size, UiColours.Phosphor);
                 slot.x += size * 1.8f;
             }
 
             if (ammoCounts.TryGetValue(room, out int ammo) && ammo > 0)
             {
-                MapSymbols.DrawAmmo(vh, slot, size * 1.2f, phosphor);
+                MapSymbols.DrawAmmo(vh, slot, size * 1.2f, UiColours.Phosphor);
                 slot.x += size * 1.6f;
             }
 
             if (medkitCounts.TryGetValue(room, out int medkits) && medkits > 0)
-                MapSymbols.DrawMedkit(vh, slot, size * 1.1f, phosphor);
+                MapSymbols.DrawMedkit(vh, slot, size * 1.1f, UiColours.Phosphor);
         }
     }
 
@@ -210,7 +207,7 @@ public class TacticalMapView : MaskableGraphic
                 hatch = FindAnyObjectByType<FloorExit>();
 
             if (hatch != null)
-                MapSymbols.DrawHatch(vh, MapPoint(new Vector2(hatch.Position.x, hatch.Position.z)), StationIconSize, phosphor);
+                MapSymbols.DrawHatch(vh, MapPoint(new Vector2(hatch.Position.x, hatch.Position.z)), StationIconSize, UiColours.Phosphor);
         }
 
         foreach (StationMarker marker in StationMarker.All)
@@ -220,9 +217,9 @@ public class TacticalMapView : MaskableGraphic
             float size = hovered ? StationIconSize * 1.25f : StationIconSize;
 
             if (hovered)
-                Ring(vh, position, size / 2f + 4f + Mathf.Sin(Time.unscaledTime * 5f) * 1.5f, 1.5f, Fade(phosphor, 0.7f));
+                Ring(vh, position, size / 2f + 4f + Mathf.Sin(Time.unscaledTime * 5f) * 1.5f, 1.5f, Fade(UiColours.Phosphor, 0.7f));
 
-            MapSymbols.DrawStation(vh, marker.Station, position, size, phosphor, marker.Abandoned, hovered);
+            MapSymbols.DrawStation(vh, marker.Station, position, size, UiColours.Phosphor, marker.Abandoned, hovered);
 
             if (!marker.Abandoned)
             {
@@ -278,14 +275,14 @@ public class TacticalMapView : MaskableGraphic
                 continue;
 
             if (MapSymbols.PinToEdge(bounds, edgeInset, MapRect(room.AnchorRect).center, out Vector2 pinned, out Vector2 direction))
-                MapSymbols.DrawEdgeMarker(vh, room.Type, pinned, direction, 14f, phosphor, hostile);
+                MapSymbols.DrawEdgeMarker(vh, room.Type, pinned, direction, 14f, UiColours.Phosphor, UiColours.Hostile);
         }
     }
 
     // Corridors running east or north only, so each one is drawn once.
     private void DrawCorridors(VertexHelper vh, Room room)
     {
-        Color colour = Fade(phosphor, 0.5f);
+        Color colour = Fade(UiColours.Phosphor, 0.5f);
         const float width = 4f;
 
         foreach (RoomConnection connection in room.Connections)
@@ -313,8 +310,8 @@ public class TacticalMapView : MaskableGraphic
         Vector2 forward = new Vector2(player.forward.x, player.forward.z);
 
         float pulse = Mathf.Repeat(Time.unscaledTime, 1.2f) / 1.2f;
-        Ring(vh, position, 6f + pulse * 26f, 1.5f, Fade(phosphor, (1f - pulse) * 0.6f));
-        MapSymbols.DrawPlayer(vh, position, forward, 10f, phosphor);
+        Ring(vh, position, 6f + pulse * 26f, 1.5f, Fade(UiColours.Phosphor, (1f - pulse) * 0.6f));
+        MapSymbols.DrawPlayer(vh, position, forward, 10f, UiColours.Phosphor);
     }
 
     private void ToMapSpace(Room room, List<Rect> blocks, List<RoomEdge> edges)

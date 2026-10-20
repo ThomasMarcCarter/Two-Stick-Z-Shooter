@@ -13,10 +13,10 @@ public partial class InventoryScreen
     private void DrawPanel(VertexHelper vh, Rect bounds)
     {
         FillRect(vh, bounds, new Color(0f, 0.04f, 0.02f, 0.97f));
-        OutlineRect(vh, bounds, 1.5f, Fade(phosphor, 0.6f));
+        OutlineRect(vh, bounds, 1.5f, Fade(UiColours.Phosphor, 0.6f));
 
         // Divider between the columns.
-        FillRect(vh, new Rect(Middle - 0.5f, bounds.yMin + 24f, 1f, bounds.height - 100f), Fade(phosphor, 0.2f));
+        FillRect(vh, new Rect(Middle - 0.5f, bounds.yMin + 24f, 1f, bounds.height - 100f), Fade(UiColours.Phosphor, 0.2f));
 
         if (weapons == null || ammo == null)
             return;
@@ -32,13 +32,13 @@ public partial class InventoryScreen
             bool inHand = weapons.ActiveSlot == slotIds[i] && gun != null;
             bool canTake = carried != null && carried.Fits(gun);
 
-            FillRect(vh, card, Fade(phosphor, inHand ? 0.1f : 0.04f));
-            OutlineRect(vh, card, inHand || canTake ? 2f : 1f, Fade(phosphor, inHand || canTake ? 0.9f : 0.4f));
+            FillRect(vh, card, Fade(UiColours.Phosphor, inHand ? 0.1f : 0.04f));
+            OutlineRect(vh, card, inHand || canTake ? 2f : 1f, Fade(UiColours.Phosphor, inHand || canTake ? 0.9f : 0.4f));
 
             if (gun != null)
             {
                 Rect icon = new Rect(card.xMin + 12f, card.yMin + 12f, 148f, card.height - 40f);
-                WeaponSilhouette.Draw(vh, gun.HudIcon, icon, Fade(phosphor, inHand ? 1f : 0.6f));
+                WeaponSilhouette.Draw(vh, gun.HudIcon, icon, Fade(UiColours.Phosphor, inHand ? 1f : 0.6f));
             }
 
             for (int s = 0; s < ModSlots.Length; s++)
@@ -52,8 +52,8 @@ public partial class InventoryScreen
             bool lifted = holding && heldFrom.Kind == SpotKind.Cell && heldFrom.Index == i;
             bool hovered = hover.Kind == SpotKind.Cell && hover.Index == i;
 
-            FillRect(vh, cell, Fade(phosphor, 0.03f));
-            OutlineRect(vh, cell, hovered ? 2f : 1f, Fade(phosphor, hovered ? 0.9f : 0.25f));
+            FillRect(vh, cell, Fade(UiColours.Phosphor, 0.03f));
+            OutlineRect(vh, cell, hovered ? 2f : 1f, Fade(UiColours.Phosphor, hovered ? 0.9f : 0.25f));
 
             if (item != null && !lifted)
                 DrawItem(vh, cell, item, 1f);
@@ -71,13 +71,13 @@ public partial class InventoryScreen
             bool hovered = hover.Kind == SpotKind.QuickSlot && hover.Index == i;
             bool selected = Quick != null && Quick.Selected == i && GameInput.UsingGamepad;
 
-            FillRect(vh, slot, Fade(phosphor, consumableCarried ? 0.1f : 0.03f));
+            FillRect(vh, slot, Fade(UiColours.Phosphor, consumableCarried ? 0.1f : 0.03f));
 
             if (item != null && !lifted)
                 DrawItem(vh, slot, item, item.Amount > 0 ? 1f : 0.4f);
 
             bool bright = hovered || consumableCarried || selected;
-            OutlineRect(vh, slot, bright ? 2f : 1f, Fade(phosphor, bright ? 0.9f : 0.3f));
+            OutlineRect(vh, slot, bright ? 2f : 1f, Fade(UiColours.Phosphor, bright ? 0.9f : 0.3f));
         }
     }
 
@@ -92,11 +92,11 @@ public partial class InventoryScreen
 
         if (gun == null)
         {
-            DashedOutlineRect(vh, rect, 1f, 4f, Fade(phosphor, 0.15f));
+            DashedOutlineRect(vh, rect, 1f, 4f, Fade(UiColours.Phosphor, 0.15f));
             return;
         }
 
-        FillRect(vh, rect, Fade(phosphor, target ? 0.12f : 0.03f));
+        FillRect(vh, rect, Fade(UiColours.Phosphor, target ? 0.12f : 0.03f));
 
         if (fitted != null && !lifted)
         {
@@ -106,7 +106,7 @@ public partial class InventoryScreen
         }
 
         float thickness = hovered || target ? 2f : 1f;
-        OutlineRect(vh, rect, thickness, Fade(phosphor, hovered || target ? 0.95f : 0.3f));
+        OutlineRect(vh, rect, thickness, Fade(UiColours.Phosphor, hovered || target ? 0.95f : 0.3f));
     }
 
     // An item in a cell (or the one being carried): attachments, consumables and materials as a
@@ -140,7 +140,7 @@ public partial class InventoryScreen
             for (int i = 0; i < size; i++)
             {
                 Rect dot = new Rect(start + i * (pip + 2f), cell.yMin + 3f, pip, 3f);
-                FillRect(vh, dot, i < item.Amount ? Fade(colour, 0.9f * alpha) : Fade(phosphor, 0.15f * alpha));
+                FillRect(vh, dot, i < item.Amount ? Fade(colour, 0.9f * alpha) : Fade(UiColours.Phosphor, 0.15f * alpha));
             }
 
             return;
@@ -157,7 +157,7 @@ public partial class InventoryScreen
             MaterialSilhouette.Draw(vh, item.Material, picture, Fade(Color.Lerp(colour, Color.white, 0.4f), alpha));
 
             Rect stackBar = new Rect(cell.xMin + 6f, cell.yMin + 4f, cell.width - 12f, 4f);
-            FillRect(vh, stackBar, Fade(phosphor, 0.15f * alpha));
+            FillRect(vh, stackBar, Fade(UiColours.Phosphor, 0.15f * alpha));
             FillRect(vh, new Rect(stackBar.xMin, stackBar.yMin, stackBar.width * item.Amount / Materials.StackSize, stackBar.height), Fade(colour, 0.9f * alpha));
             return;
         }
@@ -167,7 +167,7 @@ public partial class InventoryScreen
 
         Rect bar = new Rect(cell.xMin + 6f, cell.yMin + 4f, cell.width - 12f, 4f);
         float fill = item.Amount / (float)Backpack.StackSize(item.AmmoType);
-        FillRect(vh, bar, Fade(phosphor, 0.15f * alpha));
+        FillRect(vh, bar, Fade(UiColours.Phosphor, 0.15f * alpha));
         FillRect(vh, new Rect(bar.xMin, bar.yMin, bar.width * fill, bar.height), Fade(ammoColour, 0.9f * alpha));
     }
 
@@ -185,7 +185,7 @@ public partial class InventoryScreen
 
                 // Outside the panel, whatever is carried will be dropped on the floor.
                 bool dropping = !pointerInside;
-                OutlineRect(vh, ghost, 2f, dropping ? new Color(1f, 0.4f, 0.3f, 1f) : phosphor);
+                OutlineRect(vh, ghost, 2f, dropping ? new Color(1f, 0.4f, 0.3f, 1f) : UiColours.Phosphor);
             }
 
             return;
@@ -198,7 +198,7 @@ public partial class InventoryScreen
         Vector2 textSize = tooltipRect.sizeDelta;
         Rect box = new Rect(position.x - 10f, position.y - 8f, textSize.x + 22f, textSize.y + 16f);
         FillRect(vh, box, new Color(0f, 0.05f, 0.03f, 0.96f));
-        OutlineRect(vh, box, 1.5f, Fade(phosphor, 0.7f));
+        OutlineRect(vh, box, 1.5f, Fade(UiColours.Phosphor, 0.7f));
         FillRect(vh, new Rect(box.xMin + 3f, box.yMin + 5f, 3f, box.height - 10f), tooltipAccent);
     }
 }

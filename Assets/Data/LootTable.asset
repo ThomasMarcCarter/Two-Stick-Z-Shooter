@@ -313,3 +313,34 @@ MonoBehaviour:
     count: 1
     weight: 3.6
     minFloor: 1
+  enemyAmmoDropChance: 0.3
+  ammoCrateChance: 0.4
+  crateMultiplier: 2.5
+  heldGunAmmoBias: 0.75
+  medkitChance: 0.3
+  largeMedkitChance: 0.15
+  supplyChance: 0.3
+  supplyOdds:
+  - type: 5
+    weight: 3
+    minFloor: 1
+  - type: 3
+    weight: 2
+    minFloor: 1
+  - type: 4
+    weight: 2
+    minFloor: 1
+  - type: 2
+    weight: 1.5
+    minFloor: 1
+  meleeUpgradeChance: 0.12
+  enemyMaterialChance: 0.06
+  roomMaterialChance: 0.35
+  bossAttachments: 2
+  bossMeleeUpgrades: 1
+  bossMaterials: 3
+  treasureAttachments: 2
+  treasureMeleeUpgrades: 1
+  treasureSupplies: 0300000001000000i
+  treasureMaterials: 2
+  attachmentFitBias: 0.7

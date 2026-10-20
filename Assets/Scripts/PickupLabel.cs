@@ -73,7 +73,7 @@ public class PickupLabel : MonoBehaviour
     public bool Visible => canvas != null && !ScreenOpen;
 
     // A full screen is up over the world (or the player is dying), so labels keep out of the way.
-    private static bool ScreenOpen => InventoryScreen.IsOpen || CrateScreen.IsOpen || DeathScreen.IsDying || DeathScreen.IsShowing;
+    private static bool ScreenOpen => GameFlow.ScreenOverWorld;
 
     // Hidden by the stack for this frame (too many in one pile; see PickupLabelStack).
     public bool Suppressed { get; private set; }
@@ -184,7 +184,7 @@ public class PickupLabel : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Out of the way while the inventory is up over the room.
+        // Out of the way while a menu or screen is up over the room.
         if (canvas == null)
             canvas = GetComponent<Canvas>();
 
@@ -336,9 +336,25 @@ public class PickupLabel : MonoBehaviour
         Vector2 point = new Vector2(pickup.position.x, pickup.position.z);
         bool found = FloorAround(room, point, out Rect area);
 
+        if (!found)
+            return position;
+
+        if (camera.orthographic)
+        {
+            // Seen on the floor, the label sits where the view straight through it lands: the
+            // same size, shifted by the camera's tilt (not at all looking straight down).
+            Vector3 view = camera.transform.forward;
+            Vector2 shift = view.y < -0.01f ? new Vector2(view.x, view.z) * (position.y / -view.y) : Vector2.zero;
+            Vector2 landed = new Vector2(position.x, position.z) + shift;
+
+            landed.x = ClampAxis(landed.x, area.xMin + halfSize.x + WallMargin, area.xMax - halfSize.x - WallMargin);
+            landed.y = ClampAxis(landed.y, area.yMin + halfSize.y + WallMargin, area.yMax - halfSize.y - WallMargin);
+            return new Vector3(landed.x - shift.x, position.y, landed.y - shift.y);
+        }
+
         float cameraHeight = camera.transform.position.y;
 
-        if (!found || position.y >= cameraHeight)
+        if (position.y >= cameraHeight)
             return position;
 
         // Seen on the floor, the label looks bigger and further out than it is.

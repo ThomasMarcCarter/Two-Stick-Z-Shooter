@@ -17,16 +17,6 @@ public partial class FloorGenerator
     [Tooltip("Tint on the closed doors of wings whose survivor hasn't been rescued yet.")]
     [SerializeField] private Color sealedDoorTint = new Color(0.55f, 0.12f, 0.08f);
 
-    [Header("Crafting Materials")]
-    [Tooltip("Chance a zombie drops a material when it dies.")]
-    [SerializeField, Range(0f, 1f)] private float enemyMaterialChance = 0.06f;
-    [Tooltip("Chance a cleared combat room leaves a material.")]
-    [SerializeField, Range(0f, 1f)] private float roomMaterialChance = 0.35f;
-    [Tooltip("Materials a boss drops.")]
-    [SerializeField, Min(0)] private int bossMaterials = 3;
-    [Tooltip("Materials always waiting in the treasure room.")]
-    [SerializeField, Min(0)] private int treasureMaterials = 2;
-
     [Header("Survivors")]
     [Tooltip("Chance a floor holds a caged survivor, once one's signal is findable (see Npcs). At most one a run.")]
     [SerializeField, Range(0f, 1f)] private float survivorChance = 0.25f;
@@ -744,14 +734,14 @@ public partial class FloorGenerator
     // A zombie sometimes drops a material (a boss's go in its supply crate).
     private void DropMaterials(Room room, Vector3 position)
     {
-        if (UnityEngine.Random.value < enemyMaterialChance)
+        if (UnityEngine.Random.value < Drops.enemyMaterialChance)
             MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, InsideRoom(room, position + new Vector3(0.6f, 0f, 0.4f)), room.transform);
     }
 
     // A cleared room sometimes leaves a material where its last zombie fell.
     private void DropRoomMaterial(Room room, Vector3 position)
     {
-        if (UnityEngine.Random.value < roomMaterialChance)
+        if (UnityEngine.Random.value < Drops.roomMaterialChance)
             MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, InsideRoom(room, position + new Vector3(0f, 0f, -0.9f)), room.transform);
     }
 
