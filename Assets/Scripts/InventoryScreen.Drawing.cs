@@ -109,8 +109,9 @@ public partial class InventoryScreen
         OutlineRect(vh, rect, thickness, Fade(phosphor, hovered || target ? 0.95f : 0.3f));
     }
 
-    // An item in a cell (or the one being carried): attachments as a wireframe picture under a
-    // bar in their colour, ammo with a swatch and a fill bar for how full the stack is.
+    // An item in a cell (or the one being carried): attachments, consumables and materials as a
+    // wireframe picture under a bar in their colour, ammo with a swatch and a fill bar for how
+    // full the stack is. Every new kind of inventory item gets a wireframe picture too.
     private void DrawItem(VertexHelper vh, Rect cell, Backpack.Item item, float alpha)
     {
         if (item.Kind == Backpack.ItemKind.Attachment)
@@ -128,6 +129,8 @@ public partial class InventoryScreen
             Color colour = ConsumableInfo.Colour(item.Consumable);
             FillRect(vh, cell, Fade(colour, 0.12f * alpha));
             FillRect(vh, new Rect(cell.xMin, cell.yMax - 4f, cell.width, 4f), Fade(colour, alpha));
+            Rect picture = new Rect(cell.xMin + 5f, cell.yMin + 22f, cell.width - 10f, cell.height - 30f);
+            ConsumableSilhouette.Draw(vh, item.Consumable, picture, Fade(Color.Lerp(colour, Color.white, 0.4f), alpha));
 
             // A pip per item in the stack, filled for the ones there.
             int size = ConsumableInfo.StackSize(item.Consumable);
@@ -143,12 +146,15 @@ public partial class InventoryScreen
             return;
         }
 
-        // Materials: a tint and a bar in the material's colour, filled to how full the stack is.
+        // Materials: a wireframe picture like the attachments', with a tint and a bar in the
+        // material's colour, filled to how full the stack is.
         if (item.Kind == Backpack.ItemKind.Material)
         {
             Color colour = Materials.Colour(item.Material);
             FillRect(vh, cell, Fade(colour, 0.1f * alpha));
             FillRect(vh, new Rect(cell.xMin, cell.yMax - 4f, cell.width, 4f), Fade(colour, alpha));
+            Rect picture = new Rect(cell.xMin + 5f, cell.yMin + 22f, cell.width - 10f, cell.height - 30f);
+            MaterialSilhouette.Draw(vh, item.Material, picture, Fade(Color.Lerp(colour, Color.white, 0.4f), alpha));
 
             Rect stackBar = new Rect(cell.xMin + 6f, cell.yMin + 4f, cell.width - 12f, 4f);
             FillRect(vh, stackBar, Fade(phosphor, 0.15f * alpha));

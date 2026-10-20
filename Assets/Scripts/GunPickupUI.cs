@@ -14,6 +14,7 @@ public class GunPickupUI : MonoBehaviour
     {
         gunPickup = GetComponentInParent<GunPickup>();
         label = PickupLabel.Create(gunPickup.transform, transform.localPosition.y);
+        label.Compactable = true;
 
         gameObject.SetActive(false);
     }

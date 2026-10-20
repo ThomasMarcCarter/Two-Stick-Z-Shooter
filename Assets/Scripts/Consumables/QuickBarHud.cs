@@ -3,9 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using static MapMesh;
 
-// The quick-use bar on screen, beside the equipment panel: the four slots with what's in each,
-// how many are left, and the button that uses it (3-6 on a keyboard; on a controller the
-// selected slot shows RB). The slot being used fills up, with a ring at the cursor like a
+// The quick-use bar on screen, beside the equipment panel: the four slots with a wireframe
+// picture of what's in each (ConsumableSilhouette), how many are left, and the button that uses it. The selected slot (mouse wheel or D-pad to
+// change it) is lit like the gun in hand on the equipment panel: tinted, a bright frame and a
+// bar under it, and it shows the use button (RMB or RB); on a keyboard the others show 3-6. The slot being used fills up, with a ring at the cursor like a
 // reload, and adrenaline's time left shows above the bar. Hidden while the inventory is open,
 // which has its own copy of the bar. Built in code by EquipmentHud.
 public class QuickBarHud : MaskableGraphic
@@ -22,7 +23,6 @@ public class QuickBarHud : MaskableGraphic
 
     private TMP_Text header;
     private TMP_Text status;
-    private readonly TMP_Text[] names = new TMP_Text[QuickBar.SlotCount];
     private readonly TMP_Text[] counts = new TMP_Text[QuickBar.SlotCount];
     private readonly TMP_Text[] keys = new TMP_Text[QuickBar.SlotCount];
 
@@ -66,7 +66,6 @@ public class QuickBarHud : MaskableGraphic
         for (int i = 0; i < QuickBar.SlotCount; i++)
         {
             Rect slot = SlotRect(i);
-            names[i] = MakeText("", 14, new Rect(slot.xMin, slot.yMin + 18f, slot.width, 20f), phosphor, TextAlignmentOptions.Center, 2f);
             counts[i] = MakeText("", 11, new Rect(slot.xMin + 4f, slot.yMin + 4f, slot.width - 8f, 14f), dim, TextAlignmentOptions.BottomRight, 1f);
             keys[i] = MakeText("", 9, new Rect(slot.xMin + 4f, slot.yMax - 15f, slot.width - 8f, 12f), dim, TextAlignmentOptions.TopLeft, 1f);
         }
@@ -109,10 +108,6 @@ public class QuickBarHud : MaskableGraphic
             ConsumableType? type = bar[i];
             int count = bar.Count(i);
 
-            names[i].text = type is ConsumableType t ? ConsumableInfo.ShortName(t) : "";
-            names[i].color = type is ConsumableType c
-                ? Fade(Color.Lerp(ConsumableInfo.Colour(c), Color.white, 0.35f), count > 0 ? 1f : 0.35f)
-                : phosphor;
             counts[i].text = type != null ? "x" + count : "";
             keys[i].text = KeyLabel(i);
         }
@@ -123,18 +118,19 @@ public class QuickBarHud : MaskableGraphic
 
         header.text = GameInput.UsingGamepad
             ? $"> QUICK USE  <size=80%><alpha=#88>[{GameInput.Label(GameInput.QuickPrevious)} / {GameInput.Label(GameInput.QuickNext)}] SELECT"
-            : "> QUICK USE";
+            : $"> QUICK USE  <size=80%><alpha=#88>[WHEEL] SELECT  [{GameInput.Label(GameInput.QuickUse)}] USE";
 
         SetVerticesDirty();
     }
 
-    // Keyboard: each slot's own key. Controller: the use button, on the selected slot only.
+    // The selected slot shows the use button (RMB / RB); on a keyboard the others show their own
+    // key (3-6).
     private string KeyLabel(int slot)
     {
-        if (GameInput.UsingGamepad)
-            return slot == bar.Selected ? GameInput.Label(GameInput.QuickUse) : "";
+        if (slot == bar.Selected)
+            return GameInput.Label(GameInput.QuickUse);
 
-        return GameInput.Label(GameInput.QuickSlots[slot]);
+        return GameInput.UsingGamepad ? "" : GameInput.Label(GameInput.QuickSlots[slot]);
     }
 
     protected override void OnPopulateMesh(VertexHelper vh)
@@ -161,13 +157,22 @@ public class QuickBarHud : MaskableGraphic
                 float alpha = bar.Count(i) > 0 ? 1f : 0.3f;
                 FillRect(vh, slot, Fade(colour, 0.12f * alpha));
                 FillRect(vh, new Rect(slot.xMin, slot.yMax - 3f, slot.width, 3f), Fade(colour, alpha));
+                Rect picture = new Rect(slot.xMin + 6f, slot.yMin + 16f, slot.width - 12f, slot.height - 32f);
+                ConsumableSilhouette.Draw(vh, t, picture, Fade(Color.Lerp(colour, Color.white, 0.35f), alpha));
             }
 
             // Filling up from the bottom while it's being used.
             if (bar.UsingSlot == i)
                 FillRect(vh, new Rect(slot.xMin, slot.yMin, slot.width, slot.height * bar.UseProgress), Fade(phosphor, 0.3f));
 
-            OutlineRect(vh, slot, selected ? 2f : 1f, Fade(phosphor, selected ? 0.95f : 0.35f));
+            // Selected: lit, with a bright frame and a bar under it.
+            if (selected)
+            {
+                FillRect(vh, slot, Fade(phosphor, 0.12f));
+                FillRect(vh, new Rect(slot.xMin, slot.yMin - 7f, slot.width, 3f), phosphor);
+            }
+
+            OutlineRect(vh, slot, selected ? 2.5f : 1f, Fade(phosphor, selected ? 1f : 0.25f));
         }
 
         if (bar.IsUsing)

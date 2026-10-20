@@ -2,9 +2,10 @@ using UnityEngine;
 
 // The Butcher (floor 1's boss): plods after the player like a big zombie, but when it has them
 // in sight at a distance it stops, roars and glows red for a moment, then charges in a straight
-// line at several times its speed. Running into the player hurts and throws them; running into
-// a wall stuns it for a couple of seconds, during which it takes double damage. Sidestepping
-// the charge so it hits the wall is the way to beat it.
+// line at several times its speed, facing dead ahead (it can't turn once its aim locks).
+// Running into the player hurts and throws them; running into a wall stuns it for a couple of
+// seconds, during which it takes double damage. Sidestepping the charge so it hits the wall is
+// the way to beat it.
 [RequireComponent(typeof(Enemy))]
 public class BossButcher : MonoBehaviour, IBossMoves
 {
@@ -13,7 +14,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
     private const float MinRange = 3.5f;
     private const float MaxRange = 15f;
     private const float WindUpTime = 0.9f;
-    private const float AimLockTime = 0.25f;   // stops tracking the player this long before charging
+    private const float AimLockTime = 0.4f;    // stops tracking the player this long before charging
     private const float ChargeSpeed = 12f;
     private const float MaxChargeTime = 1.6f;
     private const float DazedTime = 2.2f;
@@ -90,8 +91,12 @@ public class BossButcher : MonoBehaviour, IBossMoves
                 float shake = Mathf.Sin(Time.time * 70f) * 0.04f * t;
                 transform.localScale = new Vector3(baseScale.x * (1f + shake), baseScale.y * (1f - shake), baseScale.z * (1f + shake));
 
+                // Once the aim locks, it faces the way it'll go and doesn't turn again until the
+                // charge (and any daze after it) is over.
                 if (phaseEnds - Time.time > AimLockTime)
                     chargeDirection = Bosses.Flat(enemy.Target.position - transform.position).normalized;
+                else
+                    enemy.FacingOverride = chargeDirection;
 
                 if (Time.time >= phaseEnds)
                     BeginCharge();
@@ -164,6 +169,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
     private void BeginCharge()
     {
         phase = Phase.Charge;
+        enemy.FacingOverride = chargeDirection;
         phaseEnds = Time.time + MaxChargeTime;
         transform.localScale = baseScale;
         enemy.SetGlow(new Color(1f, 0.15f, 0.05f) * 1.5f);
@@ -196,6 +202,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
         phase = Phase.Stalk;
         nextCharge = Time.time + cooldown;
         enemy.ExternalControl = false;
+        enemy.FacingOverride = null;
         transform.localScale = baseScale;
         enemy.SetGlow(restGlow);
     }

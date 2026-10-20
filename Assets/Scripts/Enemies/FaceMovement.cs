@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // Turns an enemy's model to face where it's going: the way it's moving, or the player while it's
-// chasing and close. The enemy's body itself never rotates (its rotation is frozen for the
+// chasing and close, unless something has locked its facing (Enemy.FacingOverride, e.g. the
+// Butcher mid-charge), which it snaps to. The enemy's body itself never rotates (its rotation is frozen for the
 // physics), so only the model child turns. Added by CharacterVisuals.AttachToEnemy.
 public class FaceMovement : MonoBehaviour
 {
@@ -18,6 +19,14 @@ public class FaceMovement : MonoBehaviour
     {
         if (enemy == null || enemy.Body == null)
             return;
+
+        if (enemy.FacingOverride is Vector3 locked && locked.sqrMagnitude > 0.0001f)
+        {
+            locked.y = 0f;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(locked.normalized, Vector3.up),
+                TurnSpeed * 2f * Time.deltaTime);
+            return;
+        }
 
         Vector3 look = enemy.Body.linearVelocity;
         look.y = 0f;

@@ -11,7 +11,7 @@ public partial class FloorGenerator
     // ---------- Melee upgrades ----------
 
     // A random upgrade the player can still take (not maxed, and not already lying on this
-    // floor so many times it would max out); null if every one is maxed.
+    // floor or waiting in a crate so many times it would max out); null if every one is maxed.
     private MeleeUpgrade? PickMeleeUpgrade(float roll)
     {
         PlayerMelee melee = player != null ? player.GetComponent<PlayerMelee>() : null;
@@ -25,6 +25,15 @@ public partial class FloorGenerator
             {
                 if (pickup.Upgrade == upgrade)
                     lying++;
+            }
+
+            foreach (SupplyCrate crate in FindObjectsByType<SupplyCrate>())
+            {
+                foreach (CrateItem item in crate.Items)
+                {
+                    if (item.Kind == CrateItem.ItemKind.MeleeUpgrade && item.Upgrade == upgrade)
+                        lying++;
+                }
             }
 
             int level = melee != null ? melee.Level(upgrade) : 0;
@@ -43,19 +52,6 @@ public partial class FloorGenerator
     {
         if (PickMeleeUpgrade(roll) is MeleeUpgrade upgrade)
             MeleeUpgradePickup.Spawn(upgrade, position, parent, ammoMaterial);
-    }
-
-    // Further out from the hatch than the boss's attachments.
-    private void DropMeleeUpgrades(Room room, Vector3 position)
-    {
-        Vector3 centre = new Vector3(room.transform.position.x, 0f, room.transform.position.z);
-        Vector3 fromCentre = new Vector3(position.x, 0f, position.z) - centre;
-        Vector3 outward = fromCentre.sqrMagnitude > 0.01f ? fromCentre.normalized : Vector3.back;
-        Vector3 spot = centre + outward * Mathf.Clamp(fromCentre.magnitude - 1.5f, 2.8f, 3.5f) + outward * 1.6f;
-        Vector3 across = new Vector3(-outward.z, 0f, outward.x);
-
-        for (int i = 0; i < bossMeleeUpgrades; i++)
-            SpawnMeleeUpgrade(spot + across * ((i - (bossMeleeUpgrades - 1) / 2f) * 1.6f), room.transform, UnityEngine.Random.value);
     }
 
     // Debug: one of each upgrade in a row at a point.
@@ -270,78 +266,126 @@ public partial class FloorGenerator
         return AmmoPickup.Spawn(type, amount, spot, room.transform, ammoMaterial, entry.crate).gameObject;
     }
 
-    // Treasure rooms get a weapon pickup in the middle, with a full magazine.
-    private void SpawnTreasure(Room room)
-    {
-        if (room.Type != RoomType.Treasure || pickupPrefab == null || treasureWeapons == null || treasureWeapons.Length == 0)
-            return;
+    // ---------- Supply crates ----------
 
-        GameObject weapon = treasureWeapons[rng.Next(treasureWeapons.Length)];
-        Gun gun = weapon != null ? weapon.GetComponent<Gun>() : null;
-
-        if (gun == null)
-            return;
-
-        GameObject pickup = Instantiate(pickupPrefab, room.transform.position, Quaternion.identity, room.transform);
-        pickup.GetComponent<GunPickup>().SetWeaponPrefab(weapon, gun.GetMagazineSize());
-
-        // Melee upgrades behind the weapon.
-        for (int i = 0; i < treasureMeleeUpgrades && ammoMaterial != null; i++)
-        {
-            Vector3 offset = new Vector3((i - (treasureMeleeUpgrades - 1) / 2f) * 1.2f, 0f, 1.6f);
-            SpawnMeleeUpgrade(room.transform.position + offset, room.transform, (float)rng.NextDouble());
-        }
-
-        // The supplies sit in a row in front of the weapon.
-        if (ammoMaterial == null || treasureSupplies == null)
-            return;
-
-        for (int i = 0; i < treasureSupplies.Length; i++)
-        {
-            Vector3 offset = new Vector3((i - (treasureSupplies.Length - 1) / 2f) * 1.1f, 0f, -1.6f);
-            ConsumablePickup.Spawn(treasureSupplies[i], 1, room.transform.position + offset, room.transform, ammoMaterial);
-        }
-    }
-
-    // ---------- Attachments ----------
-
-    // The treasure room's attachments, either side of its weapon, alternating left and right.
-    private void SpawnTreasureAttachments(Room room)
+    // The treasure room's haul, in a supply crate in its middle: a weapon with a full magazine,
+    // attachments, melee upgrades, its supplies and some crafting materials.
+    private void SpawnTreasureCrate(Room room)
     {
         if (room.Type != RoomType.Treasure)
             return;
 
-        List<WeaponAttachment> picked = PickAttachments(treasureAttachments, () => (float)rng.NextDouble());
+        SupplyCrate crate = SupplyCrate.Create("TREASURE ROOM // SUPPLY CRATE", room.transform.position, Vector3.back, room.transform);
 
-        for (int i = 0; i < picked.Count; i++)
+        if (treasureWeapons != null && treasureWeapons.Length > 0)
         {
-            float side = i % 2 == 0 ? -1f : 1f;
-            Vector3 offset = Vector3.right * side * (1.8f + (i / 2) * 1.2f);
-            AttachmentPickup.Spawn(picked[i], room.transform.position + offset, room.transform, ammoMaterial);
+            GameObject weapon = treasureWeapons[rng.Next(treasureWeapons.Length)];
+            Gun gun = weapon != null ? weapon.GetComponent<Gun>() : null;
+
+            if (gun != null)
+                crate.Add(CrateItem.ForGun(weapon, gun.GetMagazineSize()));
         }
+
+        foreach (WeaponAttachment attachment in PickAttachments(treasureAttachments, () => (float)rng.NextDouble()))
+            crate.Add(CrateItem.ForAttachment(attachment));
+
+        // One at a time, so each pick knows about the ones already in the crate.
+        for (int i = 0; i < treasureMeleeUpgrades; i++)
+        {
+            if (PickMeleeUpgrade((float)rng.NextDouble()) is MeleeUpgrade upgrade)
+                crate.Add(CrateItem.ForMeleeUpgrade(upgrade));
+        }
+
+        if (treasureSupplies != null)
+        {
+            foreach (ConsumableType supply in treasureSupplies)
+                crate.Add(CrateItem.ForConsumable(supply, 1));
+        }
+
+        for (int i = 0; i < treasureMaterials; i++)
+            crate.Add(CrateItem.ForMaterial(PickMaterial((float)rng.NextDouble()), 1));
     }
 
-    // The boss's attachments, side by side where it fell, drawn in towards the middle of the
-    // room so they don't end up in a wall, but not onto the hatch that opens there.
-    private void DropAttachments(Room room, Vector3 position)
+    // The boss's haul, in a supply crate where it fell (kept clear of the hatch in the middle,
+    // the uplink and the walls): crate-sized ammo for each gun the player has, attachments,
+    // melee upgrades and crafting materials.
+    private void SpawnBossCrate(Room room, Vector3 position)
     {
-        List<WeaponAttachment> picked = PickAttachments(bossAttachments, () => UnityEngine.Random.value);
+        Vector3 spot = BossCrateSpot(room, position);
         Vector3 centre = new Vector3(room.transform.position.x, 0f, room.transform.position.z);
-        Vector3 fromCentre = new Vector3(position.x, 0f, position.z) - centre;
+        SupplyCrate crate = SupplyCrate.Create("BOSS CACHE // SUPPLY CRATE", spot, centre - spot, room.transform);
 
-        if (fromCentre.sqrMagnitude < 0.01f)
-            fromCentre = Vector3.back;
+        List<AmmoType> types = HeldAmmoTypes();
 
-        Vector3 outward = fromCentre.normalized;
-        Vector3 spot = centre + outward * Mathf.Clamp(fromCentre.magnitude - 1.5f, 2.8f, 3.5f);
-        Vector3 across = new Vector3(-outward.z, 0f, outward.x);
+        if (types.Count == 0)
+            types.Add(AmmoInfo.All[UnityEngine.Random.Range(0, AmmoInfo.All.Length)]);
 
-        // Spread across, side by side at the same distance from the hatch.
-        for (int i = 0; i < picked.Count; i++)
+        foreach (AmmoType type in types)
+            crate.Add(CrateItem.ForAmmo(type, DropAmount(type, crateMultiplier, UnityEngine.Random.value)));
+
+        foreach (WeaponAttachment attachment in PickAttachments(bossAttachments, () => UnityEngine.Random.value))
+            crate.Add(CrateItem.ForAttachment(attachment));
+
+        for (int i = 0; i < bossMeleeUpgrades; i++)
         {
-            Vector3 offset = across * ((i - (picked.Count - 1) / 2f) * 1.8f);
-            AttachmentPickup.Spawn(picked[i], spot + offset, room.transform, ammoMaterial);
+            if (PickMeleeUpgrade(UnityEngine.Random.value) is MeleeUpgrade upgrade)
+                crate.Add(CrateItem.ForMeleeUpgrade(upgrade));
         }
+
+        for (int i = 0; i < bossMaterials; i++)
+            crate.Add(CrateItem.ForMaterial(PickMaterial(UnityEngine.Random.value), 1));
+    }
+
+    // Where the boss crate goes: in the boss room's middle cell, out from the hatch towards where
+    // the boss fell (or round from there), never on the uplink's side, well inside the walls and
+    // clear of anything solid. Falls back to beside the hatch.
+    private Vector3 BossCrateSpot(Room room, Vector3 position)
+    {
+        Vector2Int cell = MiddleCell(room);
+        Vector3 centre = CellToWorld(cell);
+        Vector2Int uplinkWall = UplinkWall(room, cell);
+        Vector3 uplink = new Vector3(uplinkWall.x, 0f, uplinkWall.y);
+        Vector3 toBoss = new Vector3(position.x - centre.x, 0f, position.z - centre.z);
+        float start = toBoss.sqrMagnitude > 0.01f ? Mathf.Atan2(toBoss.z, toBoss.x) : 0f;
+        Vector2 half = roomSize / 2f - new Vector2(1.6f, 1.4f);
+
+        for (int step = 0; step < 16; step++)
+        {
+            // Out from the boss's direction, alternating either side of it.
+            float angle = start + (step % 2 == 0 ? 1f : -1f) * ((step + 1) / 2) * (Mathf.PI / 8f);
+            Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+
+            if (Vector3.Dot(direction, uplink) > 0.5f)
+                continue;
+
+            // As far as 3.5 m out, but no further than the walls allow.
+            float reach = Mathf.Min(3.5f,
+                Mathf.Abs(direction.x) > 0.01f ? half.x / Mathf.Abs(direction.x) : float.MaxValue,
+                Mathf.Abs(direction.z) > 0.01f ? half.y / Mathf.Abs(direction.z) : float.MaxValue);
+
+            if (reach < 2.4f)
+                continue;
+
+            Vector3 spot = centre + direction * reach;
+
+            if (IsClearForCrate(spot))
+                return spot;
+        }
+
+        return centre + Vector3.left * 2.6f;
+    }
+
+    // Nothing solid and still (walls, pillars, furniture) where a crate would stand.
+    private static bool IsClearForCrate(Vector3 spot)
+    {
+        foreach (Collider hit in Physics.OverlapBox(spot + Vector3.up * 0.4f, new Vector3(0.9f, 0.3f, 0.7f), Quaternion.identity, ~0,
+            QueryTriggerInteraction.Ignore))
+        {
+            if (hit.attachedRigidbody == null || hit.attachedRigidbody.isKinematic)
+                return false;
+        }
+
+        return true;
     }
 
     // Debug: one of every attachment in a row at a point.

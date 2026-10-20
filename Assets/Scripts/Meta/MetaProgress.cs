@@ -19,9 +19,10 @@ public enum MetaUpgrade
 // Progress that carries over between runs (the only thing the game saves; there are no
 // mid-run saves): scrap, banked materials, the survivors rescued, the station upgrades bought
 // with scrap and materials, and a few lifetime stats. Kept in a small JSON file in the player's
-// data folder, written whenever something changes. A run pays out its scrap once, when it ends
-// in death or victory: a scrap a kill, more for each boss beaten, and a bonus for winning
-// (abandoned runs pay nothing). Materials are banked separately, when sent home from an uplink terminal (UplinkTerminal).
+// data folder, written whenever something changes. Scrap earned on a run (a scrap a kill, more
+// for each boss beaten) is carried, like materials: it's banked only when sent home from a boss
+// room's uplink terminal (UplinkTerminal) or when the run is won (with a bonus for winning), and
+// whatever hasn't been sent home is lost if the player dies (abandoned runs pay nothing either).
 // An upgrade is bought at its station: it needs the station's survivor rescued (except the
 // generator), scrap and materials, and for levels above 1 the generator upgraded far enough.
 // There are three save profiles, each its own file (profile 1 keeps the original file name); the
@@ -99,6 +100,7 @@ public static class MetaProgress
     {
         data = null;
         runActive = false;
+        ScrapSentHome = 0;
         profile = 0;
         Changed = null;
     }
@@ -268,21 +270,48 @@ public static class MetaProgress
 
     // ---------- Runs ----------
 
-    // A run has begun (floor 1 is being played); it pays out when it ends.
+    // A run has begun (floor 1 is being played); its scrap is carried until sent home or won.
     public static void BeginRun()
     {
         runActive = true;
+        ScrapSentHome = 0;
     }
 
-    // The run ended in death or victory: banks its scrap and stats. Returns the scrap earned, or
-    // 0 if this run has already been paid (or never began).
+    // Scrap this run has already sent home from uplinks (banked).
+    public static int ScrapSentHome { get; private set; }
+
+    // Scrap earned on this run so far that hasn't been sent home yet: lost if the player dies.
+    public static int CarriedScrap(int floorsCleared, int kills)
+    {
+        return runActive ? Mathf.Max(0, ScrapFor(false, floorsCleared, kills) - ScrapSentHome) : 0;
+    }
+
+    // An uplink sends the carried scrap home: banked for good. Returns how much went.
+    public static int SendScrapHome(int floorsCleared, int kills)
+    {
+        int amount = CarriedScrap(floorsCleared, kills);
+
+        if (amount <= 0)
+            return 0;
+
+        ScrapSentHome += amount;
+        Data.scrap += amount;
+        Data.totalScrap += amount;
+        Save();
+        Changed?.Invoke();
+        return amount;
+    }
+
+    // The run ended in death or victory: banks its stats, and on a victory the rest of its scrap
+    // (with the bonus for winning). On a death the carried scrap is simply gone. Returns the
+    // scrap banked now (0 for a death, or if this run has already ended or never began).
     public static int EndRun(bool victory, int floorsCleared, int deepestFloor, int kills)
     {
         if (!runActive)
             return 0;
 
         runActive = false;
-        int earned = ScrapFor(victory, floorsCleared, kills);
+        int earned = victory ? Mathf.Max(0, ScrapFor(true, floorsCleared, kills) - ScrapSentHome) : 0;
         Data.scrap += earned;
         Data.totalScrap += earned;
         Data.runs++;

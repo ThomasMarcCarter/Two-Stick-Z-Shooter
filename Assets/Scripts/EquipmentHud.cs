@@ -5,7 +5,10 @@ using static MapMesh;
 
 // Bottom-left equipment panel in the radar's phosphor style. The gun in hand gets the big panel:
 // its silhouette, name, ammo count, spare rounds of its ammo type, a pip per round, and a reload
-// bar. The holstered slot sits underneath, smaller and dimmed. Picking up ammo flashes a short
+// bar. It's highlighted so there's no mistaking it: a bright solid frame over a phosphor-tinted
+// fill, a selection bar down its left side and its slot name in bold (">> MAIN [1]"); it flashes
+// for a moment when the player switches. The holstered slot sits underneath, smaller,
+// unlit and faded right down. Picking up ammo flashes a short
 // "+12 9MM" notice above the panel. Each slot shows the button that switches to it, following the
 // device in use and any rebinds. Frames, icons and pips are one mesh; the text is created at
 // runtime, so the component only needs adding to the Canvas. Also builds the quick-use bar
@@ -44,6 +47,9 @@ public class EquipmentHud : MaskableGraphic
 
     private AmmoInventory ammo;
     private float pickupNoticeUntil;
+    private Gun.Slot shownSlot;
+    private float switchedAt = -10f;
+    private const float SwitchFlashTime = 0.35f;
 
     private string lastTexts;
     private bool built;
@@ -102,8 +108,14 @@ public class EquipmentHud : MaskableGraphic
         if (weapons == null)
             return;
 
+        if (weapons.ActiveSlot != shownSlot)
+        {
+            shownSlot = weapons.ActiveSlot;
+            switchedAt = Time.unscaledTime;
+        }
+
         UpdateText();
-        SetVerticesDirty();   // pips, reload bar and blink change every frame
+        SetVerticesDirty();   // pips, reload bar, blink and the switch flash change every frame
 
         // Fade the pickup notice out over its last half second.
         float left = pickupNoticeUntil - Time.unscaledTime;
@@ -127,12 +139,12 @@ public class EquipmentHud : MaskableGraphic
         Rect holstered = HolsteredRect;
 
         header = MakeText("Header", "> EQUIPMENT", 13, new Rect(0f, active.yMax + 3f, width, 18f), phosphor, TextAlignmentOptions.BottomLeft);
-        activeSlotLabel = MakeText("Active Slot", "", 11, new Rect(8f, active.yMax - 18f, width - 16f, 16f), dim, TextAlignmentOptions.TopLeft);
+        activeSlotLabel = MakeText("Active Slot", "", 11, new Rect(8f, active.yMax - 18f, width - 16f, 16f), phosphor, TextAlignmentOptions.TopLeft);
         activeName = MakeText("Active Name", "", 16, new Rect(124f, active.yMax - 40f, width - 132f, 20f), phosphor, TextAlignmentOptions.Left);
         activeAmmo = MakeText("Active Ammo", "", 26, new Rect(124f, active.yMin + 22f, width - 132f, 32f), phosphor, TextAlignmentOptions.Left);
         activeStatus = MakeText("Active Status", "", 11, new Rect(124f, active.yMin + 16f, width - 132f, 14f), phosphor, TextAlignmentOptions.Right);
-        holsteredSlotLabel = MakeText("Holstered Slot", "", 10, new Rect(66f, holstered.yMax - 16f, holstered.width - 72f, 14f), Fade(phosphor, 0.45f), TextAlignmentOptions.TopLeft);
-        holsteredInfo = MakeText("Holstered Info", "", 13, new Rect(66f, 4f, holstered.width - 72f, 18f), Fade(phosphor, 0.55f), TextAlignmentOptions.BottomLeft);
+        holsteredSlotLabel = MakeText("Holstered Slot", "", 10, new Rect(66f, holstered.yMax - 16f, holstered.width - 72f, 14f), Fade(phosphor, 0.25f), TextAlignmentOptions.TopLeft);
+        holsteredInfo = MakeText("Holstered Info", "", 13, new Rect(66f, 4f, holstered.width - 72f, 18f), Fade(phosphor, 0.3f), TextAlignmentOptions.BottomLeft);
 
         pickupNotice = MakeText("Pickup Notice", "", 13, new Rect(0f, active.yMax + 22f, width, 18f), phosphor, TextAlignmentOptions.BottomLeft);
         activeAmmo.characterSpacing = 2f;
@@ -203,7 +215,7 @@ public class EquipmentHud : MaskableGraphic
             return;
 
         lastTexts = all;
-        activeSlotLabel.text = activeLabel;
+        activeSlotLabel.text = "<b>>> " + activeLabel + "</b>";
         activeName.text = name;
         activeAmmo.text = ammo;
         activeAmmo.color = AmmoColour(gun);
@@ -265,11 +277,15 @@ public class EquipmentHud : MaskableGraphic
         Gun gun = weapons.Active.Gun;
         Gun holstered = weapons.Holstered.Gun;
 
-        // Active panel: background, frame and the radar's corner brackets.
+        // Active panel: lit up. A phosphor-tinted fill (brighter for a moment after switching), a
+        // solid bright frame, the radar's corner brackets and a selection bar down the left.
         Rect active = Offset(ActiveRect, origin);
-        FillRect(vh, active, new Color(0f, 0.07f, 0.03f, 0.8f));
-        OutlineRect(vh, active, 1f, Fade(phosphor, 0.5f));
+        float flash = 1f - Mathf.Clamp01((Time.unscaledTime - switchedAt) / SwitchFlashTime);
+        FillRect(vh, active, new Color(0f, 0.07f, 0.03f, 0.85f));
+        FillRect(vh, active, Fade(phosphor, 0.05f + 0.25f * flash));
+        OutlineRect(vh, active, 2f, phosphor);
         Brackets(vh, active, phosphor);
+        FillRect(vh, new Rect(active.xMin - 9f, active.yMin, 4f, active.height), phosphor);
 
         if (gun != null)
         {
@@ -277,13 +293,13 @@ public class EquipmentHud : MaskableGraphic
             DrawPips(vh, gun, Offset(PipArea, origin));
         }
 
-        // Holstered panel: smaller and dimmed.
+        // Holstered panel: smaller, unlit and faded.
         Rect slot = Offset(HolsteredRect, origin);
-        FillRect(vh, slot, new Color(0f, 0.07f, 0.03f, 0.6f));
-        OutlineRect(vh, slot, 1f, Fade(phosphor, 0.3f));
+        FillRect(vh, slot, new Color(0f, 0.04f, 0.02f, 0.5f));
+        OutlineRect(vh, slot, 1f, Fade(phosphor, 0.18f));
 
         if (holstered != null)
-            WeaponSilhouette.Draw(vh, holstered.HudIcon, Offset(HolsteredIconArea, origin), Fade(phosphor, 0.45f));
+            WeaponSilhouette.Draw(vh, holstered.HudIcon, Offset(HolsteredIconArea, origin), Fade(phosphor, 0.22f));
     }
 
     // One pip per round in the magazine, filled for rounds loaded; a thin bar shows reload progress.

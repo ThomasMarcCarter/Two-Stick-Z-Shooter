@@ -110,15 +110,13 @@ public partial class InventoryScreen
         }
         else if (item.Kind == Backpack.ItemKind.Consumable)
         {
-            main.text = ConsumableInfo.ShortName(item.Consumable);
-            main.color = Fade(Color.Lerp(ConsumableInfo.Colour(item.Consumable), Color.white, 0.35f), item.Amount > 0 ? 1f : 0.4f);
-            sub.text = "x" + item.Amount;
+            main.text = "";   // drawn as a picture instead (DrawItem)
+            sub.text = $"{ConsumableInfo.Name(item.Consumable)} x{item.Amount}";
         }
         else if (item.Kind == Backpack.ItemKind.Material)
         {
-            main.text = Materials.Short(item.Material);
-            main.color = Color.Lerp(Materials.Colour(item.Material), Color.white, 0.3f);
-            sub.text = "x" + item.Amount;
+            main.text = "";   // drawn as a picture instead (DrawItem)
+            sub.text = $"{Materials.Name(item.Material)} x{item.Amount}";
         }
         else
         {
@@ -200,7 +198,9 @@ public partial class InventoryScreen
         if (spot.Kind == SpotKind.QuickSlot)
         {
             Backpack.Item quick = QuickItem(spot.Index);
-            string key = GameInput.UsingGamepad ? GameInput.Label(GameInput.QuickUse) + " (WHEN SELECTED)" : GameInput.Label(GameInput.QuickSlots[spot.Index]);
+            string key = GameInput.UsingGamepad
+                ? GameInput.Label(GameInput.QuickUse) + " (WHEN SELECTED)"
+                : GameInput.Label(GameInput.QuickSlots[spot.Index]) + ", OR " + GameInput.Label(GameInput.QuickUse) + " WHEN SELECTED";
 
             if (quick == null)
             {

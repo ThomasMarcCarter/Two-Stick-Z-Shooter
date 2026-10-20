@@ -24,6 +24,7 @@ public class Minimap : MaskableGraphic
     [SerializeField] private float pulseInterval = 1.2f;
 
     private Rect clip;
+    private FloorExit hatch;
     private string lastStatus;
 
     protected override void Awake()
@@ -85,6 +86,7 @@ public class Minimap : MaskableGraphic
         {
             DrawRooms(vh, centre, playerMap);
             DrawMarkers(vh, centre, playerMap);
+            DrawStations(vh, centre, playerMap);
             DrawEnemies(vh, centre, playerMap);
             DrawDetectionRings(vh, centre, playerMap);
             DrawPlayer(vh, centre);
@@ -184,7 +186,8 @@ public class Minimap : MaskableGraphic
 
         foreach (Room room in floor.Rooms)
         {
-            if (room.Type == RoomType.Normal || !floor.IsKnown(room))
+            // No spawn marker in the hideout: its stations are its icons.
+            if (room.Type == RoomType.Normal || !floor.IsKnown(room) || floor.IsHideout)
                 continue;
 
             Vector2 position = MapPoint(room.transform.position, centre, playerMap);
@@ -193,6 +196,32 @@ public class Minimap : MaskableGraphic
                 MapSymbols.DrawEdgeMarker(vh, room.Type, pinned, direction, 8f, phosphor, hostile);
             else
                 MapSymbols.DrawMarker(vh, room.Type, position, 10f, phosphor, hostile);
+        }
+    }
+
+    // The hideout's stations, as small icons (abandoned survivor areas dim), and its deploy hatch.
+    private void DrawStations(VertexHelper vh, Vector2 centre, Vector2 playerMap)
+    {
+        if (floor.IsHideout)
+        {
+            if (hatch == null)
+                hatch = FindAnyObjectByType<FloorExit>();
+
+            if (hatch != null)
+            {
+                Vector2 at = MapPoint(hatch.Position, centre, playerMap);
+
+                if (InsideClip(at, 7f))
+                    MapSymbols.DrawHatch(vh, at, 11f, phosphor);
+            }
+        }
+
+        foreach (StationMarker marker in StationMarker.All)
+        {
+            Vector2 position = MapPoint(marker.Position, centre, playerMap);
+
+            if (InsideClip(position, 7f))
+                MapSymbols.DrawStation(vh, marker.Station, position, 11f, phosphor, marker.Abandoned);
         }
     }
 

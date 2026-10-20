@@ -32,6 +32,9 @@ public class CrtMenu
         startRow = firstRow;
     }
 
+    // The number of the highlighted button (counting column by column), or -1 if none is.
+    public int Highlighted => column >= 0 ? Number(column, row) : -1;
+
     public void Open()
     {
         column = GameInput.UsingGamepad ? startColumn : -1;

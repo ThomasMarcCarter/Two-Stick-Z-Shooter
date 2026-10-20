@@ -61,6 +61,7 @@ public partial class FloorGenerator
         int health = Mathf.Max(1, Mathf.RoundToInt(bossHealth * Bosses.HealthMultiplier(kind)));
         float speed = bossSpeed * Bosses.SpeedMultiplier(kind);
         Enemy boss = SpawnEnemy(room, room.transform.position, Bosses.Size(kind), health, speed, bossContactDamage, "Boss", EnemyKind.Walker);
+        boss.Heavy = true;
         if (CharacterVisuals.Current != null)
             CharacterVisuals.AttachToEnemy(boss, CharacterVisuals.Current.For(kind), Bosses.AnimationStyle(kind));
 
@@ -160,36 +161,14 @@ public partial class FloorGenerator
         AmmoPickup.Spawn(type, DropAmount(type, crateMultiplier, (float)rng.NextDouble()), position, room.transform, ammoMaterial, true);
     }
 
-    // A dead enemy sometimes leaves ammo; a dead boss always leaves crate-sized drops, one for
-    // each gun the player has (or one of anything if they somehow have none).
-    private void DropAmmo(Room room, Enemy enemy, bool boss)
+    // A dead enemy sometimes leaves ammo (a boss's goes in its supply crate instead).
+    private void DropAmmo(Room room, Enemy enemy)
     {
-        if (ammoMaterial == null)
+        if (ammoMaterial == null || UnityEngine.Random.value >= EnemyAmmoDropChance)
             return;
 
-        Vector3 position = enemy.transform.position;
-
-        if (!boss)
-        {
-            if (UnityEngine.Random.value < EnemyAmmoDropChance)
-            {
-                AmmoType type = PickAmmoType(UnityEngine.Random.value, UnityEngine.Random.value);
-                AmmoPickup.Spawn(type, DropAmount(type, 1f, UnityEngine.Random.value), position, room.transform, ammoMaterial, false);
-            }
-
-            return;
-        }
-
-        List<AmmoType> types = HeldAmmoTypes();
-
-        if (types.Count == 0)
-            types.Add(AmmoInfo.All[UnityEngine.Random.Range(0, AmmoInfo.All.Length)]);
-
-        for (int i = 0; i < types.Count; i++)
-        {
-            Vector3 offset = new Vector3((i - (types.Count - 1) / 2f) * 1.2f, 0f, -1.5f);
-            AmmoPickup.Spawn(types[i], DropAmount(types[i], crateMultiplier, UnityEngine.Random.value), position + offset, room.transform, ammoMaterial, true);
-        }
+        AmmoType type = PickAmmoType(UnityEngine.Random.value, UnityEngine.Random.value);
+        AmmoPickup.Spawn(type, DropAmount(type, 1f, UnityEngine.Random.value), InsideRoom(room, enemy.transform.position), room.transform, ammoMaterial, false);
     }
 
     // Usually ammo for a gun the player is carrying, so drops are useful; sometimes any type.
@@ -341,14 +320,14 @@ public partial class FloorGenerator
                 Material splat = bloodSplatMaterials[UnityEngine.Random.Range(0, bloodSplatMaterials.Length)];
                 ImpactEffects.FloorSplat(dead.transform.position, boss ? 3f : 1.5f, room.transform, splat);
             }
-            DropAmmo(room, dead, boss);
-            DropMaterials(room, dead.transform.position, boss);
-
             if (boss)
             {
-                DropAttachments(room, dead.transform.position);
-                DropMeleeUpgrades(room, dead.transform.position);
+                SpawnBossCrate(room, dead.transform.position);
+                return;
             }
+
+            DropAmmo(room, dead);
+            DropMaterials(room, dead.transform.position);
         };
         room.AddEnemy(enemy);
         return enemy;

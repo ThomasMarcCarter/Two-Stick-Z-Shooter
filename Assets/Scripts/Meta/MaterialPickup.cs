@@ -45,6 +45,7 @@ public class MaterialPickup : MonoBehaviour
         pickup.bobOffset = Random.value * 10f;
         AddGlow(root.transform, Materials.Colour(type));
         pickup.label = PickupLabel.Create(root.transform, 1.5f);
+        pickup.label.Compactable = true;
         return pickup;
     }
 

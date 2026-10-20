@@ -12,6 +12,9 @@ using static MapMesh;
 // Labels that would overlap on screen are stacked into a tidy column by PickupLabelStack, which
 // moves them after they've placed themselves; one moved off its item gets a thin leader line
 // back to it, so it's clear which label is whose.
+// Loot labels (Compactable) don't all show in full: only the one nearest the player does (its
+// details and the button prompt); the rest shrink to a dim one-line name tag, so a room full of
+// drops reads as a few short tags rather than a wall of panels.
 // After CameraFollow, so it's placed for where the camera ends up this frame.
 [DefaultExecutionOrder(200)]
 public class PickupLabel : MonoBehaviour
@@ -22,6 +25,9 @@ public class PickupLabel : MonoBehaviour
 
     private static readonly Color Phosphor = UiColours.Phosphor;
     private static FloorGenerator floor;
+    private static Transform player;
+    private static PickupLabel nearest;
+    private static int nearestFrame = -1;
 
     // Every label showing, for PickupLabelStack.
     private static readonly List<PickupLabel> showing = new List<PickupLabel>();
@@ -31,6 +37,9 @@ public class PickupLabel : MonoBehaviour
     {
         showing.Clear();
         floor = null;
+        player = null;
+        nearest = null;
+        nearestFrame = -1;
     }
 
     public static IReadOnlyList<PickupLabel> Showing => showing;
@@ -42,18 +51,29 @@ public class PickupLabel : MonoBehaviour
     private Func<string> textSource;
     private Color accent = Phosphor;
     private Canvas canvas;
+    private CanvasGroup group;
 
     // Above the item on screen instead of over it, with this much room between (world units):
     // for things the player needs to see while reading the label (the training dummy). 0 keeps
     // it centred over the item.
     public float Clearance { get; set; }
 
+    // A loot label: shown in full only while it's the nearest loot label to the player, as a
+    // dim one-line name tag otherwise.
+    public bool Compactable { get; set; }
+
+    // Showing as a name tag this frame.
+    public bool Compact { get; private set; }
+
     // Where it put itself this frame, before any stacking, and its size in world units.
     public Vector3 Placed { get; private set; }
     public Vector2 WorldSize { get; private set; }
 
     // Shown on screen this frame, before the stack has its say (the inventory hides them all).
-    public bool Visible => canvas != null && !InventoryScreen.IsOpen;
+    public bool Visible => canvas != null && !ScreenOpen;
+
+    // A full screen is up over the world (or the player is dying), so labels keep out of the way.
+    private static bool ScreenOpen => InventoryScreen.IsOpen || CrateScreen.IsOpen || DeathScreen.IsDying || DeathScreen.IsShowing;
 
     // Hidden by the stack for this frame (too many in one pile; see PickupLabelStack).
     public bool Suppressed { get; private set; }
@@ -86,6 +106,9 @@ public class PickupLabel : MonoBehaviour
         label.pickup = owner;
         label.height = labelHeight;
         label.canvas = canvas;
+        label.group = root.AddComponent<CanvasGroup>();
+        label.group.interactable = false;
+        label.group.blocksRaycasts = false;
         label.Build();
         root.SetActive(false);
         return label;
@@ -165,15 +188,22 @@ public class PickupLabel : MonoBehaviour
         if (canvas == null)
             canvas = GetComponent<Canvas>();
 
-        canvas.enabled = !InventoryScreen.IsOpen && !Suppressed;
+        canvas.enabled = !ScreenOpen && !Suppressed;
         Refresh();
     }
 
     private void Refresh()
     {
+        Compact = Compactable && Nearest() != this;
+        group.alpha = Compact ? 0.75f : 1f;
+        text.fontSize = Compact ? 20f : 24f;
+
         if (textSource != null)
         {
             string value = textSource();
+
+            if (Compact)
+                value = NameOnly(value);
 
             if (text.text != value)
                 text.text = value;
@@ -193,6 +223,68 @@ public class PickupLabel : MonoBehaviour
         transform.position = Placed;
     }
 
+    // The loot label nearest the player this frame, worked out once a frame.
+    private static PickupLabel Nearest()
+    {
+        if (nearestFrame == Time.frameCount)
+            return nearest;
+
+        nearestFrame = Time.frameCount;
+        nearest = null;
+
+        if (player == null)
+        {
+            PlayerWeapon weapon = FindAnyObjectByType<PlayerWeapon>();
+            player = weapon != null ? weapon.transform : null;
+
+            if (player == null)
+                return null;
+        }
+
+        float best = float.MaxValue;
+
+        foreach (PickupLabel label in showing)
+        {
+            if (!label.Compactable || label.pickup == null)
+                continue;
+
+            Vector3 offset = label.pickup.position - player.position;
+            float distance = offset.x * offset.x + offset.z * offset.z;
+
+            if (distance < best)
+            {
+                best = distance;
+                nearest = label;
+            }
+        }
+
+        return nearest;
+    }
+
+    // The first line that isn't small print (a "MELEE UPGRADE" header), up to any smaller-print
+    // detail after the name.
+    private static string NameOnly(string value)
+    {
+        string[] lines = value.Split('\n');
+        value = lines[0];
+
+        foreach (string line in lines)
+        {
+            if (!line.StartsWith("<size", StringComparison.Ordinal))
+            {
+                value = line;
+                break;
+            }
+        }
+
+        int detail = value.IndexOf("<size", StringComparison.Ordinal);
+
+        if (detail > 0)
+            value = value.Substring(0, detail);
+
+        return value.TrimEnd();
+    }
+
     public void SetSuppressed(bool suppressed)
     {
         // Back from hiding: straight into place, not sliding from wherever it was.
@@ -202,7 +294,7 @@ public class PickupLabel : MonoBehaviour
         Suppressed = suppressed;
 
         if (canvas != null)
-            canvas.enabled = !InventoryScreen.IsOpen && !suppressed;
+            canvas.enabled = !ScreenOpen && !suppressed;
     }
 
     // Moved by the stack: to `position`, with a leader line back to the item if it's been moved

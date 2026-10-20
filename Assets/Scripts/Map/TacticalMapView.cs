@@ -27,6 +27,13 @@ public class TacticalMapView : MaskableGraphic
     public Vector2 Pan { get; set; }
     public Room Selected { get; set; }
 
+    // The station under the cursor, drawn highlighted (its readout is in the side panel).
+    public StationMarker HoveredStation { get; set; }
+
+    private const float StationIconSize = 18f;
+
+    private FloorExit hatch;
+
     private readonly Dictionary<Room, int> itemCounts = new Dictionary<Room, int>();
     private readonly Dictionary<Room, int> ammoCounts = new Dictionary<Room, int>();
     private readonly Dictionary<Room, int> medkitCounts = new Dictionary<Room, int>();
@@ -123,6 +130,7 @@ public class TacticalMapView : MaskableGraphic
                 DrawRoom(vh, room);
         }
 
+        DrawStations(vh);
         DrawOffscreenMarkers(vh, bounds);
 
         if (player != null)
@@ -149,7 +157,8 @@ public class TacticalMapView : MaskableGraphic
         Rect anchor = MapRect(room.AnchorRect);
         MapRoomState state = MapSymbols.StateOf(room);
 
-        MapSymbols.DrawRoomShape(vh, blockBuffer, edgeBuffer, anchor, state, phosphor, hostile);
+        // The hideout gets neither a status mark nor a spawn marker: its stations are its icons.
+        MapSymbols.DrawRoomShape(vh, blockBuffer, edgeBuffer, anchor, state, phosphor, hostile, !floor.IsHideout);
 
         if (room == floor.CurrentRoom)
             MapSymbols.DrawEdges(vh, edgeBuffer, 3f, state == MapRoomState.Hostile ? hostile : phosphor);
@@ -163,7 +172,9 @@ public class TacticalMapView : MaskableGraphic
         }
 
         float iconSize = Mathf.Min(anchor.width, anchor.height) * 0.22f;
-        MapSymbols.DrawMarker(vh, room.Type, anchor.center, iconSize, phosphor, hostile);
+
+        if (!floor.IsHideout)
+            MapSymbols.DrawMarker(vh, room.Type, anchor.center, iconSize, phosphor, hostile);
 
         // Item markers along the bottom-left corner, only once the room has been explored:
         // "+" for weapons, a cartridge for ammo, then a medkit.
@@ -189,6 +200,73 @@ public class TacticalMapView : MaskableGraphic
         }
     }
 
+    // The hideout's stations: an icon each, with a row of pips under it for its upgrade levels;
+    // and its deploy hatch.
+    private void DrawStations(VertexHelper vh)
+    {
+        if (floor.IsHideout)
+        {
+            if (hatch == null)
+                hatch = FindAnyObjectByType<FloorExit>();
+
+            if (hatch != null)
+                MapSymbols.DrawHatch(vh, MapPoint(new Vector2(hatch.Position.x, hatch.Position.z)), StationIconSize, phosphor);
+        }
+
+        foreach (StationMarker marker in StationMarker.All)
+        {
+            Vector2 position = MapPoint(new Vector2(marker.Position.x, marker.Position.z));
+            bool hovered = marker == HoveredStation;
+            float size = hovered ? StationIconSize * 1.25f : StationIconSize;
+
+            if (hovered)
+                Ring(vh, position, size / 2f + 4f + Mathf.Sin(Time.unscaledTime * 5f) * 1.5f, 1.5f, Fade(phosphor, 0.7f));
+
+            MapSymbols.DrawStation(vh, marker.Station, position, size, phosphor, marker.Abandoned, hovered);
+
+            if (!marker.Abandoned)
+            {
+                // Under the icon, slid along as needed to stay inside the room's outline.
+                Vector2 pips = position + Vector2.down * (size / 2f + 6f);
+
+                if (floor.TryGetRoom(marker.Position, out Room room) && room.Blocks.Count > 0)
+                {
+                    Rect floorArea = room.Blocks[0];
+
+                    foreach (Rect block in room.Blocks)
+                        floorArea = Rect.MinMaxRect(Mathf.Min(floorArea.xMin, block.xMin), Mathf.Min(floorArea.yMin, block.yMin),
+                            Mathf.Max(floorArea.xMax, block.xMax), Mathf.Max(floorArea.yMax, block.yMax));
+
+                    Rect inside = MapRect(floorArea);
+                    float half = (marker.MaxLevel * 6f - 2f) / 2f + 3f;
+                    pips.x = Mathf.Clamp(pips.x, Mathf.Min(inside.xMin + half, inside.center.x), Mathf.Max(inside.xMax - half, inside.center.x));
+                }
+
+                MapSymbols.DrawLevelPips(vh, pips, marker.Level, marker.MaxLevel, 4f, Stations.Colour(marker.Station));
+            }
+        }
+    }
+
+    // The station whose icon is under a point in local space, or null.
+    public StationMarker StationAt(Vector2 local)
+    {
+        StationMarker nearest = null;
+        float best = StationIconSize * 0.75f;
+
+        foreach (StationMarker marker in StationMarker.All)
+        {
+            float distance = Vector2.Distance(local, MapPoint(new Vector2(marker.Position.x, marker.Position.z)));
+
+            if (distance < best)
+            {
+                best = distance;
+                nearest = marker;
+            }
+        }
+
+        return nearest;
+    }
+
     // Special rooms panned out of view get pinned to the viewport edge, pointing at the room.
     private void DrawOffscreenMarkers(VertexHelper vh, Rect bounds)
     {
@@ -196,7 +274,7 @@ public class TacticalMapView : MaskableGraphic
 
         foreach (Room room in floor.Rooms)
         {
-            if (room.Type == RoomType.Normal || !floor.IsKnown(room))
+            if (room.Type == RoomType.Normal || !floor.IsKnown(room) || floor.IsHideout)
                 continue;
 
             if (MapSymbols.PinToEdge(bounds, edgeInset, MapRect(room.AnchorRect).center, out Vector2 pinned, out Vector2 direction))

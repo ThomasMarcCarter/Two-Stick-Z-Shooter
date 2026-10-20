@@ -1,14 +1,16 @@
 using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 // Player hit points. Each hit knocks the player back, plays a hurt sound and gives a short window
-// of invulnerability, during which the player model blinks. At zero the controls lock and the
+// of invulnerability (from everything, not just whatever landed the hit, so a crowd of zombies
+// can't take several points off at once), during which the player model blinks. At zero the controls lock and the
 // death screen shows. Medkits heal through Heal.
 public class PlayerHealth : MonoBehaviour
 {
     [SerializeField] private int maxHealth = 6;
-    [Tooltip("Seconds after a hit during which the player can't be hurt again.")]
-    [SerializeField] private float invulnerableTime = 0.5f;
+    [Tooltip("Seconds after a hit during which the player can't be hurt again, by anything (not per enemy), so a crowd can't land its hits all at once.")]
+    [SerializeField] private float invulnerableTime = 0.9f;
     [SerializeField] private float knockback = 7f;
     [SerializeField] private float blinkRate = 14f;
 
@@ -129,6 +131,8 @@ public class PlayerHealth : MonoBehaviour
             Health = maxHealth;
     }
 
+    // The controls lock, the model falls (CharacterAnimator.Die), the gun clatters to the floor,
+    // and the death screen fades in over the room a moment later (DeathScreen.BeginDeath).
     private void Die()
     {
         IsDead = true;
@@ -139,11 +143,50 @@ public class PlayerHealth : MonoBehaviour
         // Lock the controls.
         GetComponent<PlayerMovement>().enabled = false;
         GetComponent<PlayerShooting>().enabled = false;
-        GetComponent<PlayerWeapon>().enabled = false;
+        PlayerWeapon weapon = GetComponent<PlayerWeapon>();
+        weapon.enabled = false;
 
+        CharacterAnimator animator = GetComponentInChildren<CharacterAnimator>();
+
+        if (animator != null)
+            animator.Die();
+
+        DropGun(weapon);
+        CameraFollow.Shake(0.35f);
         Died?.Invoke(this);
 
         if (deathScreen != null)
-            deathScreen.Show();
+            deathScreen.BeginDeath();
+    }
+
+    // The gun in hand falls out of it: a loose copy of its model tumbles to the floor (just for
+    // show; the real one is hidden).
+    private static void DropGun(PlayerWeapon weapon)
+    {
+        Gun gun = weapon != null ? weapon.Active.Gun : null;
+        Transform model = gun != null ? gun.transform.Find("Model") : null;
+
+        if (model == null)
+            return;
+
+        GameObject dropped = Instantiate(model.gameObject, model.position, model.rotation, FloorPickups.RoomAt(model.position));
+        dropped.name = "Dropped Gun";
+        dropped.transform.localScale = model.lossyScale;
+        gun.gameObject.SetActive(false);
+
+        Bounds bounds = new Bounds(dropped.transform.position, Vector3.zero);
+
+        foreach (Renderer part in dropped.GetComponentsInChildren<Renderer>())
+            bounds.Encapsulate(part.bounds);
+
+        BoxCollider box = dropped.AddComponent<BoxCollider>();
+        box.center = dropped.transform.InverseTransformPoint(bounds.center);
+        Vector3 size = dropped.transform.InverseTransformVector(bounds.size);
+        box.size = new Vector3(Mathf.Abs(size.x), Mathf.Abs(size.y), Mathf.Abs(size.z));
+
+        Rigidbody body = dropped.AddComponent<Rigidbody>();
+        body.mass = 2f;
+        body.linearVelocity = weapon.transform.forward * 1.5f + Vector3.up * 1.5f;
+        body.angularVelocity = Random.onUnitSphere * 6f;
     }
 }

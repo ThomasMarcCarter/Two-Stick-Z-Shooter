@@ -4,11 +4,11 @@ using UnityEngine;
 // The FloorGenerator's hideout and meta-progression side: building the hideout (floor 0),
 // applying the station upgrades at the start of a run, crafting-material drops, banking them at
 // checkpoints, and the caged survivor waiting on each floor until they're rescued.
-//   The hideout is a hub of rooms, Gungeon-Breach style: a big central hall with the deploy
-// hatch in the middle and the generator in a corner, a barracks with the stash, and a wing for
-// each survivor (the mechanic's workbench, the medic's station, the quartermaster's ammo press).
-// A wing is sealed, dark and empty until its survivor has been rescued on a run; after that the
-// survivor lives there by their station.
+//   The hideout is one big hall: the deploy hatch in the middle, the generator on the north
+// wall, the intel desk, a shooting range, a fire, a barracks corner with the stash, and an area
+// along the walls for each survivor (the mechanic's workshop, the medic's med bay, the
+// quartermaster's supply room, the trader's stall). An area lies abandoned under dust sheets and
+// empty boxes until its survivor is rescued on a run; then they tidy it up and set up there.
 public partial class FloorGenerator
 {
     [Header("Hideout")]
@@ -42,35 +42,52 @@ public partial class FloorGenerator
         forceSurvivor = false;
     }
 
-    // One of the hideout's rooms: its cell, the cell and direction its door leads in from (in
-    // the hall), and the survivor whose wing it is (none for the barracks).
-    private struct HideoutWing
+    // A survivor's area of the hall: the wall it backs onto (`Back` points at it), where along
+    // that wall its middle is (`Along`, on the axis `Side` gives), how deep it reaches out from
+    // the wall and how wide it is either side of its middle, and whose it is.
+    private struct HideoutArea
     {
         public string Name;
-        public Vector2Int Cell;
-        public Vector2Int FromCell;
-        public Vector2Int Direction;
-        public NpcKind? Owner;
+        public NpcKind Owner;
+        public Vector3 Back;
+        public float Along;
+        public float Depth;
+        public float Width;
     }
 
     private static readonly Vector2Int[] HallCells = { new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(0, 1), new Vector2Int(1, 1) };
 
-    private static readonly HideoutWing[] Wings =
+    private static readonly HideoutArea[] Areas =
     {
-        new HideoutWing { Name = "WORKSHOP", Cell = new Vector2Int(-1, 0), FromCell = new Vector2Int(0, 0), Direction = Vector2Int.left, Owner = NpcKind.Mechanic },
-        new HideoutWing { Name = "MED BAY", Cell = new Vector2Int(2, 0), FromCell = new Vector2Int(1, 0), Direction = Vector2Int.right, Owner = NpcKind.Medic },
-        new HideoutWing { Name = "SUPPLY ROOM", Cell = new Vector2Int(1, 2), FromCell = new Vector2Int(1, 1), Direction = Vector2Int.up, Owner = NpcKind.Quartermaster },
-        new HideoutWing { Name = "BARRACKS", Cell = new Vector2Int(0, 2), FromCell = new Vector2Int(0, 1), Direction = Vector2Int.up, Owner = null }
+        new HideoutArea { Name = "WORKSHOP", Owner = NpcKind.Mechanic, Back = Vector3.forward, Along = -13.5f, Depth = 3.5f, Width = 4f },
+        new HideoutArea { Name = "SUPPLY ROOM", Owner = NpcKind.Quartermaster, Back = Vector3.forward, Along = 13.5f, Depth = 3.5f, Width = 4f },
+        new HideoutArea { Name = "MED BAY", Owner = NpcKind.Medic, Back = Vector3.left, Along = 0f, Depth = 3.5f, Width = 4f },
+        new HideoutArea { Name = "TRADE POST", Owner = NpcKind.Trader, Back = Vector3.back, Along = -13.5f, Depth = 3f, Width = 3f }
     };
 
     // The middle of the hall's four cells.
     private Vector3 HallCentre => (CellToWorld(HallCells[0]) + CellToWorld(HallCells[3])) / 2f;
 
+    // From the hall's middle to its walls, east-west and north-south.
+    private Vector2 HallHalf => new Vector2(CellStep.x / 2f + roomSize.x / 2f, CellStep.y / 2f + roomSize.y / 2f);
+
     // Where the player starts in the hideout: the south side of the hall, facing the hatch.
     private Vector3 HideoutSpawn => HallCentre + new Vector3(0f, 1f, -5.5f);
 
+    // Along the wall an area backs onto (left to right, looking at the wall).
+    private static Vector3 Side(HideoutArea area) => new Vector3(area.Back.z, 0f, -area.Back.x);
+
+    private Vector3 Middle(HideoutArea area)
+    {
+        float toWall = Mathf.Abs(area.Back.x) * HallHalf.x + Mathf.Abs(area.Back.z) * HallHalf.y;
+        return HallCentre + area.Back * (toWall - area.Depth) + Side(area) * area.Along;
+    }
+
     // ---------- Building the hideout ----------
 
+    // One big hall, no side rooms: the deploy hatch in the middle, the generator and the intel
+    // desk, a shooting range and a fire, the barracks corner with the stash, and an area along
+    // the walls for each survivor, left abandoned until they're rescued.
     private void GenerateHideout()
     {
         floorRoot = new GameObject("Hideout").transform;
@@ -84,34 +101,18 @@ public partial class FloorGenerator
                 square = shape;
         }
 
-        List<PlannedRoom> plan = new List<PlannedRoom>
-        {
-            new PlannedRoom { Shape = square, Cells = new List<Vector2Int>(HallCells), Type = RoomType.Start }
-        };
-
-        HashSet<(Vector2Int, Vector2Int)> doorways = new HashSet<(Vector2Int, Vector2Int)>();
-
-        foreach (HideoutWing wing in Wings)
-        {
-            plan.Add(new PlannedRoom { Shape = RoomShape.Single, Cells = new List<Vector2Int> { wing.Cell }, Type = RoomType.Normal });
-            doorways.Add((wing.FromCell, wing.Direction));
-            doorways.Add((wing.Cell, -wing.Direction));
-        }
-
-        foreach (PlannedRoom planned in plan)
-            BuildRoom(planned, doorways);
-
-        foreach (HideoutWing wing in Wings)
-            BuildCorridor(wing.FromCell, wing.Direction);
+        BuildRoom(new PlannedRoom { Shape = square, Cells = new List<Vector2Int>(HallCells), Type = RoomType.Start },
+            new HashSet<(Vector2Int, Vector2Int)>());
 
         Room hall = rooms[0];
-        hall.DisplayName = "HALL";
+        hall.DisplayName = "HIDEOUT";
 
         TraderStock.Restock(rng);
         BuildHall(hall);
+        BuildBarracksCorner(hall);
 
-        for (int i = 0; i < Wings.Length; i++)
-            BuildWing(Wings[i], rooms[i + 1]);
+        foreach (HideoutArea area in Areas)
+            BuildArea(area, hall);
 
         BuildNavMesh();
         PlacePlayer();
@@ -159,16 +160,16 @@ public partial class FloorGenerator
         beam.color = new Color(0.4f, 1f, 0.6f);
         beam.shadows = LightShadows.None;
 
-        // The generator, against the west wall at the north end.
-        Vector3 west = centre + new Vector3(-(CellStep.x / 2f + roomSize.x / 2f) + 1f, 0f, CellStep.y / 2f + 2.5f);
-        StationConsole.Create(HideoutStation.Generator, west, Vector3.right, parent);
+        // The generator, against the north wall between the workshop and the hatch.
+        Vector3 generator = centre + new Vector3(-4.5f, 0f, HallHalf.y - 1f);
+        StationConsole.Create(HideoutStation.Generator, generator, Vector3.back, parent);
 
         // Fuel drums by the generator.
         Color drum = new Color(0.45f, 0.12f, 0.08f);
         Vector3 drumSize = new Vector3(0.6f, 1f, 0.6f);
-        Furniture("DrumRed", "Drum", parent, west + new Vector3(0.2f, 0f, -2.3f), new Vector3(1f, 0f, 0.4f), drumSize, drum, true, PrimitiveType.Cylinder);
-        Furniture("DrumRed", "Drum", parent, west + new Vector3(0.9f, 0f, -2.6f), new Vector3(0.6f, 0f, -1f), drumSize, drum, true, PrimitiveType.Cylinder);
-        Furniture("DrumBlue", "Drum", parent, west + new Vector3(0.3f, 0f, -3.1f), Vector3.right, drumSize, new Color(0.2f, 0.25f, 0.3f), true, PrimitiveType.Cylinder);
+        Furniture("DrumRed", "Drum", parent, generator + new Vector3(2.1f, 0f, 0.2f), new Vector3(-0.4f, 0f, -1f), drumSize, drum, true, PrimitiveType.Cylinder);
+        Furniture("DrumRed", "Drum", parent, generator + new Vector3(2.5f, 0f, -0.6f), new Vector3(1f, 0f, -0.6f), drumSize, drum, true, PrimitiveType.Cylinder);
+        Furniture("DrumBlue", "Drum", parent, generator + new Vector3(3.0f, 0f, 0.1f), Vector3.back, drumSize, new Color(0.2f, 0.25f, 0.3f), true, PrimitiveType.Cylinder);
 
         // The intel desk east of the hatch: a planning table with a lit map and the radio (the
         // Recon upgrade).
@@ -198,23 +199,14 @@ public partial class FloorGenerator
         Furniture("Bench", "Bench", parent, centre + new Vector3(-3.5f, 0f, -2f), Vector3.right, new Vector3(2.4f, 0.5f, 0.5f), wood);
         Furniture("Bench", "Bench", parent, centre + new Vector3(3.5f, 0f, -2f), Vector3.left, new Vector3(2.4f, 0.5f, 0.5f), wood);
 
-        // Supply crates and sandbags along the walls. The crates are stacked against the sealed
-        // med bay door and are cleared away once the medic has been rescued.
+        // Sandbags along the south wall.
         Color crate = new Color(0.3f, 0.33f, 0.2f);
         Color sand = new Color(0.45f, 0.4f, 0.3f);
-        float eastWall = centre.x + CellStep.x / 2f + roomSize.x / 2f - 0.9f;
-        float southWall = centre.z - CellStep.y / 2f - roomSize.y / 2f + 0.9f;
+        float eastWall = centre.x + HallHalf.x - 0.9f;
+        float southWall = centre.z - HallHalf.y + 0.9f;
 
-        if (!MetaProgress.IsRescued(NpcKind.Medic))
-        {
-            Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0f, centre.z - 6f), Vector3.left, new Vector3(1.1f, 0.9f, 1.1f), crate);
-            Furniture("Crate", "Crate", parent, new Vector3(eastWall, 0.9f, centre.z - 6f), new Vector3(-1f, 0f, 0.3f), new Vector3(0.8f, 0.6f, 0.8f), crate * 1.1f);
-            Furniture("Crate", "Crate", parent, new Vector3(eastWall - 0.2f, 0f, centre.z - 7.4f), Vector3.left, new Vector3(1.2f, 0.9f, 1f), crate);
-        }
-
-
-        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
-        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x + 9f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
+        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 8.5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
+        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x + 6f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
 
         // Four pillars framing the middle of the hall round the hatch.
         foreach (Vector2 corner in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
@@ -263,82 +255,124 @@ public partial class FloorGenerator
             }
         }
 
-        PlaceHideoutClutter(hall, new[]
-        {
-            (new Vector3(centre.x - 14f, 0f, southWall + 0.2f), Vector3.back),
-            (new Vector3(centre.x + 14f, 0f, southWall + 0.2f), Vector3.back),
-            (new Vector3(eastWall + 0.1f, 0f, centre.z + 8f), Vector3.right)
-        });
-
         SpawnTrash(hall);
     }
 
-    // A survivor's wing (lit, with their station and them by it) once they're rescued; until then
-    // its door is sealed shut, with a note saying who's needed, and the room beyond is dark and
-    // bare. The barracks is always open, with bunks and the stash.
-    private void BuildWing(HideoutWing wing, Room room)
+    // A survivor's area. Rescued: tidied up, with their station against the wall, them beside
+    // it and their furniture about. Not yet: abandoned, a dust sheet over the spot where the
+    // station will go, dusty furniture and empty boxes lying about, and a note saying whose it
+    // was and how to find them.
+    private void BuildArea(HideoutArea area, Room room)
     {
-        room.DisplayName = wing.Name;
-        bool open = wing.Owner == null || MetaProgress.IsRescued(wing.Owner.Value);
-        RoomDoor door = null;
+        Vector3 middle = Middle(area);
+        Vector3 back = area.Back;
+        Vector3 side = Side(area);
+        Vector3 inward = -back;
 
-        foreach (RoomConnection connection in room.Connections)
-            door = connection.Door;
-
-        if (!open)
+        if (!MetaProgress.IsRescued(area.Owner))
         {
-            NpcKind owner = wing.Owner.Value;
-
-            if (door != null)
-            {
-                door.SetOpen(false);
-                door.GetComponent<Renderer>().enabled = true;
-                MaterialPropertyBlock block = new MaterialPropertyBlock();
-                block.SetColor("_BaseColor", sealedDoorTint);
-                door.GetComponent<Renderer>().SetPropertyBlock(block);
-
-                // The note sits on the hall side of the door.
-                GameObject sign = new GameObject("Sealed Sign");
-                sign.transform.SetParent(rooms[0].transform, false);
-                sign.transform.position = door.transform.position - new Vector3(wing.Direction.x, 0f, wing.Direction.y) * 2.5f;
-                ProximityLabel.Add(sign, 1.2f, 4.5f, sealedDoorTint * 1.6f, () => SealedText(wing.Name, owner));
-            }
-
-            // Dark beyond the door.
-            foreach (Light light in room.GetComponentsInChildren<Light>())
-                Destroy(light.gameObject);
-
+            BuildAbandonedArea(area, room, middle, back, side);
             return;
         }
 
-        Vector3 centre = CellToWorld(wing.Cell);
-        Vector3 inward = new Vector3(-wing.Direction.x, 0f, -wing.Direction.y);   // from this room towards the hall
-        Vector3 far = -inward;                                                    // to the back wall
-        Vector3 side = new Vector3(far.z, 0f, -far.x);
-        float depth = wing.Direction.x != 0 ? roomSize.x / 2f : roomSize.y / 2f;
-        float width = wing.Direction.x != 0 ? roomSize.y / 2f : roomSize.x / 2f;
-
-        if (wing.Owner is NpcKind kind)
+        if (area.Owner == NpcKind.Trader)
         {
-            Vector3 station = centre + far * (depth - 1.3f);
-            StationConsole.Create(Npcs.Station(kind), station, inward, room.transform);
-            HideoutNpc.Create(kind, station + inward * 2.2f + side * 1.8f, inward, room.transform);
-            DressWing(kind, room, centre, far, side, depth, width);
-        }
-        else
-        {
-            BuildBarracks(room, centre, far, side, depth, width);
+            Vector3 stall = middle + back * (area.Depth - 1.7f);
+            StationConsole.Create(HideoutStation.TradePost, stall, inward, room.transform);
+            HideoutNpc.Create(NpcKind.Trader, stall + back * 1.1f, inward, room.transform);
+            Furniture("Crate", "Crate", room.transform, stall + side * 2.2f + back * 0.6f, inward, new Vector3(1f, 0.9f, 1f), new Color(0.3f, 0.33f, 0.2f));
+            Furniture("Crate", "Crate", room.transform, stall - side * 2.2f + back * 0.8f, inward, new Vector3(0.9f, 0.7f, 0.9f), new Color(0.3f, 0.33f, 0.2f));
+            return;
         }
 
-        // No trash pass here: the wings are combat-type rooms to the trash code, which would strew
-        // them with barriers and tyres. Lived-in rooms stay tidy.
+        Vector3 station = middle + back * (area.Depth - 1.3f);
+        StationConsole.Create(Npcs.Station(area.Owner), station, inward, room.transform);
+        HideoutNpc.Create(area.Owner, station + inward * 2.2f + side * 1.8f, inward, room.transform);
+        DressArea(area.Owner, room, middle, back, side, area.Depth, area.Width);
     }
 
-    // What a sealed wing's sign says: how many more completed runs until the survivor's signal
-    // can be picked up, or that it's out there now.
-    private static string SealedText(string wing, NpcKind owner, string state = "SEALED")
+    // Left as it was found: the station's spot under a dust sheet, a piece or two of the
+    // survivor's furniture gone grey with dust, and empty cardboard boxes strewn about.
+    private void BuildAbandonedArea(HideoutArea area, Room room, Vector3 middle, Vector3 back, Vector3 side)
     {
-        string header = wing + $"  <size=70%><alpha=#99>// {state}</size>\n";
+        Transform parent = room.transform;
+        Vector3 inward = -back;
+        Vector3 spot = middle + back * (area.Depth - 1.3f);
+        Color sheet = new Color(0.52f, 0.5f, 0.45f);
+
+        // A sheet thrown over something big, and a smaller lump beside it.
+        HideoutProp("Dust Sheet", parent, spot + Vector3.up * 0.55f, RotateSize(Quaternion.LookRotation(inward), new Vector3(2.3f, 1.1f, 1.2f)), sheet, Color.black, true);
+        HideoutProp("Dust Sheet", parent, spot + side * 1.9f + Vector3.up * 0.35f, RotateSize(Quaternion.LookRotation(inward), new Vector3(0.9f, 0.7f, 0.8f)), sheet * 0.95f, Color.black, true);
+
+        Color wood = new Color(0.3f, 0.24f, 0.16f);
+        Color metal = new Color(0.22f, 0.23f, 0.24f);
+
+        switch (area.Owner)
+        {
+            case NpcKind.Mechanic:
+                Dusty(Furniture("Shelving", "Dusty Shelving", parent, middle - side * (area.Width - 0.6f) + back * (area.Depth - 2.2f), side, new Vector3(2.4f, 2f, 0.6f), metal));
+                Dusty(Furniture("Tyres", "Dusty Tyres", parent, middle + side * (area.Width - 1.2f) - back * 0.5f, back, new Vector3(0.9f, 0.55f, 0.9f), new Color(0.08f, 0.08f, 0.08f), true, PrimitiveType.Cylinder));
+                break;
+
+            case NpcKind.Medic:
+                Dusty(Furniture("HospitalBed", "Dusty Bed", parent, middle - side * (area.Width - 1.2f) - back * 0.4f, side, new Vector3(0.9f, 0.88f, 2f), new Color(0.6f, 0.62f, 0.6f)));
+                Dusty(Furniture("Screen", "Dusty Screen", parent, middle + side * (area.Width - 1.5f), -side, new Vector3(2.2f, 2f, 0.4f), new Color(0.45f, 0.55f, 0.5f)));
+                break;
+
+            case NpcKind.Quartermaster:
+                Dusty(Furniture("AmmoCrate", "Empty Ammo Crate", parent, middle - side * (area.Width - 1f) + back * (area.Depth - 1f), inward, new Vector3(1.1f, 0.6f, 0.7f), new Color(0.3f, 0.35f, 0.2f)));
+                Dusty(Furniture("GunRack", "Empty Gun Rack", parent, middle + side * (area.Width - 0.3f), -side, new Vector3(2.6f, 2f, 0.3f), wood));
+                break;
+
+            default:
+                Dusty(Furniture("Counter", "Dusty Counter", parent, middle + back * (area.Depth - 1.7f), inward, new Vector3(2.4f, 1.15f, 0.7f), wood));
+                break;
+        }
+
+        // Empty boxes: against the wall either side, and one dumped out front.
+        PlaceHideoutClutter(room, new[]
+        {
+            (middle + back * (area.Depth - 0.5f) + side * (area.Width - 0.8f), back),
+            (middle + back * (area.Depth - 0.5f) - side * (area.Width - 0.8f), back),
+            (middle - back * (area.Depth - 1.2f) + side * 0.6f, -back)
+        });
+
+        GameObject sign = new GameObject(area.Name + " Sign");
+        sign.transform.SetParent(parent, false);
+        sign.transform.position = middle - back * 0.5f;
+        ProximityLabel.Add(sign, 1.6f, 4.5f, sealedDoorTint * 1.6f, () => SealedText(area.Name, area.Owner, "ABANDONED"));
+        StationMarker.Add(sign, area.Owner == NpcKind.Trader ? HideoutStation.TradePost : Npcs.Station(area.Owner), true);
+    }
+
+    // Greys a piece of furniture over, like it's sat under years of dust.
+    private static void Dusty(GameObject prop)
+    {
+        if (prop == null)
+            return;
+
+        Color dust = new Color(0.42f, 0.4f, 0.36f);
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+
+        foreach (Renderer renderer in prop.GetComponentsInChildren<Renderer>())
+        {
+            Material[] materials = renderer.sharedMaterials;
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Color colour = materials[i] != null && materials[i].HasProperty("_BaseColor") ? materials[i].GetColor("_BaseColor") : Color.grey;
+                block.Clear();
+                block.SetColor("_BaseColor", Color.Lerp(colour, dust, 0.65f));
+                block.SetColor("_EmissionColor", Color.black);
+                renderer.SetPropertyBlock(block, i);
+            }
+        }
+    }
+
+    // What an abandoned area's note says: how many more completed runs until the survivor's
+    // signal can be picked up, or that it's out there now.
+    private static string SealedText(string area, NpcKind owner, string state)
+    {
+        string header = area + $"  <size=70%><alpha=#99>// {state}</size>\n";
         int needed = Npcs.RequiredVictories(owner) - MetaProgress.Victories;
 
         if (needed > 0)
@@ -347,9 +381,9 @@ public partial class FloorGenerator
         return header + $"<size=70%><color={UiColours.AmberHex}>DISTRESS SIGNAL ACTIVE // FIND THE {Npcs.Role(owner)} ON A RUN</color></size>";
     }
 
-    // A few things to make each wing its own: shelves of parts for the workshop, beds and
-    // supplies for the med bay, crates and racks for the supply room.
-    private void DressWing(NpcKind kind, Room room, Vector3 centre, Vector3 far, Vector3 side, float depth, float width)
+    // A rescued survivor's things, tidied round their station: shelves of parts for the
+    // workshop, beds and supplies for the med bay, crates and racks for the supply room.
+    private void DressArea(NpcKind kind, Room room, Vector3 centre, Vector3 far, Vector3 side, float depth, float width)
     {
         Transform parent = room.transform;
         Quaternion facing = Quaternion.LookRotation(-far);
@@ -360,7 +394,7 @@ public partial class FloorGenerator
             case NpcKind.Mechanic:
                 for (int s = -1; s <= 1; s += 2)
                 {
-                    Vector3 shelf = centre + side * s * (width - 0.6f) + far * (depth - 3.5f);
+                    Vector3 shelf = centre + side * s * (width - 0.6f) + far * (depth - 2.2f);
                     Furniture("Shelving", "Shelving", parent, shelf, -side * s, new Vector3(2.4f, 2f, 0.6f), metal);
 
                     // The model has its bins and boxes on the shelves already.
@@ -370,15 +404,14 @@ public partial class FloorGenerator
                         HideoutProp("Parts Bin", parent, shelf + Vector3.up * 0.6f + far * 0.4f, RotateSize(facing, new Vector3(0.65f, 0.3f, 0.6f)), new Color(0.2f, 0.3f, 0.5f), Color.black, false);
                     }
                 }
-                // In the front corner opposite the clutter by the door.
-                Furniture("Tyres", "Tyres", parent, centre - side * (width - 1.2f) - far * (depth - 2f), far, new Vector3(0.9f, 0.55f, 0.9f),
+
+                Furniture("Tyres", "Tyres", parent, centre - side * (width - 1.2f) - far * (depth - 1.5f), far, new Vector3(0.9f, 0.55f, 0.9f),
                     new Color(0.06f, 0.06f, 0.06f), true, PrimitiveType.Cylinder);
                 break;
 
             case NpcKind.Medic:
                 for (int i = 0; i < 2; i++)
                 {
-                    // Head against the wall.
                     Vector3 bed = centre - side * (width - 1.2f) + far * (depth - 2.5f - i * 2.6f);
 
                     if (PropModel("HospitalBed", "Bed", parent, bed, side, new Vector3(0.9f, 0.88f, 2f)) == null)
@@ -387,6 +420,7 @@ public partial class FloorGenerator
                         HideoutProp("Bed Frame", parent, bed + Vector3.up * 0.15f, RotateSize(Quaternion.LookRotation(side), new Vector3(0.85f, 0.3f, 1.9f)), metal, Color.black, true);
                     }
                 }
+
                 Furniture("Screen", "Curtain", parent, centre - side * (width - 2.6f) + far * (depth - 3.8f), side, new Vector3(2.2f, 2f, 0.4f), new Color(0.5f, 0.65f, 0.6f));
                 Furniture("MedCabinet", "Supplies", parent, centre + side * (width - 0.3f) + far * (depth - 3f), -side, new Vector3(1.2f, 1.2f, 0.5f), new Color(0.8f, 0.8f, 0.8f));
                 break;
@@ -400,8 +434,8 @@ public partial class FloorGenerator
                         Furniture("AmmoCrate", "Ammo Crate", parent, crate + Vector3.up * 0.6f, side, new Vector3(0.9f, 0.5f, 0.6f), new Color(0.33f, 0.37f, 0.22f));
                 }
 
-                // The rack against the other side wall, rifles stood in it.
-                Vector3 rack = centre + side * (width - 0.25f) + far * (depth - 3.5f);
+                // The rack against the other side, rifles stood in it.
+                Vector3 rack = centre + side * (width - 0.25f) + far * (depth - 2.5f);
                 Furniture("GunRack", "Gun Rack", parent, rack, -side, new Vector3(2.6f, 2f, 0.3f), new Color(0.3f, 0.22f, 0.14f));
 
                 if (!HasPropModel("GunRack"))
@@ -411,80 +445,57 @@ public partial class FloorGenerator
                 }
                 break;
         }
-
-        PlaceHideoutClutter(room, new[] { (centre - far * (depth - 1f) + side * (width - 1.5f), -far) });
     }
 
-    // Bunks along the walls, lockers, and the stash: a locker whose label lists the banked
-    // materials and the records. The trader's stall stands by the door once they're rescued.
-    private void BuildBarracks(Room room, Vector3 centre, Vector3 far, Vector3 side, float depth, float width)
+    // The south-west corner: bunks against the west wall and the stash, a row of lockers on the
+    // south wall whose middle one is lit, its label listing the banked scrap, materials and
+    // records. Always there.
+    private void BuildBarracksCorner(Room room)
     {
         Transform parent = room.transform;
-        BuildTradePost(room, centre - side * (width - 2.2f) - far * (depth - 2.6f), side, -side);
+        Vector3 centre = HallCentre;
+        Vector2 half = HallHalf;
         Color metal = new Color(0.25f, 0.27f, 0.25f);
         Color blanket = new Color(0.25f, 0.3f, 0.2f);
 
-        for (int s = -1; s <= 1; s += 2)
+        for (int i = 0; i < 2; i++)
         {
-            for (int i = 0; i < 2; i++)
-            {
-                // Head against the side wall, the ladder at the end towards the middle.
-                Vector3 bunk = centre + side * s * (width - 1.2f) + far * (depth - 1.4f - i * 2.8f);
+            // Head against the west wall.
+            Vector3 bunk = centre + new Vector3(-half.x + 1.1f, 0f, -6.5f - i * 2.1f);
 
-                if (PropModel("BunkBed", "Bunk", parent, bunk, -far * s, new Vector3(2f, 1.9f, 0.9f)) != null)
-                    continue;
+            if (PropModel("BunkBed", "Bunk", parent, bunk, Vector3.forward, new Vector3(2f, 1.9f, 0.9f)) != null)
+                continue;
 
-                Vector3 size = RotateSize(Quaternion.LookRotation(far), new Vector3(2f, 0.15f, 0.9f));
-                HideoutProp("Bunk", parent, bunk + Vector3.up * 0.45f, size, blanket, Color.black, true);
-                HideoutProp("Bunk", parent, bunk + Vector3.up * 1.45f, size, blanket, Color.black, true);
-                HideoutProp("Bunk Frame", parent, bunk + Vector3.up * 1f, size + Vector3.up * 1.8f - new Vector3(0.1f, 0f, 0.1f), metal, Color.black, true);
-            }
+            Vector3 size = new Vector3(2f, 0.15f, 0.9f);
+            HideoutProp("Bunk", parent, bunk + Vector3.up * 0.45f, size, blanket, Color.black, true);
+            HideoutProp("Bunk", parent, bunk + Vector3.up * 1.45f, size, blanket, Color.black, true);
+            HideoutProp("Bunk Frame", parent, bunk + Vector3.up * 1f, size + Vector3.up * 1.8f - new Vector3(0.1f, 0f, 0.1f), metal, Color.black, true);
         }
 
-        // The stash: a row of lockers against the back wall, the middle one lit.
-        Quaternion facing = Quaternion.LookRotation(-far);
+        Vector3 row = centre + new Vector3(-13.5f, 0f, -half.y + 0.4f);
 
         for (int i = -2; i <= 2; i++)
         {
-            Vector3 locker = centre + far * (depth - 0.4f) + side * i * 0.75f;
+            Vector3 locker = row + Vector3.right * i * 0.75f;
 
-            if (PropModel(i == 0 ? "StashLocker" : "Locker", "Locker", parent, locker, -far, new Vector3(0.7f, 2f, 0.6f)) == null)
-                HideoutProp("Locker", parent, locker + Vector3.up * 1f, RotateSize(facing, new Vector3(0.7f, 2f, 0.6f)),
+            if (PropModel(i == 0 ? "StashLocker" : "Locker", "Locker", parent, locker, Vector3.forward, new Vector3(0.7f, 2f, 0.6f)) == null)
+                HideoutProp("Locker", parent, locker + Vector3.up * 1f, new Vector3(0.7f, 2f, 0.6f),
                     i == 0 ? new Color(0.25f, 0.4f, 0.3f) : metal, i == 0 ? new Color(0.05f, 0.25f, 0.1f) : Color.black, true);
         }
 
         GameObject stash = new GameObject("Stash");
         stash.transform.SetParent(parent, false);
-        stash.transform.position = centre + far * (depth - 0.9f);
+        stash.transform.position = row + Vector3.forward * 0.5f;
         ProximityLabel.Add(stash, 2.3f, 3.5f, UiColours.Amber, StashText);
 
         Light glow = new GameObject("Stash Light").AddComponent<Light>();
         glow.transform.SetParent(stash.transform, false);
-        glow.transform.localPosition = Vector3.up * 1.8f - far * 0.6f;
+        glow.transform.localPosition = Vector3.up * 1.8f + Vector3.forward * 0.6f;
         glow.type = LightType.Point;
         glow.color = new Color(1f, 0.85f, 0.45f);
         glow.range = 4f;
         glow.intensity = 2f;
         glow.shadows = LightShadows.None;
-    }
-
-    // The trader's stall, facing into the room, with the trader behind it; until they're
-    // rescued, a bare counter with a note like a sealed wing's.
-    private void BuildTradePost(Room room, Vector3 position, Vector3 facing, Vector3 behind)
-    {
-        if (MetaProgress.IsRescued(NpcKind.Trader))
-        {
-            StationConsole.Create(HideoutStation.TradePost, position, facing, room.transform);
-            HideoutNpc.Create(NpcKind.Trader, position + behind * 1.1f, facing, room.transform);
-            return;
-        }
-
-        Furniture("Counter", "Empty Counter", room.transform, position, facing, new Vector3(2.4f, 1.15f, 0.7f), new Color(0.3f, 0.22f, 0.14f));
-
-        GameObject sign = new GameObject("Trade Post Sign");
-        sign.transform.SetParent(room.transform, false);
-        sign.transform.position = position + facing * 0.8f;
-        ProximityLabel.Add(sign, 1.4f, 3.5f, sealedDoorTint * 1.6f, () => SealedText("TRADE POST", NpcKind.Trader, "UNMANNED"));
     }
 
     private static string StashText()
@@ -730,42 +741,18 @@ public partial class FloorGenerator
         return MaterialType.Parts;
     }
 
-    // A zombie sometimes drops a material; a boss drops several in a ring.
-    private void DropMaterials(Room room, Vector3 position, bool boss)
+    // A zombie sometimes drops a material (a boss's go in its supply crate).
+    private void DropMaterials(Room room, Vector3 position)
     {
-        if (!boss)
-        {
-            if (UnityEngine.Random.value < enemyMaterialChance)
-                MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, position + new Vector3(0.6f, 0f, 0.4f), room.transform);
-
-            return;
-        }
-
-        for (int i = 0; i < bossMaterials; i++)
-        {
-            float angle = (i / (float)Mathf.Max(1, bossMaterials)) * Mathf.PI * 2f + 0.4f;
-            Vector3 spot = position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * 2.2f;
-            MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, spot, room.transform);
-        }
+        if (UnityEngine.Random.value < enemyMaterialChance)
+            MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, InsideRoom(room, position + new Vector3(0.6f, 0f, 0.4f)), room.transform);
     }
 
     // A cleared room sometimes leaves a material where its last zombie fell.
     private void DropRoomMaterial(Room room, Vector3 position)
     {
         if (UnityEngine.Random.value < roomMaterialChance)
-            MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, position + new Vector3(0f, 0f, -0.9f), room.transform);
-    }
-
-    private void SpawnTreasureMaterials(Room room)
-    {
-        if (room.Type != RoomType.Treasure)
-            return;
-
-        for (int i = 0; i < treasureMaterials; i++)
-        {
-            Vector3 offset = new Vector3((i - (treasureMaterials - 1) / 2f) * 1.1f, 0f, 2.8f);
-            MaterialPickup.Spawn(PickMaterial((float)rng.NextDouble()), 1, room.transform.position + offset, room.transform);
-        }
+            MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, InsideRoom(room, position + new Vector3(0f, 0f, -0.9f)), room.transform);
     }
 
     // Debug: one of each material in a row at a point.

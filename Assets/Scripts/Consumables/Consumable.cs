@@ -38,20 +38,6 @@ public static class ConsumableInfo
         }
     }
 
-    // Fits in a backpack cell or quick slot.
-    public static string ShortName(ConsumableType type)
-    {
-        switch (type)
-        {
-            case ConsumableType.Medkit: return "MED";
-            case ConsumableType.LargeMedkit: return "MED+";
-            case ConsumableType.Adrenaline: return "ADR";
-            case ConsumableType.Grenade: return "GRN";
-            case ConsumableType.Molotov: return "MOLO";
-            default: return "BTL";
-        }
-    }
-
     public static int StackSize(ConsumableType type)
     {
         switch (type)

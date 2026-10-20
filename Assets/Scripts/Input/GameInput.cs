@@ -52,7 +52,7 @@ public static class GameInput
     public static InputAction Pause { get; private set; }
     public static InputAction WeaponMain { get; private set; }
     public static InputAction WeaponSidearm { get; private set; }
-    public static InputAction WeaponScroll { get; private set; }   // mouse wheel: up = main, down = sidearm
+    public static InputAction QuickScroll { get; private set; }    // mouse wheel: selects a quick-use slot
     public static InputAction Inventory { get; private set; }
     public static InputAction Melee { get; private set; }
     public static InputAction QuickUse { get; private set; }
@@ -137,7 +137,7 @@ public static class GameInput
         Inventory = AddButton(gameplay, "Inventory", "<Keyboard>/tab", "<Gamepad>/leftShoulder");
 
         Melee = AddButton(gameplay, "Melee", "<Keyboard>/v", "<Gamepad>/buttonEast");
-        QuickUse = AddButton(gameplay, "QuickUse", "<Keyboard>/q", "<Gamepad>/rightShoulder");
+        QuickUse = AddButton(gameplay, "QuickUse", "<Mouse>/rightButton", "<Gamepad>/rightShoulder");
         QuickNext = AddButton(gameplay, "QuickNext", null, "<Gamepad>/dpad/right");
         QuickPrevious = AddButton(gameplay, "QuickPrevious", null, "<Gamepad>/dpad/left");
         QuickSlots = new InputAction[4];
@@ -145,8 +145,8 @@ public static class GameInput
         for (int i = 0; i < QuickSlots.Length; i++)
             QuickSlots[i] = AddButton(gameplay, "QuickSlot" + (i + 1), "<Keyboard>/" + (i + 3), null);
 
-        WeaponScroll = gameplay.AddAction("WeaponScroll", InputActionType.Value);
-        WeaponScroll.AddBinding("<Mouse>/scroll/y", groups: KeyboardMouseGroup);
+        QuickScroll = gameplay.AddAction("QuickScroll", InputActionType.Value);
+        QuickScroll.AddBinding("<Mouse>/scroll/y", groups: KeyboardMouseGroup);
 
         InputActionMap menus = Asset.AddActionMap("Menus");
 

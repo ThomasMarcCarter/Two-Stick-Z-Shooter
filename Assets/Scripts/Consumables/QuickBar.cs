@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Four quick-use slots, each set to a kind of consumable, used straight from the backpack's
-// stacks of it without opening the inventory. Keyboard: 3-6 use a slot, Q uses the selected one.
-// Controller: D-pad left / right selects, RB uses. Slots are set by dragging consumables onto
-// them in the inventory; a kind picked up for the first time goes in the first empty slot.
+// stacks of it without opening the inventory. Mouse: the wheel selects a slot, right-click uses
+// it (3-6 use a slot straight away). Controller: D-pad left / right selects, RB uses. Slots are set by dragging consumables onto
+// them in the inventory; a kind picked up for the first time goes in the first empty slot, and
+// one that runs out comes off the bar.
 // Medkits and adrenaline take a moment to use, slowing the player and stopping them shooting,
 // and a hit interrupts them (nothing is used up). Thrown things fly at the cursor, out to a
 // maximum range. Added to the player by PlayerWeapon.
@@ -124,9 +125,19 @@ public class QuickBar : MonoBehaviour
     }
 
     // A kind the player didn't have before goes in the first empty slot (if it isn't on the
-    // bar already), so new finds are ready to use without a trip to the inventory.
+    // bar already), so new finds are ready to use without a trip to the inventory. A kind that's
+    // run out (used up or dropped) comes off the bar, freeing its slot.
     private void OnBackpackChanged()
     {
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (slots[i] is ConsumableType held && backpack.ConsumableCount(held) <= 0)
+            {
+                slots[i] = null;
+                Changed?.Invoke();
+            }
+        }
+
         foreach (ConsumableType type in ConsumableInfo.All)
         {
             int count = backpack.ConsumableCount(type);
@@ -165,10 +176,13 @@ public class QuickBar : MonoBehaviour
             }
         }
 
-        if (GameInput.QuickNext.WasPressedThisFrame())
+        // Wheel down moves right along the bar, wheel up left, one slot per notch.
+        float scroll = GameInput.QuickScroll.ReadValue<float>();
+
+        if (GameInput.QuickNext.WasPressedThisFrame() || scroll < 0f)
             Select((Selected + 1) % SlotCount);
 
-        if (GameInput.QuickPrevious.WasPressedThisFrame())
+        if (GameInput.QuickPrevious.WasPressedThisFrame() || scroll > 0f)
             Select((Selected + SlotCount - 1) % SlotCount);
 
         if (GameInput.QuickUse.WasPressedThisFrame())

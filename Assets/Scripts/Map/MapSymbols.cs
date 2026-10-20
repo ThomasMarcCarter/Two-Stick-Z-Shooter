@@ -35,8 +35,9 @@ public static class MapSymbols
     // Unexplored: faint fill, dashed outline.
     // Hostile:    red fill and outline with a "!" in the corner.
     // Cleared:    green fill, solid outline and a tick in the corner.
+    // `showMark` false leaves the corner mark off (the hideout, which is never a fight).
     public static void DrawRoomShape(VertexHelper vh, IReadOnlyList<Rect> blocks, IReadOnlyList<RoomEdge> edges,
-        Rect markRect, MapRoomState state, Color phosphor, Color hostile)
+        Rect markRect, MapRoomState state, Color phosphor, Color hostile, bool showMark = true)
     {
         float mark = Mathf.Clamp(markRect.height * 0.18f, 4f, 9f);
         Vector2 corner = new Vector2(markRect.xMax - mark - 4f, markRect.yMax - mark - 4f);
@@ -56,6 +57,10 @@ public static class MapSymbols
             case MapRoomState.Hostile:
                 FillBlocks(vh, blocks, Fade(hostile, 0.16f));
                 DrawEdges(vh, edges, 2f, hostile);
+
+                if (!showMark)
+                    break;
+
                 FillRect(vh, new Rect(corner.x + mark * 0.4f, corner.y + mark * 0.35f, mark * 0.25f, mark * 0.75f), hostile);
                 FillRect(vh, new Rect(corner.x + mark * 0.4f, corner.y, mark * 0.25f, mark * 0.2f), hostile);
                 break;
@@ -63,6 +68,10 @@ public static class MapSymbols
             case MapRoomState.Cleared:
                 FillBlocks(vh, blocks, Fade(phosphor, 0.2f));
                 DrawEdges(vh, edges, 2f, Fade(phosphor, 0.9f));
+
+                if (!showMark)
+                    break;
+
                 Line(vh, corner + new Vector2(0f, mark * 0.5f), corner + new Vector2(mark * 0.35f, mark * 0.15f), 2f, phosphor);
                 Line(vh, corner + new Vector2(mark * 0.35f, mark * 0.15f), corner + new Vector2(mark, mark), 2f, phosphor);
                 break;
@@ -187,6 +196,112 @@ public static class MapSymbols
             case RoomType.Boss:
                 DrawBoss(vh, position, size * 0.9f, hostile);
                 break;
+        }
+    }
+
+    // A hideout station's icon: a dark badge ringed in phosphor with a glyph in the station's
+    // colour (a bolt for the generator, a hammer for the workbench, a cross for the med station,
+    // a cartridge for the ammo press, a coin for the trade post, crosshairs for the intel desk).
+    // Abandoned survivor areas draw dim, with a dashed-looking broken ring.
+    public static void DrawStation(VertexHelper vh, HideoutStation station, Vector2 position, float size, Color phosphor,
+        bool abandoned, bool highlighted = false)
+    {
+        float radius = size / 2f;
+        float alpha = abandoned ? 0.4f : 1f;
+        Color glyph = Fade(abandoned ? phosphor : Stations.Colour(station), alpha);
+
+        // The badge: a filled disc under a ring (brighter and thicker when hovered).
+        List<Vector2> disc = new List<Vector2>(16);
+
+        for (int i = 0; i < 16; i++)
+            disc.Add(position + Direction(i * 22.5f) * radius);
+
+        Polygon(vh, disc, new Color(0f, 0.06f, 0.03f, 0.9f * Mathf.Max(alpha, 0.6f)));
+
+        if (abandoned)
+        {
+            for (int i = 0; i < 8; i++)
+                Line(vh, position + Direction(i * 45f) * radius, position + Direction(i * 45f + 25f) * radius, 1.2f, Fade(phosphor, 0.45f));
+        }
+        else
+        {
+            Ring(vh, position, radius, highlighted ? 2.5f : 1.5f, Fade(phosphor, highlighted ? 1f : 0.8f));
+        }
+
+        float g = size * 0.3f;   // glyph half-size
+        float t = Mathf.Max(1.5f, size * 0.1f);
+
+        switch (station)
+        {
+            case HideoutStation.Generator:
+                Polygon(vh, new[]
+                {
+                    position + new Vector2(g * 0.25f, g), position + new Vector2(-g * 0.6f, -g * 0.1f), position + new Vector2(-g * 0.05f, -g * 0.1f),
+                    position + new Vector2(-g * 0.3f, -g), position + new Vector2(g * 0.6f, g * 0.15f), position + new Vector2(g * 0.05f, g * 0.15f)
+                }, glyph);
+                break;
+
+            case HideoutStation.Workbench:
+                Line(vh, position + new Vector2(-g * 0.7f, -g * 0.8f), position + new Vector2(g * 0.2f, g * 0.3f), t, glyph);
+                Quad(vh, position + new Vector2(-g * 0.1f, g * 0.75f), position + new Vector2(g * 0.85f, -g * 0.05f),
+                    position + new Vector2(g * 0.55f, -g * 0.4f), position + new Vector2(-g * 0.45f, g * 0.45f), glyph);
+                break;
+
+            case HideoutStation.MedStation:
+                DrawItems(vh, position, g * 1.8f, glyph);
+                break;
+
+            case HideoutStation.AmmoPress:
+                DrawAmmo(vh, position, g * 2f, glyph);
+                break;
+
+            case HideoutStation.TradePost:
+                Ring(vh, position, g * 0.85f, t, glyph);
+                FillRect(vh, new Rect(position.x - t / 2f, position.y - g * 0.5f, t, g), glyph);
+                break;
+
+            default:
+                Ring(vh, position, g * 0.7f, t * 0.8f, glyph);
+                FillRect(vh, new Rect(position.x - t / 2f, position.y + g * 0.35f, t, g * 0.65f), glyph);
+                FillRect(vh, new Rect(position.x - t / 2f, position.y - g, t, g * 0.65f), glyph);
+                FillRect(vh, new Rect(position.x + g * 0.35f, position.y - t / 2f, g * 0.65f, t), glyph);
+                FillRect(vh, new Rect(position.x - g, position.y - t / 2f, g * 0.65f, t), glyph);
+                break;
+        }
+    }
+
+    // The deploy hatch: a framed square with an arrow pointing down through it (the way down).
+    public static void DrawHatch(VertexHelper vh, Vector2 position, float size, Color colour)
+    {
+        float half = size / 2f;
+        float t = Mathf.Max(1.5f, size * 0.12f);
+
+        FillRect(vh, new Rect(position - Vector2.one * half, Vector2.one * size), new Color(0f, 0.06f, 0.03f, 0.9f));
+        OutlineRect(vh, new Rect(position - Vector2.one * half, Vector2.one * size), t, colour);
+
+        // Shaft and head of the arrow, pointing down the screen.
+        FillRect(vh, new Rect(position.x - t / 2f, position.y - half * 0.05f, t, half * 0.65f), colour);
+        Triangle(vh, position + new Vector2(-half * 0.5f, 0f), position + new Vector2(half * 0.5f, 0f), position + new Vector2(0f, -half * 0.6f), colour);
+    }
+
+    // A row of pips under a station's icon: one per upgrade level there is, filled for each bought.
+    public static void DrawLevelPips(VertexHelper vh, Vector2 centre, int level, int max, float pip, Color colour)
+    {
+        if (max <= 0)
+            return;
+
+        float gap = pip * 0.5f;
+        float width = max * pip + (max - 1) * gap;
+        float x = centre.x - width / 2f;
+
+        for (int i = 0; i < max; i++)
+        {
+            Rect rect = new Rect(x + i * (pip + gap), centre.y - pip / 2f, pip, pip);
+
+            if (i < level)
+                FillRect(vh, rect, colour);
+            else
+                OutlineRect(vh, rect, 1f, Fade(colour, 0.45f));
         }
     }
 

@@ -69,6 +69,7 @@ public class ConsumablePickup : MonoBehaviour, FloorPickups.IPickup
         pickup.reach = trigger.radius + 0.6f;
         AddGlow(root.transform, type);
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
+        pickup.label.Compactable = true;
         return pickup;
     }
 

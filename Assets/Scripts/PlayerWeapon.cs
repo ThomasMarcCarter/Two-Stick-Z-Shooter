@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // The player's two weapon slots, main and sidearm. A picked-up gun goes into its own slot (see
 // Gun.EquipSlot) and becomes the one in hand, dropping whatever was in that slot before. Switch
-// with Weapon Main / Weapon Sidearm (D-pad up/down, 1/2) or the mouse wheel. Each slot keeps its
+// with Weapon Main / Weapon Sidearm (D-pad up/down, 1/2); the mouse wheel is the quick bar's. Each slot keeps its
 // own gun, so ammo carries over while it's holstered. Attachments stay on a gun when it's dropped
 // and come back with it when it's picked up.
 public class PlayerWeapon : MonoBehaviour
@@ -68,11 +69,9 @@ public class PlayerWeapon : MonoBehaviour
             return;
         }
 
-        float scroll = GameInput.WeaponScroll.ReadValue<float>();
-
-        if (GameInput.WeaponMain.WasPressedThisFrame() || scroll > 0f)
+        if (GameInput.WeaponMain.WasPressedThisFrame())
             Switch(Gun.Slot.Main);
-        else if (GameInput.WeaponSidearm.WasPressedThisFrame() || scroll < 0f)
+        else if (GameInput.WeaponSidearm.WasPressedThisFrame())
             Switch(Gun.Slot.Sidearm);
     }
 
@@ -155,14 +154,55 @@ public class PlayerWeapon : MonoBehaviour
         return gun;
     }
 
-    // Puts a new gun from a prefab into its slot (dropping what was there) and takes it in hand.
-    private Gun Equip(GameObject weaponPrefab)
+    // A gun put away somewhere other than the floor (a supply crate), with what it carried.
+    public class Stowed
+    {
+        public GameObject Prefab;
+        public int Ammo;
+        public List<WeaponAttachment> Attachments;
+    }
+
+    // Takes a gun out of a supply crate: like picking one up, but whatever was in its slot comes
+    // back out as `replaced` (for the crate to keep) instead of being dropped on the floor.
+    public Gun TakeFromCrate(GameObject weaponPrefab, int ammo, IEnumerable<WeaponAttachment> fitted, out Stowed replaced)
+    {
+        replaced = null;
+
+        if (weaponPrefab == null || weaponPrefab.GetComponent<Gun>() == null)
+            return null;
+
+        Equipped old = SlotFor(weaponPrefab.GetComponent<Gun>().EquipSlot);
+
+        if (old.Gun != null)
+        {
+            replaced = new Stowed
+            {
+                Prefab = old.Prefab,
+                Ammo = old.Gun.GetCurrentAmmo(),
+                Attachments = new List<WeaponAttachment>(old.Gun.Attachments)
+            };
+        }
+
+        Gun gun = Equip(weaponPrefab, false);
+
+        if (fitted != null)
+            gun.SetAttachments(fitted);
+
+        gun.SetCurrentAmmo(ammo);
+        return gun;
+    }
+
+    // Puts a new gun from a prefab into its slot (dropping what was there, or just removing it
+    // when it's been stowed elsewhere) and takes it in hand.
+    private Gun Equip(GameObject weaponPrefab, bool dropOld = true)
     {
         Gun.Slot slot = weaponPrefab.GetComponent<Gun>().EquipSlot;
         Equipped equipped = SlotFor(slot);
 
-        if (equipped.Gun != null)
+        if (equipped.Gun != null && dropOld)
             Drop(equipped);
+        else if (equipped.Gun != null)
+            Remove(equipped);
 
         GameObject weapon = Instantiate(weaponPrefab, weaponHolder.position, weaponHolder.rotation, weaponHolder);
         equipped.Gun = weapon.GetComponent<Gun>();
@@ -183,7 +223,11 @@ public class PlayerWeapon : MonoBehaviour
     {
         GameObject pickup = Instantiate(gunPickupPrefab, transform.position, Quaternion.identity);
         pickup.GetComponent<GunPickup>().SetWeaponPrefab(equipped.Prefab, equipped.Gun.GetCurrentAmmo(), equipped.Gun.Attachments);
+        Remove(equipped);
+    }
 
+    private static void Remove(Equipped equipped)
+    {
         Destroy(equipped.Gun.gameObject);
         equipped.Gun = null;
         equipped.Prefab = null;

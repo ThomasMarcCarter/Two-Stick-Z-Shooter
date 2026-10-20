@@ -9,7 +9,8 @@ using UnityEngine;
 //   lumbers and rolls its shoulders, the bloater waddles side to side).
 //   Player: crouches and leans when sneaking, leans into a sprint, and reloads: for a magazine
 //   the support hand drops to the belt for a fresh one while the gun tips over, then slaps it
-//   home; shell by shell, the gun stays tipped and the hand feeds it in a steady rhythm.
+//   home; shell by shell, the gun stays tipped and the hand feeds it in a steady rhythm. Dying
+//   (Die), the knees buckle and the body slumps, then it topples over backwards, arms flung out.
 //   Zombies: swing in time with the Enemy's attack clock (the hit lands as the arms come down):
 //   a two-handed swipe for walkers and
 //   screamers, quick alternating claws for runners, an overhead double-fisted slam for brutes and
@@ -31,6 +32,18 @@ public class CharacterAnimator : MonoBehaviour
     public bool Talking { get; set; }
     public bool Cowering { get; set; }
     public Transform LookAt { get; set; }
+
+    // Dead (the player): plays the fall once, then lies still.
+    public bool Dead => diedAt >= 0f;
+    private float diedAt = -1f;
+
+    // On real time, so the fall plays out at full speed through the death's slow motion and
+    // finishes even once the death screen has paused the game.
+    public void Die()
+    {
+        if (diedAt < 0f)
+            diedAt = Time.unscaledTime;
+    }
 
     private struct Limb
     {
@@ -110,6 +123,12 @@ public class CharacterAnimator : MonoBehaviour
     {
         float dt = Time.deltaTime;
 
+        if (Dead && torso.Bone != null)
+        {
+            AnimateDeath(Time.unscaledTime - diedAt);
+            return;
+        }
+
         if (dt <= 0f || torso.Bone == null)
             return;
 
@@ -142,6 +161,36 @@ public class CharacterAnimator : MonoBehaviour
             AnimateBossArms(dt);
         else
             AnimateZombieArms(dt);
+    }
+
+    // Knees buckle and the body slumps forward (first 0.25 s), then the whole model topples over
+    // backwards about its feet with a small bounce as it lands, arms flung out and head lolling.
+    private void AnimateDeath(float t)
+    {
+        float buckle = Mathf.SmoothStep(0f, 1f, t / 0.25f);
+        float fall = Mathf.Clamp01((t - 0.2f) / 0.55f);
+        float landed = fall * fall;                                           // speeds up as it goes over
+        float bounce = t > 0.75f ? Mathf.Sin(Mathf.Clamp01((t - 0.75f) / 0.25f) * Mathf.PI) * 6f : 0f;
+
+        transform.localRotation = Quaternion.Euler(-86f * landed + bounce, 0f, 0f);
+
+        torso.Bone.localPosition = torso.RestPosition + Vector3.down * 0.12f * buckle * (1f - landed);
+        torso.Bone.localRotation = torso.Rest * Quaternion.Euler(Mathf.Lerp(22f * buckle, -8f, landed), 0f, 0f);
+
+        if (head.Bone != null)
+            Pose(head, Quaternion.Euler(Mathf.Lerp(30f * buckle, -25f, landed), 0f, 20f * landed));
+
+        if (armL.Bone != null)
+            Pose(armL, Quaternion.Euler(-60f * landed, 0f, -15f * buckle - 55f * landed));
+
+        if (armR.Bone != null)
+            Pose(armR, Quaternion.Euler(-40f * landed, 0f, 15f * buckle + 65f * landed));
+
+        if (legL.Bone != null)
+            Pose(legL, Quaternion.Euler(25f * buckle * (1f - landed) - 10f * landed, 0f, -8f * landed));
+
+        if (legR.Bone != null)
+            Pose(legR, Quaternion.Euler(-15f * buckle * (1f - landed) + 12f * landed, 0f, 6f * landed));
     }
 
     private float Stride

@@ -15,9 +15,10 @@ using UnityEngine.AI;
 // It moves by physics but plans its route over the floor's navmesh, so it goes around pillars
 // and corners rather than into them; along a wall it steers to slide past, and if it still
 // gets wedged it side-steps out. A blow (melee, a blast) knocks it back and staggers it for a
-// moment, less so for heavy kinds. What kind it is (walker, runner, brute and so on) only
-// changes its numbers and colour here; the screamer's and bloater's extra behaviour is in their
-// own components (EnemyScreamer, EnemyBloater).
+// moment, less so for heavy kinds, and bosses barely (so they can't be stun-locked). What kind
+// it is (walker, runner, brute and so on) only changes its numbers and colour here; the
+// screamer's and bloater's extra behaviour is in their own components (EnemyScreamer,
+// EnemyBloater).
 // Attacks are swings: once the player is within reach it starts one (its length set by kind),
 // and the hit lands at the moment the arms come down, if the player is still in reach then, so
 // backing off during the wind-up dodges it. The model's swing (CharacterAnimator) is driven by
@@ -115,6 +116,13 @@ public class Enemy : MonoBehaviour
     private Color emission;
     private float knockbackScale = 1f;
     private float staggerUntil;
+    private float staggerImmuneUntil;
+
+    // Bosses: how much of a blow's push they take, how much of its stagger, and how long after a
+    // stagger before another can land, so repeated melee hits can't stun-lock them.
+    private const float HeavyKnockback = 0.15f;
+    private const float HeavyStagger = 0.4f;
+    private const float HeavyStaggerCooldown = 2.5f;
 
     private float attackTime = -1f;
     private int strikesDone;
@@ -125,6 +133,10 @@ public class Enemy : MonoBehaviour
     public bool IsChasing => state == State.Chase;
     public int Health => health;
     public bool IsStaggered => Time.time < staggerUntil;
+
+    // A boss: shrugs off most of a blow's push, flinches only briefly, and can't be staggered
+    // again for a while after (see Knock).
+    public bool Heavy { get; set; }
 
     // Scales its speed, e.g. a bloater slowing as it swells. 1 normally.
     public float SpeedMultiplier { get; set; } = 1f;
@@ -138,6 +150,10 @@ public class Enemy : MonoBehaviour
     // While true it still sees and hears, but doesn't move itself: a boss's attack (a charge,
     // a dodge) is driving its body instead.
     public bool ExternalControl { get; set; }
+
+    // A direction the model must face whatever it's doing (a boss locked into a charge), or null
+    // to face where it's going as usual (FaceMovement).
+    public Vector3? FacingOverride { get; set; }
 
     // Hurts with timed swings (true) or by touching the player (false, for bosses).
     public bool SwingAttacks { get; set; } = true;
@@ -270,13 +286,26 @@ public class Enemy : MonoBehaviour
     }
 
     // Knocked back along a velocity (scaled down for heavy kinds), and staggered: it doesn't
-    // steer for that long, sliding to a stop instead.
+    // steer for that long, sliding to a stop instead. Bosses (Heavy) take far less of both, and
+    // ignore blows for a few seconds after one staggers them.
     public void Knock(Vector3 velocity, float stagger)
     {
         if (health <= 0)
             return;
 
         velocity.y = 0f;
+
+        if (Heavy)
+        {
+            // Still recovering from the last flinch: the blow lands but doesn't move it.
+            if (Time.time < staggerImmuneUntil)
+                return;
+
+            velocity *= HeavyKnockback;
+            stagger *= HeavyStagger;
+            staggerImmuneUntil = Time.time + stagger + HeavyStaggerCooldown;
+        }
+
         rb.linearVelocity = velocity * knockbackScale + Vector3.up * rb.linearVelocity.y;
         staggerUntil = Mathf.Max(staggerUntil, Time.time + stagger * Mathf.Lerp(0.4f, 1f, knockbackScale));
 

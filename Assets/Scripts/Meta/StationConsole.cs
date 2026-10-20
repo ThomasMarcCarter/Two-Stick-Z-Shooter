@@ -35,6 +35,7 @@ public class StationConsole : MonoBehaviour, FloorPickups.IPickup
 
         StationConsole console = root.AddComponent<StationConsole>();
         console.station = station;
+        StationMarker.Add(root, station, false);
         Material material = ConsumablePickup.DefaultMaterial;
         Color accent = Stations.Colour(station);
         Transform t = root.transform;

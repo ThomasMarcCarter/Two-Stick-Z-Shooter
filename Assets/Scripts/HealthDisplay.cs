@@ -3,7 +3,8 @@ using UnityEngine.UI;
 using static MapMesh;
 
 // Player health as a row of segments, in the same phosphor style as the radar. Segments go red
-// when health is low, and the whole bar flashes when the player is hit.
+// when health is low, and the whole bar flashes when the player is hit. Also puts the pulsing
+// red low-health glow round the screen edges (LowHealthVignette) on the canvas.
 public class HealthDisplay : MaskableGraphic
 {
     [SerializeField] private PlayerHealth playerHealth;
@@ -18,6 +19,7 @@ public class HealthDisplay : MaskableGraphic
 
     private int lastHealth = -1;
     private float flashUntil;
+    private LowHealthVignette vignette;
 
     protected override void Awake()
     {
@@ -50,6 +52,9 @@ public class HealthDisplay : MaskableGraphic
     {
         if (!Application.isPlaying || playerHealth == null)
             return;
+
+        if (vignette == null && canvas != null)
+            vignette = LowHealthVignette.Create(canvas.rootCanvas.transform, playerHealth);
 
         // Redraw when health changes, and every frame while flashing.
         if (playerHealth.Health != lastHealth || Time.unscaledTime < flashUntil + 0.05f)

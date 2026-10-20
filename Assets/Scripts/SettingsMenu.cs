@@ -230,8 +230,8 @@ public class SettingsMenu : MonoBehaviour
         AddRow(ref y, "SIDEARM", Binding(GameInput.WeaponSidearm, false), Binding(GameInput.WeaponSidearm, true));
         AddRow(ref y, "INVENTORY", Binding(GameInput.Inventory, false), Binding(GameInput.Inventory, true));
         AddRow(ref y, "QUICK USE (SELECTED)", Binding(GameInput.QuickUse, false), Binding(GameInput.QuickUse, true));
-        AddRow(ref y, "QUICK SLOT LEFT", Fixed("-"), Binding(GameInput.QuickPrevious, true));
-        AddRow(ref y, "QUICK SLOT RIGHT", Fixed("-"), Binding(GameInput.QuickNext, true));
+        AddRow(ref y, "QUICK SLOT LEFT", Fixed("WHEEL UP"), Binding(GameInput.QuickPrevious, true));
+        AddRow(ref y, "QUICK SLOT RIGHT", Fixed("WHEEL DOWN"), Binding(GameInput.QuickNext, true));
 
         for (int i = 0; i < GameInput.QuickSlots.Length; i++)
             AddRow(ref y, $"QUICK SLOT {i + 1}", Binding(GameInput.QuickSlots[i], false), Fixed("-"));

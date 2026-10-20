@@ -7,7 +7,8 @@ using UnityEngine.InputSystem;
 // Fullscreen tactical map. Toggle with Map (M / View); Back (Esc / B) also closes. Pauses the
 // game while open. Mouse: drag to pan. Controller: left stick pans, right stick moves the cursor.
 // Either way, the room under the cursor is the one shown in the side panel; moving off the rooms
-// keeps the last one.
+// keeps the last one. In the hideout, a station's icon under the cursor shows that station's
+// upgrades there instead.
 public class FullscreenMap : MonoBehaviour
 {
     public static bool IsOpen { get; private set; }
@@ -30,11 +31,13 @@ public class FullscreenMap : MonoBehaviour
     private readonly Dictionary<Room, List<GunPickup>> items = new Dictionary<Room, List<GunPickup>>();
     private readonly Dictionary<Room, List<AmmoPickup>> ammoItems = new Dictionary<Room, List<AmmoPickup>>();
     private readonly Dictionary<Room, List<ConsumablePickup>> medkits = new Dictionary<Room, List<ConsumablePickup>>();
+    private readonly Dictionary<Room, List<SupplyCrate>> crates = new Dictionary<Room, List<SupplyCrate>>();
     private float previousTimeScale = 1f;
     private bool dragging;
     private Vector2 lastPointer;
     private Vector2 padCursor;
     private Room shownRoom;
+    private StationMarker shownStation;
     private Vector2 lastCursor;
     private bool hasLastCursor;
 
@@ -84,7 +87,30 @@ public class FullscreenMap : MonoBehaviour
     // up, so a quick flick (or a slow frame) can't skip over a room: the last room crossed wins.
     private void SelectRoomUnderCursor()
     {
-        view.PointerToLocal(GameInput.Pointer, out Vector2 pointer);
+        bool inside = view.PointerToLocal(GameInput.Pointer, out Vector2 pointer);
+
+        // Over a station's icon: its readout, until the cursor moves off it.
+        StationMarker station = inside ? view.StationAt(pointer) : null;
+        view.HoveredStation = station;
+
+        if (station != null)
+        {
+            if (station != shownStation)
+            {
+                shownStation = station;
+                roomInfoText.text = "<mspace=0.62em>" + station.Describe();
+            }
+
+            lastCursor = pointer;
+            hasLastCursor = true;
+            return;
+        }
+
+        if (shownStation != null)
+        {
+            shownStation = null;
+            Select(shownRoom);
+        }
 
         Vector2 from = hasLastCursor ? lastCursor : pointer;
         lastCursor = pointer;
@@ -162,6 +188,8 @@ public class FullscreenMap : MonoBehaviour
         Time.timeScale = 0f;
 
         RefreshItems();
+        shownStation = null;
+        view.HoveredStation = null;
         view.CentreOn(player.position);
         Select(floor.CurrentRoom);
 
@@ -222,13 +250,14 @@ public class FullscreenMap : MonoBehaviour
         roomInfoText.text = "<mspace=0.62em>" + DescribeRoom(room);
     }
 
-    // Weapon, ammo and medkit pickups, each assigned to the room it's lying in, so dropped weapons
-    // and enemy ammo drops show up too.
+    // Weapon, ammo and medkit pickups and supply crates, each assigned to the room it's in, so
+    // dropped weapons and enemy ammo drops show up too.
     private void RefreshItems()
     {
         items.Clear();
         ammoItems.Clear();
         medkits.Clear();
+        crates.Clear();
 
         foreach (GunPickup pickup in FindObjectsByType<GunPickup>())
             AddItem(items, pickup);
@@ -238,6 +267,9 @@ public class FullscreenMap : MonoBehaviour
 
         foreach (ConsumablePickup pickup in FindObjectsByType<ConsumablePickup>())
             AddItem(medkits, pickup);
+
+        foreach (SupplyCrate crate in FindObjectsByType<SupplyCrate>())
+            AddItem(crates, crate);
 
         view.SetItemCounts(Counts(items), Counts(ammoItems), Counts(medkits));
     }
@@ -321,6 +353,15 @@ public class FullscreenMap : MonoBehaviour
             {
                 string colour = ColorUtility.ToHtmlStringRGB(ConsumableInfo.Colour(kit.Type));
                 text.AppendLine($"<color=#{colour}>+</color> {ConsumableInfo.Name(kit.Type)}{(kit.Amount > 1 ? " x" + kit.Amount : "")}");
+                any = true;
+            }
+        }
+
+        if (crates.TryGetValue(room, out List<SupplyCrate> roomCrates))
+        {
+            foreach (SupplyCrate crate in roomCrates)
+            {
+                text.AppendLine($"<color={UiColours.AmberHex}>#</color> SUPPLY CRATE ({(crate.Items.Count == 0 ? "EMPTY" : crate.Items.Count + " ITEMS")})");
                 any = true;
             }
         }

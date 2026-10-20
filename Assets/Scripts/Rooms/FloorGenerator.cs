@@ -288,6 +288,22 @@ public partial class FloorGenerator : MonoBehaviour
     public int TotalFloors => totalFloors;
     public int EnemiesKilled { get; private set; }
 
+    // Floors of this run whose boss is dead: the ones before this, and this one once its boss
+    // room is cleared. What the run's scrap counts.
+    public int FloorsCleared
+    {
+        get
+        {
+            foreach (Room room in rooms)
+            {
+                if (room.Type == RoomType.Boss && room.IsCleared)
+                    return FloorNumber;
+            }
+
+            return Mathf.Max(0, FloorNumber - 1);
+        }
+    }
+
     // Floor 0 is the hideout: the hub with the stations, the rescued survivors and the hatch to floor 1.
     public bool IsHideout => FloorNumber == 0;
     public string FloorName => IsHideout ? "HIDEOUT" : $"FLOOR {FloorNumber}";
@@ -444,9 +460,7 @@ public partial class FloorGenerator : MonoBehaviour
             SpawnClutter(room);
             SpawnTrash(room);
             List<Vector3> placed = SpawnEnemies(room);
-            SpawnTreasure(room);
-            SpawnTreasureAttachments(room);
-            SpawnTreasureMaterials(room);
+            SpawnTreasureCrate(room);
             placed.AddRange(lootFloorPoints);
             SpawnAmmoCrate(room, placed);
         }
@@ -572,6 +586,16 @@ public partial class FloorGenerator : MonoBehaviour
     // facing in.
     private void SpawnUplink(Room room)
     {
+        Vector2Int cell = MiddleCell(room);
+        Vector2Int wall = UplinkWall(room, cell);
+        Vector3 outward = new Vector3(wall.x, 0f, wall.y);
+        float halfExtent = wall.x != 0 ? roomSize.x / 2f : roomSize.y / 2f;
+        UplinkTerminal.Create(uplinkModel, CellToWorld(cell) + outward * (halfExtent - 0.9f), -outward, room.transform);
+    }
+
+    // The room's cell nearest its middle.
+    private Vector2Int MiddleCell(Room room)
+    {
         Vector3 centre = room.transform.position;
         Vector2Int cell = room.Cells[0];
 
@@ -581,8 +605,12 @@ public partial class FloorGenerator : MonoBehaviour
                 cell = candidate;
         }
 
-        Vector2Int wall = Vector2Int.zero;
+        return cell;
+    }
 
+    // Which wall of that cell the uplink stands against: the first outside wall with no door.
+    private static Vector2Int UplinkWall(Room room, Vector2Int cell)
+    {
         foreach (Vector2Int side in new[] { Vector2Int.up, Vector2Int.right, Vector2Int.left, Vector2Int.down })
         {
             bool door = false;
@@ -591,18 +619,10 @@ public partial class FloorGenerator : MonoBehaviour
                 door |= connection.Cell == cell && connection.Direction == side;
 
             if (!room.Contains(cell + side) && !door)
-            {
-                wall = side;
-                break;
-            }
+                return side;
         }
 
-        if (wall == Vector2Int.zero)
-            wall = Vector2Int.up;
-
-        Vector3 outward = new Vector3(wall.x, 0f, wall.y);
-        float halfExtent = wall.x != 0 ? roomSize.x / 2f : roomSize.y / 2f;
-        UplinkTerminal.Create(uplinkModel, CellToWorld(cell) + outward * (halfExtent - 0.9f), -outward, room.transform);
+        return Vector2Int.up;
     }
 
     // A normal room's last enemy is down: the cleared chime, and sometimes a medkit where it
@@ -629,18 +649,48 @@ public partial class FloorGenerator : MonoBehaviour
         if (UnityEngine.Random.value < medkitChance)
         {
             bool large = UnityEngine.Random.value < largeMedkitChance;
-            ConsumablePickup.Spawn(large ? ConsumableType.LargeMedkit : ConsumableType.Medkit, 1, position, room.transform, ammoMaterial);
+            ConsumablePickup.Spawn(large ? ConsumableType.LargeMedkit : ConsumableType.Medkit, 1, InsideRoom(room, position), room.transform, ammoMaterial);
         }
 
         Vector3 side = Vector3.Cross(Vector3.up, toCentre.sqrMagnitude > 0.01f ? toCentre.normalized : Vector3.forward);
 
         if (UnityEngine.Random.value < supplyChance && PickSupply(UnityEngine.Random.value) is ConsumableType supply)
-            ConsumablePickup.Spawn(supply, 1, position + side * 0.9f, room.transform, ammoMaterial);
+            ConsumablePickup.Spawn(supply, 1, InsideRoom(room, position + side * 0.9f), room.transform, ammoMaterial);
 
         if (UnityEngine.Random.value < meleeUpgradeChance)
-            SpawnMeleeUpgrade(position - side * 0.9f, room.transform, UnityEngine.Random.value);
+            SpawnMeleeUpgrade(InsideRoom(room, position - side * 0.9f), room.transform, UnityEngine.Random.value);
 
         DropRoomMaterial(room, position);
+    }
+
+    // A drop point pulled in off the walls: kept inside the room's cell it's in (or the room's
+    // nearest cell), at least `margin` from the walls, so nothing lands in or behind one.
+    public Vector3 InsideRoom(Room room, Vector3 position, float margin = 0.8f)
+    {
+        Vector2Int cell = WorldToCell(position);
+
+        if (!room.Contains(cell))
+        {
+            float best = float.MaxValue;
+
+            foreach (Vector2Int candidate in room.Cells)
+            {
+                float distance = (CellToWorld(candidate) - position).sqrMagnitude;
+
+                if (distance < best)
+                {
+                    best = distance;
+                    cell = candidate;
+                }
+            }
+        }
+
+        Vector3 centre = CellToWorld(cell);
+        Vector2 half = new Vector2(Mathf.Max(0f, roomSize.x / 2f - margin), Mathf.Max(0f, roomSize.y / 2f - margin));
+        return new Vector3(
+            Mathf.Clamp(position.x, centre.x - half.x, centre.x + half.x),
+            position.y,
+            Mathf.Clamp(position.z, centre.z - half.y, centre.z + half.y));
     }
 
     // Higher for small, quick kinds, lower for big ones.
@@ -674,7 +724,8 @@ public partial class FloorGenerator : MonoBehaviour
             MetaProgress.AddMaterials(recovered);
 
             PlayerHealth health = player.GetComponent<PlayerHealth>();
-            int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled);
+            // The rest of the run's scrap comes home with the bonus; the screen shows the run's total.
+            int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled) + MetaProgress.ScrapSentHome;
             victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap,
                 Materials.Describe(recovered));
             return;
@@ -1166,7 +1217,7 @@ public partial class FloorGenerator : MonoBehaviour
         float middle = alongX ? block.center.x : block.center.y;
         CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f);
         CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end);
-        CreateDoorFrame(room.transform, alongX, across, middle);
+        CreateDoorFrame(room.transform, alongX, across, middle, new Vector3(-direction.x, 0f, -direction.y));
         CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
     }
 
@@ -1190,26 +1241,31 @@ public partial class FloorGenerator : MonoBehaviour
     }
 
     // Steel posts either side of a doorway, standing a little proud of the wall on both faces
-    // and above it, so doorways read clearly from above. Just for looks: no colliders (the wall
-    // ends do the blocking), so nothing catches on them.
-    private void CreateDoorFrame(Transform parent, bool alongX, float across, float middle)
+    // and above it, so doorways read clearly from above, with flashing amber lights on them
+    // (DoorBeacon) so they're easy to find in the dark. Just for looks: no colliders (the wall
+    // ends do the blocking), so nothing catches on them. `inward` points into the room.
+    private void CreateDoorFrame(Transform parent, bool alongX, float across, float middle, Vector3 inward)
     {
-        if (wallTrimMaterial == null)
-            return;
-
         const float postWidth = 0.16f;
         Vector3 size = WallSize(alongX, postWidth, wallThickness + 0.1f) + Vector3.up * 0.06f;
+        Vector3[] posts = new Vector3[2];
 
-        foreach (float side in new[] { -1f, 1f })
+        for (int i = 0; i < 2; i++)
         {
+            float side = i == 0 ? -1f : 1f;
             float along = middle + side * (doorWidth / 2f + postWidth / 2f - 0.02f);
-            Vector3 world = alongX
+            posts[i] = alongX
                 ? new Vector3(along, (wallHeight + 0.06f) / 2f, across)
                 : new Vector3(across, (wallHeight + 0.06f) / 2f, along);
 
-            GameObject post = CreateBlock("Door Frame", parent, ToLocal(parent, world), size, wallTrimMaterial);
-            Destroy(post.GetComponent<Collider>());
+            if (wallTrimMaterial != null)
+            {
+                GameObject post = CreateBlock("Door Frame", parent, ToLocal(parent, posts[i]), size, wallTrimMaterial);
+                Destroy(post.GetComponent<Collider>());
+            }
         }
+
+        DoorBeacon.Create(parent, posts[0], posts[1], wallHeight + 0.06f, inward, postWidth, wallThickness, ammoMaterial);
     }
 
     private void CreateWallSpan(Transform parent, bool alongX, float across, float start, float end)

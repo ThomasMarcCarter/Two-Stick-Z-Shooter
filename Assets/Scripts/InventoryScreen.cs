@@ -394,7 +394,7 @@ public partial class InventoryScreen : MonoBehaviour
         {
             Rect slot = QuickSlotRect(i);
             quickMain[i] = MakeText(panel.transform, "", 14, new Rect(slot.xMin + 2f, slot.yMin + 17f, slot.width - 4f, 20f), phosphor, TextAlignmentOptions.Center, 2f);
-            quickSub[i] = MakeText(panel.transform, "", 8, new Rect(slot.xMin + 2f, slot.yMin + 6f, slot.width - 4f, 12f), dim, TextAlignmentOptions.Center, 1f);
+            quickSub[i] = MakeLabel(panel.transform, new Rect(slot.xMin + 2f, slot.yMin + 6f, slot.width - 4f, 12f), dim);
         }
 
         Rect lastQuick = QuickSlotRect(QuickBar.SlotCount - 1);

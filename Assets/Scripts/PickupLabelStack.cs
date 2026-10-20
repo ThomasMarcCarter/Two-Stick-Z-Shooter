@@ -13,7 +13,7 @@ using UnityEngine;
 [DefaultExecutionOrder(210)]
 public class PickupLabelStack : MonoBehaviour
 {
-    private const int MaxPerStack = 5;
+    private const int MaxPerStack = 3;
     private const float Gap = 6f;            // pixels between stacked labels
     private const float ScreenMargin = 12f;
     private const float Ease = 16f;          // per second

@@ -126,6 +126,7 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
         pickup.crate = crate;
         pickup.reach = trigger.radius + 0.6f;
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
+        pickup.label.Compactable = true;
         return pickup;
     }
 

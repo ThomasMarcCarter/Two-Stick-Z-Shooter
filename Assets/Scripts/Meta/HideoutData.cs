@@ -51,19 +51,6 @@ public static class Materials
         }
     }
 
-    // Three letters, for the HUD and cost lists.
-    public static string Short(MaterialType type)
-    {
-        switch (type)
-        {
-            case MaterialType.Parts: return "PRT";
-            case MaterialType.Wiring: return "WIR";
-            case MaterialType.Chemicals: return "CHM";
-            case MaterialType.Gunpowder: return "GPW";
-            default: return "FUL";
-        }
-    }
-
     public static Color Colour(MaterialType type)
     {
         switch (type)
@@ -221,10 +208,10 @@ public static class Npcs
     {
         switch (kind)
         {
-            case NpcKind.Mechanic: return "OWE YOU ONE. I'LL GET YOUR WORKBENCH RUNNING.";
-            case NpcKind.Medic: return "THANK GOD. FIND ME AT THE HIDEOUT, I CAN PATCH YOU UP.";
-            case NpcKind.Trader: return "A PLEASURE DOING BUSINESS. I'LL SET UP SHOP IN YOUR BARRACKS.";
-            default: return "GOOD TIMING, SOLDIER. I'LL SORT YOUR SUPPLY LINES.";
+            case NpcKind.Mechanic: return "OWE YOU ONE. I'LL CLEAR OUT THAT DUSTY CORNER AND GET A WORKBENCH RUNNING.";
+            case NpcKind.Medic: return "THANK GOD. I'LL CLEAN UP A MED BAY AT THE HIDEOUT AND PATCH YOU UP.";
+            case NpcKind.Trader: return "A PLEASURE DOING BUSINESS. I'LL CLEAR A CORNER OF YOUR HIDEOUT AND SET UP SHOP.";
+            default: return "GOOD TIMING, SOLDIER. I'LL TIDY UP YOUR SUPPLY ROOM AND SORT YOUR SUPPLY LINES.";
         }
     }
 

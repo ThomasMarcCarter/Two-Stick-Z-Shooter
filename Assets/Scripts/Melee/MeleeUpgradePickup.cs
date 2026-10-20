@@ -62,6 +62,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
 
         AddGlow(root.transform, colour);
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
+        pickup.label.Compactable = true;
         return pickup;
     }
 

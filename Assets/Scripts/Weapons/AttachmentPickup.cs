@@ -63,6 +63,7 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         pickup.visual = kit.transform;
         pickup.bobOffset = Random.value * 10f;
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
+        pickup.label.Compactable = true;
         return pickup;
     }
 
@@ -163,7 +164,7 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         return nearest;
     }
 
-    private enum Take
+    public enum Take
     {
         Fit,        // onto a gun with that slot free
         Store,      // into the backpack
@@ -171,14 +172,35 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         None
     }
 
+    // Every carried gun it fits, main first: "FITS AK47 + PISTOL", "FITS PISTOL", or
+    // "FITS NO GUN YOU CARRY". Also used by supply crates.
+    public static string FitsCarried(PlayerWeapon player, WeaponAttachment attachment)
+    {
+        List<string> names = new List<string>();
+
+        foreach (PlayerWeapon.Equipped slot in new[] { player.Main, player.Sidearm })
+        {
+            if (slot.Gun != null && attachment.Fits(slot.Gun))
+                names.Add(slot.Name);
+        }
+
+        return names.Count > 0 ? "FITS " + string.Join(" + ", names) : "FITS NO GUN YOU CARRY";
+    }
+
     // What taking it would do, and the gun involved if any.
     private Take Decide(out PlayerWeapon.Equipped target)
+    {
+        return Decide(player, Attachment, out target);
+    }
+
+    // What taking an attachment would do for this player (also used by supply crates).
+    public static Take Decide(PlayerWeapon player, WeaponAttachment attachment, out PlayerWeapon.Equipped target)
     {
         target = null;
 
         foreach (PlayerWeapon.Equipped slot in new[] { player.Active, player.Holstered })
         {
-            if (slot.Gun != null && Attachment.Fits(slot.Gun) && slot.Gun.AttachmentIn(Attachment.slot) == null)
+            if (slot.Gun != null && attachment.Fits(slot.Gun) && slot.Gun.AttachmentIn(attachment.slot) == null)
             {
                 target = slot;
                 return Take.Fit;
@@ -188,9 +210,9 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         if (player.Backpack != null && player.Backpack.HasRoomForAttachment)
             return Take.Store;
 
-        target = player.TargetFor(Attachment);
+        target = player.TargetFor(attachment);
 
-        if (target != null && target.Gun.AttachmentIn(Attachment.slot) != Attachment)
+        if (target != null && target.Gun.AttachmentIn(attachment.slot) != attachment)
             return Take.Swap;
 
         target = null;
@@ -237,7 +259,11 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
     private string LabelText()
     {
         WeaponAttachment attachment = Attachment;
-        string text = $"{attachment.name.ToUpperInvariant()}  <size=70%><alpha=#99>// {WeaponAttachment.SlotName(attachment.slot)}</size>\n"
+
+        // Which carried guns it fits goes on the first line, so the name tag a far-off label
+        // shrinks to (PickupLabel.Compact) still shows it.
+        string fitsCarried = player != null ? $"  <alpha=#AA>{FitsCarried(player, attachment)}<alpha=#FF>" : "";
+        string text = $"{attachment.name.ToUpperInvariant()}{fitsCarried}  <size=70%><alpha=#99>// {WeaponAttachment.SlotName(attachment.slot)}</size>\n"
             + $"<size=70%>{attachment.Describe()}</size>\n";
 
         if (player == null)
@@ -251,8 +277,7 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
                 return text + $"<size=80%><color=#FFFFFF>{button} FIT TO {target.Name}</color></size>";
 
             case Take.Store:
-                PlayerWeapon.Equipped fits = player.TargetFor(attachment);
-                string note = fits != null ? "SLOT TAKEN ON " + fits.Name : attachment.FitDescription() + " // FITS NO GUN YOU CARRY";
+                string note = player.TargetFor(attachment) != null ? "SLOT TAKEN" : attachment.FitDescription();
                 return text + $"<size=80%><color=#FFFFFF>{button} TAKE</color>  <alpha=#88><size=85%>{note}</size></size>";
 
             case Take.Swap:

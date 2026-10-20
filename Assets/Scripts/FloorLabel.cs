@@ -24,7 +24,7 @@ public class FloorLabel : MonoBehaviour
 
         shownFloor = floor.FloorNumber;
         label.text = floor.IsHideout
-            ? string.Format(format.Replace("FLOOR {0}", "{2}"), shownFloor, floor.TotalFloors, floor.FloorName)
+            ? string.Format(format.Replace("FLOOR {0} OF {1}", "{2}").Replace("FLOOR {0}", "{2}"), shownFloor, floor.TotalFloors, floor.FloorName)
             : string.Format(format, shownFloor, floor.TotalFloors);
     }
 }

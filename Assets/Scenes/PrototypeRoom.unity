@@ -3494,7 +3494,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 6
-  invulnerableTime: 0.5
+  invulnerableTime: 0.9
   knockback: 7
   blinkRate: 14
   hurtSound: {fileID: 0}

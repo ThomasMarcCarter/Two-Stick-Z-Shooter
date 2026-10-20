@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 // A hideout station's upgrade screen: a CRT panel listing the upgrades that station holds, each
 // with its level, what the next level gives, and what it costs in scrap and materials (anything
 // the player is short of in red, and a note if the generator isn't up to it yet). Pick one to
 // buy its next level. Opened by walking up to a station (StationConsole) and pressing Interact;
 // Cancel (or the CLOSE button) shuts it. The game keeps running behind it, but the player can't
-// move or shoot while it's up. Built in code the first time it opens, on the HUD canvas just
-// below the Crosshair (the menu cursor), like the other screens, and rebuilt per station.
+// move or shoot while it's up. Built in code the first time it opens (CrtPanel), and rebuilt
+// per station.
 // The trade post uses the same screen as a shop: a row per item in the trader's stock (price,
 // how many are left, how many the player already carries), bought with scrap straight into the
 // pack.
@@ -253,26 +252,10 @@ public class StationScreen : MonoBehaviour
 
     private static StationScreen Create()
     {
-        EquipmentHud hud = FindAnyObjectByType<EquipmentHud>();
-        Canvas canvas = hud != null ? hud.canvas : null;
+        GameObject root = CrtPanel.CreateRoot("Station Screen", out Canvas canvas);
 
-        if (canvas == null)
+        if (root == null)
             return null;
-
-        GameObject root = new GameObject("Station Screen", typeof(RectTransform));
-        root.layer = canvas.gameObject.layer;
-        root.transform.SetParent(canvas.transform, false);
-
-        // Below the Crosshair, which is the menu cursor and has to draw on top.
-        Transform crosshair = canvas.transform.Find("Crosshair");
-
-        if (crosshair != null)
-            root.transform.SetSiblingIndex(crosshair.GetSiblingIndex());
-
-        RectTransform rootRect = root.GetComponent<RectTransform>();
-        rootRect.anchorMin = Vector2.zero;
-        rootRect.anchorMax = Vector2.one;
-        rootRect.offsetMin = rootRect.offsetMax = Vector2.zero;
 
         StationScreen screen = root.AddComponent<StationScreen>();
         screen.Build(root.transform, canvas);
@@ -282,28 +265,8 @@ public class StationScreen : MonoBehaviour
 
     private void Build(Transform root, Canvas canvas)
     {
-        font = TMP_Settings.defaultFontAsset;
-        TMP_Text sample = canvas.GetComponentInChildren<TMP_Text>(true);
-
-        if (sample != null)
-            font = sample.font;
-
-        panel = new GameObject("Panel", typeof(RectTransform));
-        panel.layer = gameObject.layer;
-        panel.transform.SetParent(root, false);
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(PanelWidth, 400f);
-
-        Image fill = panel.AddComponent<Image>();
-        fill.color = Background;
-        fill.raycastTarget = false;
-        // A thin phosphor frame (an Outline effect would copy the whole filled panel in green).
-        Color frame = new Color(Phosphor.r, Phosphor.g, Phosphor.b, 0.6f);
-        FrameEdge(new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1.5f), frame);
-        FrameEdge(new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1.5f), frame);
-        FrameEdge(new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1.5f, 0f), frame);
-        FrameEdge(new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1.5f, 0f), frame);
+        font = CrtPanel.Font(canvas);
+        panel = CrtPanel.CreatePanel(root, new Vector2(PanelWidth, 400f));
 
         Color dim = new Color(Phosphor.r, Phosphor.g, Phosphor.b, 0.55f);
         float inner = PanelWidth - 60f;
@@ -319,23 +282,6 @@ public class StationScreen : MonoBehaviour
         closeButton.Label.text = "[ CLOSE ]";
         statsText = MakeText("Stats", "", 11, new Vector2(0f, 52f), 0f, new Vector2(inner, 18f), dim, 4f, TextAlignmentOptions.Center);
         status = MakeText("Status", "", 12, new Vector2(0f, 28f), 0f, new Vector2(inner, 20f), dim, 4f, TextAlignmentOptions.Center);
-    }
-
-    // One edge of the panel's frame, stretched along the panel between two anchors.
-    private void FrameEdge(Vector2 anchorMin, Vector2 anchorMax, Vector2 thickness, Color colour)
-    {
-        GameObject edge = new GameObject("Frame", typeof(RectTransform));
-        edge.layer = gameObject.layer;
-        edge.transform.SetParent(panel.transform, false);
-        RectTransform rect = edge.GetComponent<RectTransform>();
-        rect.anchorMin = anchorMin;
-        rect.anchorMax = anchorMax;
-        rect.sizeDelta = thickness;
-        rect.anchoredPosition = Vector2.zero;
-
-        Image image = edge.AddComponent<Image>();
-        image.color = colour;
-        image.raycastTarget = false;
     }
 
     // One row per upgrade of the station shown, then the close button under them.
@@ -371,69 +317,14 @@ public class StationScreen : MonoBehaviour
         menu = new CrtMenu(all.ToArray());
     }
 
-    // `edge` is 1 to place it from the panel's top, 0 from its bottom.
     private TMP_Text MakeText(string name, string text, float size, Vector2 position, float edge, Vector2 box, Color colour,
         float spacing, TextAlignmentOptions alignment)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(panel.transform, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, edge);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = box;
-
-        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
-        label.font = font;
-        label.fontSize = size;
-        label.color = colour;
-        label.characterSpacing = spacing;
-        label.alignment = alignment;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.raycastTarget = false;
-        label.richText = true;
-        label.text = text;
-        return label;
+        return CrtPanel.MakeText(panel.transform, font, name, text, size, position, edge, box, colour, spacing, alignment);
     }
 
-    // Placed down from the panel's top edge (BuildRows positions it).
     private CrtButton MakeButton(string name, Vector2 size, TextAlignmentOptions alignment)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = gameObject.layer;
-        go.transform.SetParent(panel.transform, false);
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.sizeDelta = size;
-
-        Image image = go.AddComponent<Image>();
-        image.raycastTarget = false;
-
-        GameObject labelObject = new GameObject("Label", typeof(RectTransform));
-        labelObject.layer = gameObject.layer;
-        labelObject.transform.SetParent(go.transform, false);
-        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = new Vector2(10f, 0f);
-        labelRect.offsetMax = new Vector2(-10f, 0f);
-
-        TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
-        label.font = font;
-        label.fontSize = 16;
-        label.characterSpacing = 4f;
-        label.lineSpacing = 6f;
-        label.alignment = alignment;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.richText = true;
-        label.raycastTarget = false;
-
-        CrtButton button = go.AddComponent<CrtButton>();
-        button.Setup(image, label,
-            new Color(Phosphor.r, Phosphor.g, Phosphor.b, 0.08f),
-            new Color(Phosphor.r, Phosphor.g, Phosphor.b, 0.35f),
-            new Color(Phosphor.r, Phosphor.g, Phosphor.b, 0.85f),
-            Color.white);
-        return button;
+        return CrtPanel.MakeButton(panel.transform, font, name, size, alignment);
     }
 }

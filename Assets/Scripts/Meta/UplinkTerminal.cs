@@ -2,9 +2,10 @@ using UnityEngine;
 using UnityEngine.AI;
 
 // A supply uplink: a field radio console that turns up in the boss room once the boss is dead,
-// against a wall away from the door. Interact at it to send every crafting material in the
-// backpack home to the hideout, where it's banked for good (MetaProgress); anything still in the
-// backpack is lost if the player dies. It can be used again for anything picked up afterwards.
+// against a wall away from the door. Interact at it to send the scrap earned on the run so far
+// and every crafting material in the backpack home to the hideout, where they're banked for good
+// (MetaProgress); anything not sent home is lost if the player dies. It can be used again for
+// anything earned or picked up afterwards.
 // Its label lists what's waiting to go, its screen glows (brighter for a moment after sending),
 // the beacon on its aerial blinks, and the radio confirms what the hideout received. The body is
 // the Uplink model (FloorGenerator), or a plain block without one.
@@ -15,6 +16,7 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
 
     private PickupLabel label;
     private PlayerWeapon playerWeapon;
+    private FloorGenerator floor;
     private Renderer screen;
     private Renderer beacon;
     private Light lamp;
@@ -159,29 +161,45 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
         return playerWeapon != null ? Backpack.For(playerWeapon.gameObject).MaterialCounts() : new int[Materials.All.Length];
     }
 
+    // The run's scrap not sent home yet.
+    private int CarriedScrap()
+    {
+        if (floor == null)
+            floor = FindAnyObjectByType<FloorGenerator>();
+
+        return floor != null ? MetaProgress.CarriedScrap(floor.FloorsCleared, floor.EnemiesKilled) : 0;
+    }
+
     private string LabelText()
     {
-        string header = "SUPPLY UPLINK  <size=70%><alpha=#99>// SENDS MATERIALS TO THE HIDEOUT</size>\n";
+        string header = "SUPPLY UPLINK  <size=70%><alpha=#99>// SENDS SCRAP AND MATERIALS TO THE HIDEOUT</size>\n";
 
         if (Time.time - sentAt < 3f && lastSent != null)
             return header + $"<size=70%><color={UiColours.AmberHex}>RECEIVED AT THE HIDEOUT // {lastSent}</color></size>";
 
+        int scrap = CarriedScrap();
         string carried = Materials.Describe(Carried());
 
-        if (carried.Length == 0)
-            return header + "<size=70%><alpha=#88>NO MATERIALS IN THE BACKPACK TO SEND</size>";
+        if (carried.Length == 0 && scrap <= 0)
+            return header + "<size=70%><alpha=#88>NOTHING TO SEND // NO SCRAP OR MATERIALS CARRIED</size>";
 
-        return header + $"<size=70%>{carried}</size>\n"
+        string scrapText = scrap > 0 ? $"<color={UiColours.AmberHex}>{scrap} SCRAP</color>" : "";
+        string both = scrapText.Length > 0 && carried.Length > 0 ? scrapText + "  " + carried : scrapText + carried;
+        return header + $"<size=70%>{both}</size>\n"
             + $"<size=80%><color=#FFFFFF>{InputHint.Format("[{Interact}]")} SEND HOME</color></size>";
     }
 
-    // Everything in the backpack goes home and is banked.
+    // The run's scrap so far and everything in the backpack goes home and is banked.
     private void Send()
     {
+        if (floor == null)
+            floor = FindAnyObjectByType<FloorGenerator>();
+
+        int scrap = floor != null ? MetaProgress.SendScrapHome(floor.FloorsCleared, floor.EnemiesKilled) : 0;
         int[] sent = Backpack.For(playerWeapon.gameObject).TakeAllMaterials();
         string plain = Materials.Describe(sent, false);
 
-        if (plain.Length == 0)
+        if (plain.Length == 0 && scrap <= 0)
         {
             SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-deny", 1, i => ProceduralAudio.AttachmentDeny())), 0.5f);
             return;
@@ -189,7 +207,9 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
 
         MetaProgress.AddMaterials(sent);
         sentAt = Time.time;
-        lastSent = Materials.Describe(sent);
+        string coloured = Materials.Describe(sent);
+        lastSent = scrap > 0 ? $"{scrap} SCRAP" + (coloured.Length > 0 ? "  " + coloured : "") : coloured;
+        plain = scrap > 0 ? $"{scrap} SCRAP" + (plain.Length > 0 ? ", " + plain : "") : plain;
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("room.cleared", 1, i => ProceduralAudio.RoomCleared())), 0.45f, 1.4f);
         RadioMessage.Show("SUPPLY UPLINK", "RECEIVED AT THE HIDEOUT: " + plain);
     }
