@@ -15,9 +15,11 @@ using UnityEngine;
 //   Flat (floor litter): lying on the floor under what it follows, turned with it, like a decal.
 // Upright and Flat sprites are drawn at Scale (a prop's sprite sized to the prop).
 // Positions can be snapped to the art pixel grid (Snap, off: the camera moves smoothly).
-// DepthOffset slides it along the view (CameraFollow.ViewDirection), which an orthographic camera
-// doesn't see but the depth test does: a gun goes in front of or behind its holder that way. Frames are picked with SetFrame and set in the mesh's UVs (not a
-// property block, which an enemy's hit flash uses).
+// DepthOffset slides it along the line of sight (CameraFollow.ViewRay), which the camera doesn't
+// see but the depth test does: a gun goes in front of or behind its holder that way. Frames are
+// picked with SetFrame and set in the mesh's UVs (not a property block, which an enemy's hit flash
+// uses). Upright and Standing quads are marked (second UV) to lean back and face the camera when
+// CameraFollow has sprites face it (done in SpriteLit, which keeps the upright depth).
 [DefaultExecutionOrder(300)]
 public class PixelSprite : MonoBehaviour
 {
@@ -44,6 +46,8 @@ public class PixelSprite : MonoBehaviour
     private Mesh mesh;
     private readonly Vector3[] vertices = new Vector3[4];
     private readonly Vector2[] uvs = new Vector2[4];
+    private static readonly Vector2[] Leans = { Vector2.right, Vector2.right, Vector2.right, Vector2.right };
+    private static readonly Vector2[] NoLeans = { Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero };
     private float builtStretch = -1f;
     private float builtAngle = float.NaN;
     private float builtScale;
@@ -197,7 +201,7 @@ public class PixelSprite : MonoBehaviour
         if (Snap)
             position = SnapToPixels(position, view, sheet.pixelsPerUnit);
 
-        transform.SetPositionAndRotation(position + CameraFollow.ViewDirection * DepthOffset, rotation);
+        transform.SetPositionAndRotation(position + CameraFollow.ViewRay(position) * DepthOffset, rotation);
 
         // World-sized whatever the parent's scale (enemy bodies are scaled blocks).
         Vector3 parentScale = transform.parent != null ? transform.parent.lossyScale : Vector3.one;
@@ -234,6 +238,8 @@ public class PixelSprite : MonoBehaviour
             mesh.triangles = new[] { 0, 2, 1, 1, 2, 3 };
             mesh.normals = new[] { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
         }
+
+        mesh.uv2 = Standing ? Leans : NoLeans;
 
         mesh.RecalculateBounds();
     }
@@ -298,6 +304,7 @@ public class PixelSprite : MonoBehaviour
         mesh.Clear();
         mesh.vertices = vertices;
         mesh.uv = uvs;
+        mesh.uv2 = mode == Mode.Upright ? Leans : NoLeans;
         mesh.triangles = new[] { 0, 2, 1, 1, 2, 3 };
         mesh.normals = new[] { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
         mesh.RecalculateBounds();

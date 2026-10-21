@@ -161,6 +161,9 @@ MonoBehaviour:
   pushable: 1
   density: 0.35
   brokenVersion: {fileID: 0}
-  hitsToBreak: 1
+  hitsToBreak: 3
+  burstsIntoLitter: 1
+  litterPieces: {x: 4, y: 7}
   bulletImpulse: 0.3
   canTip: 0
+  toppleSpin: 9

@@ -417,7 +417,8 @@ public partial class FloorGenerator
                     }
                 }
 
-                Furniture("Screen", "Curtain", parent, centre - side * (width - 2.6f) + far * (depth - 3.8f), side, new Vector3(2.2f, 2f, 0.4f), new Color(0.5f, 0.65f, 0.6f));
+                // (No privacy screen: the medic stood in front of it, and a sprite in front of
+                // something meant to be taller than them looks wrong.)
                 Furniture("MedCabinet", "Supplies", parent, centre + side * (width - 0.3f) + far * (depth - 3f), -side, new Vector3(1.2f, 1.2f, 0.5f), new Color(0.8f, 0.8f, 0.8f));
                 break;
 

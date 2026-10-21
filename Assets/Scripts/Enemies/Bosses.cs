@@ -15,6 +15,7 @@ public enum BossMove
     WindUp,     // Butcher about to charge
     Charge,     // Butcher charging
     Dazed,      // Butcher stunned after hitting a wall
+    Sweep,      // Butcher winding up a wide cleaver sweep at a player too close to charge
     Spit,       // Broodmother swelling up to lob acid
     Howl,       // Howler rearing up to howl
     Dodge       // Howler darting sideways
@@ -146,6 +147,24 @@ public static class Bosses
             case BossKind.Howler: return CharacterAnimator.Style.Howler;
             default: return CharacterAnimator.Style.Butcher;
         }
+    }
+
+    // Most zombies a boss fight has at once (the boss included), counting ones still on the way.
+    public const int MaxAliveInFight = 8;
+
+    // How long a called zombie's spot glows on the floor before it climbs in.
+    public const float MinionWarning = 1.2f;
+
+    // A zombie called in mid-fight: a glowing disc on the floor where it'll appear (FloorMarker),
+    // then the zombie once it fills, if the boss is still alive. Nothing if the fight already has
+    // its fill of zombies.
+    public static void CallMinion(Enemy boss, Vector3 position, EnemyKind kind, Func<Vector3, EnemyKind, Enemy> spawn, Color colour)
+    {
+        if (boss == null || spawn == null || boss.Room == null || boss.Room.Enemies.Count + FloorMarker.PendingSpawns >= MaxAliveInFight)
+            return;
+
+        FloorMarker.Spawn(Flat(position), colour, MinionWarning, boss.Room.transform,
+            () => boss != null && boss.Health > 0 ? spawn(position, kind) : null);
     }
 
     public static float FlatDistance(Vector3 a, Vector3 b)

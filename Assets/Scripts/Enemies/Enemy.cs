@@ -772,8 +772,7 @@ public class Enemy : MonoBehaviour
 
         if (health <= 0)
         {
-            Died?.Invoke(this);
-            Destroy(gameObject);
+            Die();
             return;
         }
 
@@ -790,7 +789,17 @@ public class Enemy : MonoBehaviour
             return;
 
         health = 0;
+        Die();
+    }
+
+    // Gone, leaving its body on the floor for a while (sprite art: Corpse).
+    private void Die()
+    {
         Died?.Invoke(this);
+
+        if (SpriteBody)
+            Corpse.Leave(this);
+
         Destroy(gameObject);
     }
 

@@ -33,7 +33,13 @@ MonoBehaviour:
     frames: 1
     fps: 1
     directional: 0
+  - name: melee
+    row: 11
+    frames: 4
+    fps: 12
+    directional: 1
   bodyRadius: 0.28
+  hitRadius: 0
   bodyHeight: 1.4
   holdHeight: 15
   holdReach: 0.3

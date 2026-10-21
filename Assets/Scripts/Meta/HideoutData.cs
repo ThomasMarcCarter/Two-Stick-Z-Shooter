@@ -189,6 +189,33 @@ public static class Npcs
         }
     }
 
+    // Shouted when the player shoots them, angrier the more it happens (level 0 first, then 1,
+    // then 2 and on).
+    public static string[] ShotAt(NpcKind kind, int level)
+    {
+        if (level <= 0)
+        {
+            switch (kind)
+            {
+                case NpcKind.Mechanic: return new[] { "WHAT THE HELL ARE YOU DOING?!", "WATCH IT! I'M WORKING HERE!", "HEY! POINT THAT SOMEWHERE ELSE!" };
+                case NpcKind.Medic: return new[] { "WHAT THE HELL ARE YOU DOING?!", "I'M THE ONE WHO PATCHES YOU UP!", "CAREFUL! I'M NOT ONE OF THEM!" };
+                case NpcKind.Trader: return new[] { "WHAT THE HELL ARE YOU DOING?!", "HEY! THAT'S NO WAY TO HAGGLE!", "WATCH THE MERCHANDISE!" };
+                default: return new[] { "WHAT THE HELL ARE YOU DOING?!", "CEASE FIRE! FRIENDLY!", "CHECK YOUR TARGET, SOLDIER!" };
+            }
+        }
+
+        if (level == 1)
+            return new[] { "STOP SHOOTING AT ME!", "ARE YOU OUT OF YOUR MIND?!", "I SAID KNOCK IT OFF!", "ENOUGH!" };
+
+        switch (kind)
+        {
+            case NpcKind.Mechanic: return new[] { "KEEP IT UP AND YOU CAN FIX YOUR OWN GEAR.", "I'VE HAD ROBOTS WITH BETTER MANNERS." };
+            case NpcKind.Medic: return new[] { "NEXT TIME YOU'RE BLEEDING OUT, REMEMBER THIS.", "I'M WRITING THIS IN YOUR FILE." };
+            case NpcKind.Trader: return new[] { "PRICES JUST WENT UP. FOR YOU.", "YOU KNOW I DON'T DO REFUNDS, RIGHT?" };
+            default: return new[] { "ONE MORE AND YOU'RE ON LATRINE DUTY.", "THAT'S INSUBORDINATION, SOLDIER." };
+        }
+    }
+
     // Shouted from the cage while zombies are still in the room.
     public static readonly string[] CagedPleas =
     {

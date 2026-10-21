@@ -5,11 +5,14 @@ using UnityEngine;
 // Melee (V / B): a swing in an arc in front of the player that hits the nearest few zombies in
 // it (3 to start with), knocking them back and staggering them for a moment. It costs a little
 // stamina and can't be used while winded, but it's much quieter than a gunshot and needs no
-// ammo. Walls and pillars shield what's behind them, and boxes in the arc get hit too.
+// ammo. Walls and pillars shield what's behind them, and boxes and trash in the arc get hit too.
 // Upgrades picked up during the run (MeleeUpgradePickup) add to it, up to each one's max level.
-// Added to the player by PlayerWeapon.
+// Added to the player by PlayerWeapon. SwingProgress times the swing's animation (the player
+// sprite's melee clip and the held gun's arc).
 public class PlayerMelee : MonoBehaviour
 {
+    private const float SwingTime = 0.32f;   // seconds the swing's animation takes
+
     [Header("Base Swing")]
     [SerializeField] private int damage = 1;
     [SerializeField] private int maxTargets = 3;
@@ -32,6 +35,17 @@ public class PlayerMelee : MonoBehaviour
     private PlayerHealth health;
     private QuickBar quickBar;
     private float nextSwing;
+    private float swungAt = -10f;
+
+    // How far through the swing's animation it is (0 to 1), or -1 when not swinging.
+    public float SwingProgress
+    {
+        get
+        {
+            float t = (Time.time - swungAt) / SwingTime;
+            return t >= 0f && t < 1f ? t : -1f;
+        }
+    }
 
     public event Action Changed;
 
@@ -109,6 +123,7 @@ public class PlayerMelee : MonoBehaviour
     private void Swing()
     {
         nextSwing = Time.time + Cooldown;
+        swungAt = Time.time;
 
         if (stamina != null && !stamina.Boosted)
             stamina.Spend(StaminaCost);
@@ -208,13 +223,17 @@ public class PlayerMelee : MonoBehaviour
         if (!ImpactEffects.TryGetMaterials(out ImpactEffects.Materials materials))
             return;
 
-        HashSet<CardboardBox> done = new HashSet<CardboardBox>();
+        HashSet<Component> done = new HashSet<Component>();
 
         foreach (Collider collider in Physics.OverlapSphere(origin + Vector3.up * 0.5f, Reach, ~0, QueryTriggerInteraction.Ignore))
         {
-            CardboardBox box = collider.GetComponentInParent<CardboardBox>();
+            // Boxes, and props like trash bags.
+            Component target = collider.GetComponentInParent<CardboardBox>();
 
-            if (box == null || !done.Add(box))
+            if (target == null)
+                target = collider.GetComponentInParent<Prop>();
+
+            if (target == null || !done.Add(target))
                 continue;
 
             Vector3 offset = Flat(collider.bounds.center) - origin;
@@ -222,7 +241,12 @@ public class PlayerMelee : MonoBehaviour
             if (Vector3.Angle(forward, offset) > Arc / 2f)
                 continue;
 
-            box.Hit(collider.ClosestPoint(origin + Vector3.up * 0.5f), -offset.normalized, offset.normalized, materials);
+            Vector3 point = collider.ClosestPoint(origin + Vector3.up * 0.5f);
+
+            if (target is CardboardBox box)
+                box.Hit(point, -offset.normalized, offset.normalized, materials);
+            else
+                ((Prop)target).Hit(point, -offset.normalized, offset.normalized, materials);
         }
     }
 

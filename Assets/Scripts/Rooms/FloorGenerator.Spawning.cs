@@ -97,9 +97,7 @@ public partial class FloorGenerator
     // A zombie a boss calls in mid-fight. Capped, so a long fight doesn't flood the room.
     private Enemy SpawnMinion(Room room, Vector3 position, EnemyKind kind)
     {
-        const int maxAlive = 8;   // the boss and seven others
-
-        if (room.Enemies.Count >= maxAlive)
+        if (room.Enemies.Count >= Bosses.MaxAliveInFight)
             return null;
 
         return SpawnNormalEnemy(room, position, kind);

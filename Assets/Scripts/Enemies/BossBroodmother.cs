@@ -111,7 +111,8 @@ public class BossBroodmother : MonoBehaviour, IBossMoves
         SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("throw", 2, ProceduralAudio.Throw)), transform.position, 0.8f, 0.6f);
     }
 
-    // At two thirds and one third health, a brood of runners bursts out of her.
+    // At two thirds and one third health, a brood of runners bursts out of her: their spots glow
+    // yellow around her first (not acid green: they come with an acid splash).
     private void OnDamaged(Enemy _)
     {
         int threshold = burstsDone == 0 ? enemy.MaxHealth * 2 / 3 : burstsDone == 1 ? enemy.MaxHealth / 3 : -1;
@@ -128,7 +129,7 @@ public class BossBroodmother : MonoBehaviour, IBossMoves
         {
             float angle = (i / (float)RunnersPerBurst) * Mathf.PI * 2f + UnityEngine.Random.value;
             Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (baseScale.x * 0.5f + 1f);
-            spawnMinion(Bosses.Flat(transform.position) + offset, EnemyKind.Runner);
+            Bosses.CallMinion(enemy, Bosses.Flat(transform.position) + offset, EnemyKind.Runner, spawnMinion, new Color(1f, 0.85f, 0.2f));
         }
     }
 }

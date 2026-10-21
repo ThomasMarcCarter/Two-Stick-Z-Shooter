@@ -5,11 +5,14 @@ using UnityEngine;
 // line at several times its speed, facing dead ahead (it can't turn once its aim locks).
 // Running into the player hurts and throws them; running into a wall stuns it for a couple of
 // seconds, during which it takes double damage. Sidestepping the charge so it hits the wall is
-// the way to beat it. Boxes, trash and furniture in its path are smashed (Smashable).
+// the way to beat it. Boxes, trash and furniture in its path are smashed (Smashable). Staying
+// inside its charge range for a couple of seconds doesn't make you safe: it plants its feet, a
+// red wedge glows on the floor in front of it (FloorMarker) and then it sweeps the cleaver across
+// the whole wedge, hurting and throwing anyone still in it and smashing the boxes there.
 [RequireComponent(typeof(Enemy))]
 public class BossButcher : MonoBehaviour, IBossMoves
 {
-    private enum Phase { Stalk, WindUp, Charge, Dazed }
+    private enum Phase { Stalk, WindUp, Charge, Dazed, Sweep }
 
     private const float MinRange = 3.5f;
     private const float MaxRange = 15f;
@@ -19,6 +22,14 @@ public class BossButcher : MonoBehaviour, IBossMoves
     private const float MaxChargeTime = 1.6f;
     private const float DazedTime = 2.2f;
     private const float Cooldown = 3.5f;
+    private const float SweepAfter = 2f;         // seconds inside MinRange before it sweeps
+    private const float SweepWindUp = 1f;
+    private const float SweepRange = 3.4f;
+    private const float SweepArc = 200f;         // degrees
+    private const int SweepDamage = 2;
+    private const float SweepCooldown = 2.5f;
+
+    private static readonly Color SweepColour = new Color(1f, 0.18f, 0.08f);
 
     private Enemy enemy;
     private Phase phase = Phase.Stalk;
@@ -28,6 +39,9 @@ public class BossButcher : MonoBehaviour, IBossMoves
     private Color restGlow;
     private Vector3 baseScale;
     private float bodyRadius = 1f;
+    private float closeSince = -1f;
+    private Vector3 sweepDirection;
+    private FloorMarker sweepMarker;
 
     public BossMove Move
     {
@@ -38,6 +52,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
                 case Phase.WindUp: return BossMove.WindUp;
                 case Phase.Charge: return BossMove.Charge;
                 case Phase.Dazed: return BossMove.Dazed;
+                case Phase.Sweep: return BossMove.Sweep;
                 default: return BossMove.None;
             }
         }
@@ -47,7 +62,8 @@ public class BossButcher : MonoBehaviour, IBossMoves
     {
         get
         {
-            float length = phase == Phase.WindUp ? WindUpTime : phase == Phase.Dazed ? DazedTime : phase == Phase.Charge ? MaxChargeTime : 0f;
+            float length = phase == Phase.WindUp ? WindUpTime : phase == Phase.Dazed ? DazedTime : phase == Phase.Charge ? MaxChargeTime
+                : phase == Phase.Sweep ? SweepWindUp : 0f;
             return length > 0f ? Mathf.Clamp01(1f - (phaseEnds - Time.time) / length) : 0f;
         }
     }
@@ -80,7 +96,30 @@ public class BossButcher : MonoBehaviour, IBossMoves
 
                 if (Time.time >= nextCharge && enemy.CanSeeTarget && !enemy.IsStaggered && distance >= MinRange && distance <= MaxRange)
                     BeginWindUp();
+
+                // Too close to charge for too long: a sweep instead.
+                if (distance < MinRange && enemy.CanSeeTarget && !enemy.IsStaggered)
+                {
+                    if (closeSince < 0f)
+                        closeSince = Time.time;
+                    else if (Time.time - closeSince >= SweepAfter)
+                        BeginSweep();
+                }
+                else
+                {
+                    closeSince = -1f;
+                }
                 break;
+
+            case Phase.Sweep:
+            {
+                float t = 1f - (phaseEnds - Time.time) / SweepWindUp;
+                enemy.SetGlow(Color.Lerp(restGlow, SweepColour * 2.5f, t));
+
+                if (Time.time >= phaseEnds)
+                    Sweep();
+                break;
+            }
 
             case Phase.WindUp:
             {
@@ -123,7 +162,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
 
     private void FixedUpdate()
     {
-        if (phase == Phase.WindUp || phase == Phase.Dazed)
+        if (phase == Phase.WindUp || phase == Phase.Dazed || phase == Phase.Sweep)
         {
             enemy.Body.linearVelocity = Vector3.zero;
             return;
@@ -206,8 +245,58 @@ public class BossButcher : MonoBehaviour, IBossMoves
         }
     }
 
+    // Plants its feet and raises the cleaver; the wedge it'll sweep glows on the floor.
+    private void BeginSweep()
+    {
+        phase = Phase.Sweep;
+        phaseEnds = Time.time + SweepWindUp;
+        closeSince = -1f;
+        sweepDirection = Bosses.Flat(enemy.Target.position - transform.position);
+
+        if (sweepDirection.sqrMagnitude < 0.0001f)
+            sweepDirection = transform.forward;
+
+        sweepDirection.Normalize();
+        enemy.ExternalControl = true;
+        enemy.FacingOverride = sweepDirection;
+        sweepMarker = FloorMarker.Sector(Bosses.Flat(transform.position), sweepDirection, SweepRange, SweepArc, SweepColour, SweepWindUp,
+            enemy.Room != null ? enemy.Room.transform : null, null);
+        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 0.8f, 0.35f);
+    }
+
+    // The blow: everyone and everything breakable in the wedge.
+    private void Sweep()
+    {
+        Vector3 centre = Bosses.Flat(transform.position);
+        Transform target = enemy.Target;
+
+        if (target != null && InWedge(target.position) && target.TryGetComponent(out PlayerHealth player))
+            player.TakeDamage(SweepDamage, transform.position);
+
+        foreach (Collider part in Physics.OverlapSphere(centre + Vector3.up * 0.5f, SweepRange, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (part.attachedRigidbody != enemy.Body && InWedge(part.ClosestPoint(centre)))
+                Smashable.Break(part, part.ClosestPoint(centre), Bosses.Flat(part.bounds.center - centre).normalized);
+        }
+
+        CameraFollow.Shake(0.35f);
+        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("melee.hit", 3, ProceduralAudio.MeleeHit)), transform.position, 1f, 0.55f);
+        Noise.Emit(transform.position, Noise.Gunshot, Noise.Kind.Smash);
+        EndAttack(SweepCooldown);
+    }
+
+    private bool InWedge(Vector3 point)
+    {
+        Vector3 to = Bosses.Flat(point - transform.position);
+        return to.magnitude <= SweepRange + 0.3f && Vector3.Angle(sweepDirection, to) <= SweepArc / 2f;
+    }
+
     private void EndAttack(float cooldown)
     {
+        if (sweepMarker != null)
+            Destroy(sweepMarker.gameObject);
+
+        closeSince = -1f;
         phase = Phase.Stalk;
         nextCharge = Time.time + cooldown;
         enemy.ExternalControl = false;

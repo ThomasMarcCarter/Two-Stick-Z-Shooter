@@ -159,7 +159,8 @@ public class BossHowler : MonoBehaviour, IBossMoves
             }
         }
 
-        // The call: zombies climb in from the room's edges, away from the player.
+        // The call: zombies climb in from the room's edges, away from the player, each spot glowing
+        // violet on the floor first.
         if (spawnMinion == null)
             return;
 
@@ -167,6 +168,7 @@ public class BossHowler : MonoBehaviour, IBossMoves
         int runners = Enraged ? 1 : 0;
 
         for (int i = 0; i < walkers + runners; i++)
-            spawnMinion(Bosses.SpawnPointInRoom(enemy, player.position, 5f), i < walkers ? EnemyKind.Walker : EnemyKind.Runner);
+            Bosses.CallMinion(enemy, Bosses.SpawnPointInRoom(enemy, player.position, 5f), i < walkers ? EnemyKind.Walker : EnemyKind.Runner,
+                spawnMinion, new Color(0.7f, 0.35f, 1f));
     }
 }

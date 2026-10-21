@@ -48,6 +48,10 @@ public static class ClutterSprites
         if (name.StartsWith("Coffee_Cup") || name.StartsWith("Soda_Cup"))
             return 0.35f;
 
+        // Trash bags: the pack's are 1.8 m across; about 0.8 m.
+        if (name.StartsWith("TrashBag"))
+            return 0.45f;
+
         // The gas can, drawn as an oil drum: about 0.9 m tall.
         if (name.StartsWith("GasCan"))
             return 0.7f;

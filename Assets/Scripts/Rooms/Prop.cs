@@ -7,9 +7,19 @@ using UnityEngine.AI;
 // Some props break when shot (a glass bottle into a broken one, a cup crushed flat). Each has
 // a surface, which sets what a hit throws off and sounds like. Anything that can tip and is
 // still standing is knocked over when the player or a zombie walks into it. A boss's charge or
-// acid (Smash) breaks it, throws it aside or, for fixed cover, wrecks it.
+// acid (Smash) breaks it, throws it aside or, for fixed cover, wrecks it. A prop that bursts
+// into litter (trash bags) splits open after its hits instead, scattering flat litter about.
 public class Prop : MonoBehaviour
 {
+    // The floor's flat litter, for props that burst into it (set by the FloorGenerator).
+    public static GameObject[] LitterPrefabs { get; set; } = new GameObject[0];
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        LitterPrefabs = new GameObject[0];
+    }
+
     public enum Surface
     {
         Paper,
@@ -28,6 +38,9 @@ public class Prop : MonoBehaviour
     [Tooltip("What it turns into when shot (optional), and how many hits that takes.")]
     [SerializeField] private GameObject brokenVersion;
     [SerializeField, Min(1)] private int hitsToBreak = 1;
+    [Tooltip("Without a broken version: splits open after hitsToBreak hits and scatters flat litter (trash bags).")]
+    [SerializeField] private bool burstsIntoLitter;
+    [SerializeField] private Vector2Int litterPieces = new Vector2Int(4, 7);
     [Tooltip("How hard a bullet shoves a pushable prop.")]
     [SerializeField] private float bulletImpulse = 0.6f;
     [Tooltip("Pushable only: free to tip over and tumble. Off keeps it upright (trash bags just slump along).")]
@@ -155,13 +168,18 @@ public class Prop : MonoBehaviour
         if (body != null)
             body.AddForceAtPosition(direction.normalized * bulletImpulse, point, ForceMode.Impulse);
 
-        if (brokenVersion == null)
+        if (brokenVersion == null && !burstsIntoLitter)
             return;
 
         damage++;
 
         if (damage >= hitsToBreak)
-            Break(body);
+        {
+            if (brokenVersion != null)
+                Break(body);
+            else
+                Burst(direction, materials);
+        }
 
         void Effects(Vector3 at, Vector3 facing)
         {
@@ -198,7 +216,7 @@ public class Prop : MonoBehaviour
         if (broken)
             return;
 
-        if (brokenVersion != null)
+        if (brokenVersion != null || burstsIntoLitter)
             damage = hitsToBreak - 1;
 
         Hit(point, -direction, direction, materials);
@@ -222,6 +240,48 @@ public class Prop : MonoBehaviour
     private static void PlaySound(string key, System.Func<int, AudioClip> make, Vector3 at, float volume)
     {
         SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips(key, 3, make)), at, volume, Random.Range(0.9f, 1.1f));
+    }
+
+    // Split open: a puff of torn plastic and the contents strewn across the floor around it.
+    private void Burst(Vector3 direction, ImpactEffects.Materials materials)
+    {
+        broken = true;
+
+        Bounds bounds = new Bounds(transform.position, Vector3.zero);
+
+        foreach (Collider part in GetComponentsInChildren<Collider>())
+            bounds.Encapsulate(part.bounds);
+
+        ImpactEffects.Debris(bounds.center, Vector3.up + direction.normalized * 0.4f, 16, new Color(0.12f, 0.12f, 0.13f), new Color(0.3f, 0.28f, 0.22f), materials);
+        PlaySound("cardboard.break", ProceduralAudio.CardboardBreak, bounds.center, 0.6f);
+
+        if (LitterPrefabs != null && LitterPrefabs.Length > 0)
+        {
+            float spread = Mathf.Max(0.5f, Mathf.Max(bounds.extents.x, bounds.extents.z) + 0.4f);
+            int pieces = Random.Range(litterPieces.x, litterPieces.y + 1);
+
+            for (int i = 0; i < pieces; i++)
+            {
+                GameObject prefab = LitterPrefabs[Random.Range(0, LitterPrefabs.Length)];
+
+                if (prefab == null)
+                    continue;
+
+                // Thrown out more the way it was hit.
+                Vector2 scatter = Random.insideUnitCircle * spread + new Vector2(direction.x, direction.z).normalized * Random.Range(0f, 0.4f);
+                GameObject litter = Instantiate(prefab, new Vector3(bounds.center.x + scatter.x, 0f, bounds.center.z + scatter.y),
+                    Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), transform.parent);
+                litter.name = prefab.name;
+
+                // Just scenery: nothing to bump into.
+                foreach (Collider part in litter.GetComponentsInChildren<Collider>())
+                    Destroy(part);
+
+                ClutterSprites.Dress(litter);
+            }
+        }
+
+        Destroy(gameObject);
     }
 
     // Swapped for its broken version where it stands, carrying on with whatever push it had.

@@ -144,7 +144,7 @@ public class Projectile : MonoBehaviour
                 continue;
 
             if (hit.CompareTag("Wall") || hit.GetComponent<Enemy>() != null || hit.GetComponentInParent<CardboardBox>() != null
-                || hit.GetComponentInParent<Prop>() != null || hit.GetComponent<TrainingDummy>() != null)
+                || hit.GetComponentInParent<Prop>() != null || hit.GetComponent<TrainingDummy>() != null || hit.GetComponent<HideoutNpc>() != null)
             {
                 nearest = hit;
                 nearestDistance = sweepHits[i].distance;
@@ -157,7 +157,12 @@ public class Projectile : MonoBehaviour
         if (sprite != null)
         {
             Vector3 point = transform.position + step / distance * nearestDistance;
-            HitEnemy(sprite.Enemy, point, -step / distance);
+
+            if (sprite.Enemy != null)
+                HitEnemy(sprite.Enemy, point, -step / distance);
+            else
+                HitNpc(sprite.Npc, point);
+
             return;
         }
 
@@ -165,7 +170,19 @@ public class Projectile : MonoBehaviour
             Hit(nearest);
     }
 
-    // The first sprite enemy whose footprint this step crosses before `nearestDistance`, which
+    // A hideout survivor: the round stops on them, they're not hurt, and they're not happy.
+    private void HitNpc(HideoutNpc npc, Vector3 point)
+    {
+        spent = true;
+
+        if (npc != null)
+            npc.Shot(point);
+
+        LeaveTracer();
+        Destroy(gameObject);
+    }
+
+    // The first sprite enemy (or survivor) whose footprint this step crosses before `nearestDistance`, which
     // it shortens to where it's crossed.
     private SpriteCharacter NearestSprite(Vector3 start, Vector3 step, float distance, ref float nearestDistance)
     {
@@ -173,7 +190,7 @@ public class Projectile : MonoBehaviour
 
         foreach (SpriteCharacter sprite in SpriteCharacter.Enemies)
         {
-            if (sprite == null || sprite.Enemy == null || sprite.transform.root == shooterRoot)
+            if (sprite == null || (sprite.Enemy == null && sprite.Npc == null) || sprite.transform.root == shooterRoot)
                 continue;
 
             if (!sprite.Footprint(start.y, out Vector3 from, out Vector3 to, out float radius))
@@ -282,6 +299,13 @@ public class Projectile : MonoBehaviour
         {
             FindHit(other, out Vector3 point, out Vector3 normal);
             HitEnemy(enemy, point, normal);
+            return;
+        }
+
+        if (other.TryGetComponent(out HideoutNpc npc))
+        {
+            FindHit(other, out Vector3 npcPoint, out Vector3 _);
+            HitNpc(npc, npcPoint);
             return;
         }
 

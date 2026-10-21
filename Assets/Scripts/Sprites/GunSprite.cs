@@ -8,13 +8,14 @@ using UnityEngine;
 // tracers and the flash come out of the drawn barrel and fly through the crosshair, and the
 // holder's flashlight goes there too, shining the way the gun points (and still landing the same
 // distance ahead). It stands upright just in front of its holder's sprite, or just behind when
-// they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight) and tips up
-// while reloading. Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
+// they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight), tips up
+// while reloading and swings through an arc in a melee bash (PlayerMelee.SwingProgress). Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
 [DefaultExecutionOrder(260)]
 public class GunSprite : MonoBehaviour
 {
     private const float DepthGap = 0.15f;  // metres in front of / behind the holder's body
     private const float ReloadTip = 40f;   // degrees the gun tips up mid-reload
+    private const float MeleeArc = 150f;   // degrees the gun sweeps through in a melee swing
     private const float FloorClearance = 0.05f;  // lowest the gun's quad may reach, in metres
 
     private Gun gun;
@@ -87,14 +88,15 @@ public class GunSprite : MonoBehaviour
         float holdUp = body != null ? body.holdHeight / Mathf.Max(1f, body.pixelsPerUnit) : 0.6f;
         float reach = body != null ? body.holdReach : 0.3f;
         Vector3 feet = new Vector3(holder.position.x, 0f, holder.position.z);
-        Vector2 hands = camera.WorldToScreenPoint(feet + Vector3.up * (holdUp / Mathf.Max(0.01f, CameraFollow.VerticalScale)));
+        Vector3 handsWorld = feet + CameraFollow.SpriteUp * (holdUp / Mathf.Max(0.01f, CameraFollow.VerticalScale));
+        Vector2 hands = camera.WorldToScreenPoint(handsWorld);
         Vector2 toCursor = GameInput.Pointer - hands;
 
         if (toCursor.sqrMagnitude > 4f)
             aim = toCursor.normalized;
 
-        // Screen pixels per metre across (the floor's scale; the oblique view keeps height to it).
-        float pixelsPerMetre = camera.pixelWidth / (2f * camera.orthographicSize * camera.aspect);
+        // Screen pixels per metre across, at the holder (with perspective it depends on the distance).
+        float pixelsPerMetre = Vector2.Distance(hands, camera.WorldToScreenPoint(handsWorld + camera.transform.right));
         Vector2 grip = hands + aim * reach * pixelsPerMetre;
         float barrel = (sheet.muzzle - sheet.pivot).magnitude / Mathf.Max(1f, sheet.pixelsPerUnit);
         Vector2 tip = grip + aim * barrel * pixelsPerMetre;
@@ -104,6 +106,16 @@ public class GunSprite : MonoBehaviour
 
         if (gun.IsReloading)
             target += Mathf.Sin(gun.ReloadProgress * Mathf.PI) * ReloadTip * (left ? -1f : 1f);
+
+        // A melee swing bashes with the gun: drawn back, then swept through an arc and back.
+        PlayerMelee melee = holder.GetComponent<PlayerMelee>();
+        float bash = melee != null ? melee.SwingProgress : -1f;
+
+        if (bash >= 0f)
+        {
+            float sweep = bash < 0.25f ? Mathf.Lerp(0f, 1f, bash / 0.25f) : bash < 0.6f ? Mathf.Lerp(1f, -1f, (bash - 0.25f) / 0.35f) : Mathf.Lerp(-1f, 0f, (bash - 0.6f) / 0.4f);
+            target += sweep * MeleeArc * 0.5f * (left ? -1f : 1f);
+        }
 
         Vector3 gripWorld = OnAimPlane(camera, grip);
         sprite.MirrorY = left;
@@ -132,7 +144,7 @@ public class GunSprite : MonoBehaviour
 
         // On the holder's body plane (the vertical plane through their feet facing the camera),
         // then a touch in front of it, or behind when they face away.
-        Vector3 view = CameraFollow.ViewDirection;
+        Vector3 view = CameraFollow.ViewRay(gripWorld);
         Vector3 flatForward = Vector3.ProjectOnPlane(view, Vector3.up);
         float toPlane = 0f;
 
@@ -148,7 +160,9 @@ public class GunSprite : MonoBehaviour
 
         // Pointing down the screen, a long gun's quad reaches below the floor, which hides the
         // barrel: slide it toward the camera (no change on screen) until it clears the floor.
-        float lowest = gripWorld.y + view.y * sprite.DepthOffset - sprite.StandingDrop();
+        // (The drop is measured on its depth plane: stretched as the camera foreshortens height.)
+        float drop = sprite.StandingDrop() * CameraFollow.VerticalScale / Mathf.Max(0.25f, CameraFollow.Foreshortening);
+        float lowest = gripWorld.y + view.y * sprite.DepthOffset - drop;
 
         if (lowest < FloorClearance && view.y < -0.01f)
             sprite.DepthOffset -= (FloorClearance - lowest) / -view.y;

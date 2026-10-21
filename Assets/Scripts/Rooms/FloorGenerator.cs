@@ -95,8 +95,8 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private GameObject pillarPrefab;
     [Tooltip("Width of a pillar (it's square).")]
     [SerializeField] private float pillarSize = 0.8f;
-    [Tooltip("Height of a pillar. A little over the walls looks like it holds the ceiling.")]
-    [SerializeField] private float pillarHeight = 2.5f;
+    [Tooltip("Height of a pillar. Tall enough that a character standing right in front of one (south of it) never looks taller than it: camera-facing sprites show their full height while the tilt squashes the pillar's (2.8 m clears the player at the 30° orthographic tilt; a 20° perspective tilt needed 4.2 m).")]
+    [SerializeField] private float pillarHeight = 2.8f;
     [Tooltip("How far enemies, crates and other spawns keep from a pillar's centre.")]
     [SerializeField] private float pillarClearance = 1.8f;
 
@@ -332,6 +332,7 @@ public partial class FloorGenerator : MonoBehaviour
     private void Awake()
     {
         UseSpriteArt();
+        Prop.LitterPrefabs = floorLitter;
         EnemySenses.Use(enemySenses);
         AmmoVisuals.Use(ammoVisuals);
         ConsumableVisuals.Use(consumableVisuals);

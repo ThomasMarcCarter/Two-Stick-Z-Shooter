@@ -7335,7 +7335,7 @@ MonoBehaviour:
   minCellsForPillars: 2
   pillarPrefab: {fileID: 8421164758759364222, guid: 08a61c6bd620b654a873613729ec48d2, type: 3}
   pillarSize: 0.8
-  pillarHeight: 2.5
+  pillarHeight: 2.8
   pillarClearance: 1.5
   clutterBoxes:
   - {fileID: 875105272777243, guid: 92c4b03122bb52f4c917a19a5d29d2de, type: 3}
@@ -7356,6 +7356,7 @@ MonoBehaviour:
   openClutterPerCell: {x: 0, y: 2}
   flattenedPerCell: {x: 2, y: 5}
   boxScale: {x: 1.4, y: 1.8}
+  maxBoxSize: 1.1
   flattenedScale: {x: 0.8, y: 1.3}
   boxPhysics: {fileID: 13400000, guid: 3cd1d17810b5e62499b37bad9a048aae, type: 2}
   clutterClearance: 1.4
@@ -9303,6 +9304,9 @@ MonoBehaviour:
   smoothSpeed: 10
   mouseLookAhead: 0.2
   tilt: 30
+  perspective: 0
+  fieldOfView: 45
+  spritesFaceCamera: 0
   floor: {fileID: 1558234085}
   shakeDecay: 2.5
 --- !u!114 &1858697502

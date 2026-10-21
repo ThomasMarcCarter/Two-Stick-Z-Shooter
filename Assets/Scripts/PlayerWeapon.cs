@@ -5,8 +5,10 @@ using UnityEngine;
 // The player's two weapon slots, main and sidearm. A picked-up gun goes into its own slot (see
 // Gun.EquipSlot) and becomes the one in hand, dropping whatever was in that slot before. Switch
 // with Weapon Main / Weapon Sidearm (D-pad up/down, 1/2); the mouse wheel is the quick bar's. Each slot keeps its
-// own gun, so ammo carries over while it's holstered. Attachments stay on a gun when it's dropped
-// and come back with it when it's picked up.
+// own gun, so ammo carries over while it's holstered. A gun leaving the player's hands (swapped
+// for one on the floor or in a supply crate) is stripped of its attachments first: each goes onto
+// the new gun if it fits a free slot there, otherwise into the backpack, or onto the floor beside
+// the player if that's full. A gun found with attachments on keeps them.
 public class PlayerWeapon : MonoBehaviour
 {
     [SerializeField] private Transform weaponHolder;
@@ -130,7 +132,7 @@ public class PlayerWeapon : MonoBehaviour
 
     private void PickUp(GunPickup pickup)
     {
-        Gun gun = Equip(pickup.GetWeaponPrefab());
+        Gun gun = Equip(pickup.GetWeaponPrefab(), true, out List<WeaponAttachment> carried);
 
         // Before the ammo, so an extended magazine's extra rounds are kept.
         gun.SetAttachments(pickup.Attachments);
@@ -140,6 +142,7 @@ public class PlayerWeapon : MonoBehaviour
 
         Destroy(pickup.gameObject);
         nearbyPickup = null;
+        Rehome(carried, gun);
     }
 
     // Hands the player a gun with a full magazine, e.g. the hideout's Armory upgrade at the start
@@ -149,8 +152,9 @@ public class PlayerWeapon : MonoBehaviour
         if (weaponPrefab == null || weaponPrefab.GetComponent<Gun>() == null)
             return null;
 
-        Gun gun = Equip(weaponPrefab);
+        Gun gun = Equip(weaponPrefab, true, out List<WeaponAttachment> carried);
         gun.SetCurrentAmmo(gun.GetMagazineSize());
+        Rehome(carried, gun);
         return gun;
     }
 
@@ -172,6 +176,7 @@ public class PlayerWeapon : MonoBehaviour
             return null;
 
         Equipped old = SlotFor(weaponPrefab.GetComponent<Gun>().EquipSlot);
+        List<WeaponAttachment> carried = Strip(old);
 
         if (old.Gun != null)
         {
@@ -179,25 +184,33 @@ public class PlayerWeapon : MonoBehaviour
             {
                 Prefab = old.Prefab,
                 Ammo = old.Gun.GetCurrentAmmo(),
-                Attachments = new List<WeaponAttachment>(old.Gun.Attachments)
+                Attachments = new List<WeaponAttachment>()
             };
         }
 
-        Gun gun = Equip(weaponPrefab, false);
+        Gun gun = Equip(weaponPrefab, false, out _);
 
         if (fitted != null)
             gun.SetAttachments(fitted);
 
         gun.SetCurrentAmmo(ammo);
+        Rehome(carried, gun);
         return gun;
     }
 
+    private Gun Equip(GameObject weaponPrefab)
+    {
+        return Equip(weaponPrefab, true, out _);
+    }
+
     // Puts a new gun from a prefab into its slot (dropping what was there, or just removing it
-    // when it's been stowed elsewhere) and takes it in hand.
-    private Gun Equip(GameObject weaponPrefab, bool dropOld = true)
+    // when it's been stowed elsewhere) and takes it in hand. The old gun goes without its
+    // attachments: they come back as `carried`, for Rehome once the new gun is set up.
+    private Gun Equip(GameObject weaponPrefab, bool dropOld, out List<WeaponAttachment> carried)
     {
         Gun.Slot slot = weaponPrefab.GetComponent<Gun>().EquipSlot;
         Equipped equipped = SlotFor(slot);
+        carried = Strip(equipped);
 
         if (equipped.Gun != null && dropOld)
             Drop(equipped);
@@ -218,6 +231,46 @@ public class PlayerWeapon : MonoBehaviour
         Changed?.Invoke();
 
         return equipped.Gun;
+    }
+
+    // Takes every attachment off the gun in a slot (rounds an extended magazine held that no longer
+    // fit go back in the backpack) and returns them.
+    private static List<WeaponAttachment> Strip(Equipped equipped)
+    {
+        List<WeaponAttachment> taken = new List<WeaponAttachment>();
+
+        if (equipped.Gun == null || equipped.Gun.Attachments.Count == 0)
+            return taken;
+
+        taken.AddRange(equipped.Gun.Attachments);
+        equipped.Gun.SetAttachments(null);
+        return taken;
+    }
+
+    // Attachments off a gun that's gone: onto the new gun where they fit a free slot, otherwise
+    // into the backpack, otherwise onto the floor beside the player.
+    private void Rehome(List<WeaponAttachment> carried, Gun gun)
+    {
+        if (carried == null)
+            return;
+
+        foreach (WeaponAttachment attachment in carried)
+        {
+            if (gun != null && attachment.Fits(gun) && gun.AttachmentIn(attachment.slot) == null)
+            {
+                gun.Attach(attachment);
+                continue;
+            }
+
+            if (Backpack.AddAttachment(attachment))
+                continue;
+
+            Vector3 position = FloorPickups.DropPoint(transform);
+            AttachmentPickup.Spawn(attachment, position, FloorPickups.RoomAt(position), AttachmentPickup.DefaultMaterial);
+        }
+
+        if (carried.Count > 0)
+            Changed?.Invoke();
     }
 
     private void Drop(Equipped equipped)

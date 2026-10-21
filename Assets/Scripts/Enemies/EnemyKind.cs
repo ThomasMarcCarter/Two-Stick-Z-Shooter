@@ -41,7 +41,7 @@ public static class EnemyKinds
     {
         switch (kind)
         {
-            case EnemyKind.Runner: return 1.7f;
+            case EnemyKind.Runner: return 1.4f;   // 4.2 m/s: under the player's walk (was 1.7, too fast)
             case EnemyKind.Brute: return 0.7f;
             case EnemyKind.Bloater: return 0.75f;
             case EnemyKind.Screamer: return 1.1f;

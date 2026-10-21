@@ -20,11 +20,14 @@ public class SpriteCharacter : MonoBehaviour
     private Transform facingSource;
     private Enemy enemy;
     private PlayerHealth player;
+    private HideoutNpc npc;
     private SpriteSheet.Clip idle;
     private SpriteSheet.Clip walk;
     private SpriteSheet.Clip attack;
     private SpriteSheet.Clip dead;
     private SpriteSheet.Clip special;
+    private SpriteSheet.Clip melee;
+    private PlayerMelee playerMelee;
     private IBossMoves boss;
     private bool lookedForBoss;
     private Vector3 lastPosition;
@@ -34,8 +37,10 @@ public class SpriteCharacter : MonoBehaviour
     public PixelSprite Sprite => sprite;
     public SpriteFacing.Facing CurrentFacing => facing;
     public Enemy Enemy => enemy;
+    public HideoutNpc Npc => npc;
 
-    // Enemies drawn as sprites, for Projectile's on-screen hit test.
+    // Enemies (and hideout survivors, who can be shot but not hurt) drawn as sprites, for
+    // Projectile's on-screen hit test.
     private static readonly System.Collections.Generic.List<SpriteCharacter> enemies = new System.Collections.Generic.List<SpriteCharacter>();
     public static System.Collections.Generic.IReadOnlyList<SpriteCharacter> Enemies => enemies;
 
@@ -47,7 +52,7 @@ public class SpriteCharacter : MonoBehaviour
 
     private void OnEnable()
     {
-        if (enemy != null && !enemies.Contains(this))
+        if ((enemy != null || npc != null) && !enemies.Contains(this))
             enemies.Add(this);
     }
 
@@ -61,26 +66,30 @@ public class SpriteCharacter : MonoBehaviour
     // body's half-width either side.
     public bool Footprint(float height, out Vector3 from, out Vector3 to, out float radius)
     {
-        Vector3 view = CameraFollow.ViewDirection;
         SpriteSheet sheet = sprite != null ? sprite.Sheet : null;
         Vector3 feet = new Vector3(transform.position.x, 0f, transform.position.z);
         from = to = new Vector3(feet.x, height, feet.z);
         radius = sheet != null ? sheet.HitRadius : 0.25f;
 
-        if (sheet == null || view.y > -0.01f)
+        if (sheet == null)
             return false;
 
-        float top = sheet.bodyHeight / Mathf.Max(0.01f, CameraFollow.VerticalScale);
-        from = OnPlane(feet, 0f, height, view);
-        to = OnPlane(feet, top, height, view);
-        return true;
+        // The top of the drawn body: straight up and stretched, or leaning back to the camera.
+        Vector3 top = feet + CameraFollow.SpriteUp * (sheet.bodyHeight / Mathf.Max(0.01f, CameraFollow.VerticalScale));
+        return OnPlane(feet, height, out from) & OnPlane(top, height, out to);
     }
 
-    // Where the line of sight through the point `up` metres above the feet crosses `height`.
-    private static Vector3 OnPlane(Vector3 feet, float up, float height, Vector3 view)
+    // Where the line of sight through a point crosses `height`.
+    private static bool OnPlane(Vector3 point, float height, out Vector3 crossing)
     {
-        Vector3 point = feet + Vector3.up * up;
-        return point + view * ((up - height) / -view.y);
+        Vector3 view = CameraFollow.ViewRay(point);
+        crossing = point;
+
+        if (view.y > -0.01f)
+            return false;
+
+        crossing = point + view * ((point.y - height) / -view.y);
+        return true;
     }
 
     public static SpriteCharacter Attach(Transform body, SpriteSheet sheet, Transform facingSource, uint renderingLayers)
@@ -90,14 +99,17 @@ public class SpriteCharacter : MonoBehaviour
         character.facingSource = facingSource != null ? facingSource : body;
         character.enemy = body.GetComponent<Enemy>();
         character.player = body.GetComponent<PlayerHealth>();
+        character.npc = body.GetComponent<HideoutNpc>();
         character.idle = sheet.Find("idle");
         character.walk = sheet.Find("walk");
         character.attack = sheet.Find("attack");
         character.dead = sheet.Find("dead");
         character.special = sheet.Find("special");
+        character.melee = sheet.Find("melee");
+        character.playerMelee = body.GetComponent<PlayerMelee>();
         character.lastPosition = body.position;
 
-        if (character.enemy != null && !enemies.Contains(character))
+        if ((character.enemy != null || character.npc != null) && !enemies.Contains(character))
             enemies.Add(character);
 
         return character;
@@ -134,6 +146,15 @@ public class SpriteCharacter : MonoBehaviour
         if (boss != null && special != null && boss.Move != BossMove.None)
         {
             sprite.SetFrame(special, Mathf.Min(special.frames - 1, Mathf.FloorToInt(boss.MoveProgress * special.frames)), facing);
+            return;
+        }
+
+        // The player's melee swing.
+        float bash = playerMelee != null ? playerMelee.SwingProgress : -1f;
+
+        if (bash >= 0f && melee != null)
+        {
+            sprite.SetFrame(melee, Mathf.Min(melee.frames - 1, Mathf.FloorToInt(bash * melee.frames)), facing);
             return;
         }
 

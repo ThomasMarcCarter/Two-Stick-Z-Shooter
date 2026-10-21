@@ -9,6 +9,12 @@
 // can't blow it out the way an inverse-square falloff would close up. Character quads stand upright but are drawn
 // stretched up the screen to undo the camera's tilt (PixelSprite); their shadows are cast at
 // true height by squashing them back by _SpriteShadowSquash (a global set by PixelSprite).
+// When sprites face the camera (_SpriteLean 1, CameraFollow), quads marked to lean (TEXCOORD1.x,
+// set by PixelSprite on upright and standing sprites) are drawn tilted back about their origin
+// so they face the camera along _SpriteUp, and are lit and cast shadows as if upright. Their depth
+// is the upright plane through their origin (facing the camera, across the screen) seen along
+// each pixel's own line of sight: everything north of a sprite's feet is behind it and only
+// what stands south of them can cover it.
 Shader "Roguelike/SpriteLit"
 {
     Properties
@@ -42,6 +48,42 @@ Shader "Roguelike/SpriteLit"
         CBUFFER_END
 
         float _SpriteShadowSquash;
+        float3 _SpriteUp;
+        float _SpriteLean;
+
+        // Clip position of a sprite vertex: leaned back to face the camera when it should, with the
+        // depth where its line of sight meets the upright plane through the sprite's origin.
+        float4 SpriteClipPosition(float3 positionWS, float lean)
+        {
+            float4 upright = TransformWorldToHClip(positionWS);
+
+            if (lean * _SpriteLean <= 0)
+                return upright;
+
+            float3 origin = TransformObjectToWorld(float3(0, 0, 0));
+            float rise = positionWS.y - origin.y;
+            float3 leanedWS = positionWS + (_SpriteUp - float3(0, 1, 0)) * rise;
+            float4 leaned = TransformWorldToHClip(leanedWS);
+
+            // The upright plane faces the camera across the floor (its normal is the view's
+            // direction flattened onto the floor).
+            float3 forward = -UNITY_MATRIX_V[2].xyz;
+            float3 normal = float3(forward.x, 0, forward.z);
+
+            if (dot(normal, normal) < 0.0001)
+                return leaned;
+
+            normal = normalize(normal);
+            float3 ray = unity_OrthoParams.w > 0.5 ? forward : leanedWS - _WorldSpaceCameraPos;
+            float along = dot(ray, normal);
+
+            if (abs(along) < 0.0001)
+                return leaned;
+
+            float4 onPlane = TransformWorldToHClip(leanedWS + ray * (dot(origin - leanedWS, normal) / along));
+            leaned.z = onPlane.z / onPlane.w * leaned.w;
+            return leaned;
+        }
         ENDHLSL
 
         Pass
@@ -66,6 +108,7 @@ Shader "Roguelike/SpriteLit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                float2 lean : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -83,7 +126,7 @@ Shader "Roguelike/SpriteLit"
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                output.positionCS = TransformWorldToHClip(output.positionWS);
+                output.positionCS = SpriteClipPosition(output.positionWS, input.lean.x);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
@@ -208,6 +251,7 @@ Shader "Roguelike/SpriteLit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                float2 lean : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -221,7 +265,7 @@ Shader "Roguelike/SpriteLit"
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.positionCS = SpriteClipPosition(TransformObjectToWorld(input.positionOS.xyz), input.lean.x);
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }

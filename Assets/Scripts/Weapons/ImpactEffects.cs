@@ -255,7 +255,7 @@ public static class ImpactEffects
     {
         if (!haveKnown)
         {
-            Gun gun = Object.FindFirstObjectByType<Gun>();
+            Gun gun = Object.FindAnyObjectByType<Gun>();
             Projectile bullet = gun != null && gun.ProjectilePrefab != null ? gun.ProjectilePrefab.GetComponent<Projectile>() : null;
 
             if (bullet != null)

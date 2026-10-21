@@ -224,13 +224,14 @@ public class ItemSprite : MonoBehaviour
         lastPosition = transform.position;
     }
 
-    // With frameOnFloor: how far up the drawn quad its pivot sits (stretched like the quad).
+    // With frameOnFloor: how far up its depth plane the pivot sits (the quad's height below the
+    // pivot, foreshortened as the camera sees upright things).
     private float PivotRise()
     {
         if (!frameOnFloor || sprite.Sheet == null)
             return 0f;
 
-        return sprite.Sheet.pivot.y / Mathf.Max(1f, sprite.Sheet.pixelsPerUnit) * sprite.Scale / Mathf.Max(0.25f, CameraFollow.VerticalScale);
+        return sprite.Sheet.pivot.y / Mathf.Max(1f, sprite.Sheet.pixelsPerUnit) * sprite.Scale / Mathf.Max(0.25f, CameraFollow.Foreshortening);
     }
 
     // Every mesh under the item but its glow and the sprite itself; again now and then, as some
