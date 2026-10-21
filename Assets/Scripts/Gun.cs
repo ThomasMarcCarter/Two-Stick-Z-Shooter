@@ -107,6 +107,8 @@ public class Gun : MonoBehaviour
     private PlayerStamina ownerStamina;
     private Rigidbody ownerBody;
     private Coroutine reloadRoutine;
+    private int lastTryFireFrame = -10;
+    private bool dryClickedThisPull;
 
     // Bloom as of the last shot; it settles back from there over time (see Bloom).
     private float bloomAtShot;
@@ -286,6 +288,14 @@ public class Gun : MonoBehaviour
 
     public void TryFire()
     {
+        // Full auto calls this every frame the trigger is held, so a call straight after one on
+        // the last frame is the same pull; only a fresh pull can dry-click again.
+        bool newPull = Time.frameCount - lastTryFireFrame > 1;
+        lastTryFireFrame = Time.frameCount;
+
+        if (newPull)
+            dryClickedThisPull = false;
+
         if (isReloading)
         {
             // A shell-by-shell reload can be cut short to fire whatever is already loaded.
@@ -300,11 +310,26 @@ public class Gun : MonoBehaviour
 
         if (currentAmmo <= 0)
         {
-            emptyAudio.PlayOneShot(emptyAudio.clip);
+            if (!dryClickedThisPull)
+            {
+                dryClickedThisPull = true;
+                DryClick();
+            }
+
             return;
         }
 
         Fire();
+    }
+
+    // The empty click: never restarted or stacked while one is still playing (a one-shot a
+    // frame from a held trigger used up the audio voices and cut the music out).
+    private void DryClick()
+    {
+        if (emptyAudio == null || emptyAudio.clip == null || emptyAudio.isPlaying)
+            return;
+
+        emptyAudio.Play();
     }
 
     // The point under the cursor at AimHeight, whatever the camera's tilt.
@@ -465,7 +490,7 @@ public class Gun : MonoBehaviour
         // Nothing to reload with: just the dry click.
         if (Reserve <= 0)
         {
-            emptyAudio.PlayOneShot(emptyAudio.clip);
+            DryClick();
             return;
         }
 
