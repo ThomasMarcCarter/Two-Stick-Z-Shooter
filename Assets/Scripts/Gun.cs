@@ -119,6 +119,8 @@ public class Gun : MonoBehaviour
 
     public IReadOnlyList<WeaponAttachment> Attachments => attachments;
     public event System.Action AttachmentsChanged;
+    public bool Suppressed => HidesFlash;
+    public LaserSight Laser => laserSight;
 
     public int PelletsPerShot => Mathf.Max(1, pelletsPerShot);
     public Transform Muzzle => muzzle;
@@ -211,16 +213,22 @@ public class Gun : MonoBehaviour
     public static float AimHeight => SpriteVisuals.Current != null ? SpriteAimHeight : ModelAimHeight;
     public const float ModelAimHeight = 1.13f;
     public const float SpriteAimHeight = 0.75f;
+    private const float SuppressedVolume = 0.8f;
 
     // The name shown for a gun prefab: its asset name upper-cased, with words split where a
     // lower-case letter meets a capital ("DoubleBarrel" -> "DOUBLE BARREL", "AK47" unchanged).
     // Shots don't use ammo (the hideout's shooting range). Set by the FloorGenerator per floor.
     public static bool FreeAmmo { get; set; }
 
+    // The shot every suppressed gun plays instead of its own (the FloorGenerator's Suppressed
+    // Shot Sound). Without one, a suppressed gun plays its own shot quieter and higher.
+    public static AudioClip SuppressedShot { get; set; }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetFreeAmmo()
     {
         FreeAmmo = false;
+        SuppressedShot = null;
     }
 
     public static string DisplayName(GameObject weapon)
@@ -382,10 +390,21 @@ public class Gun : MonoBehaviour
         if (muzzleFlash != null && !HidesFlash)
             muzzleFlash.Fire();
 
-        // A suppressed shot is quieter and a little higher: a crack rather than a bang.
+        // A suppressed shot plays the suppressed sound (pitched by the gun, so each still sounds
+        // its own); without one, the gun's own shot quieter and a little higher.
         float loudness = Loudness;
-        shotAudio.pitch = shotPitch * Random.Range(0.95f, 1.05f) * (loudness < 1f ? 1.15f : 1f);
-        shotAudio.PlayOneShot(shotAudio.clip, Mathf.Clamp01(Mathf.Lerp(0.25f, 1f, loudness)));
+
+        if (HidesFlash && SuppressedShot != null)
+        {
+            shotAudio.pitch = shotPitch * Random.Range(0.92f, 1.08f);
+            shotAudio.PlayOneShot(SuppressedShot, SuppressedVolume);
+        }
+        else
+        {
+            shotAudio.pitch = shotPitch * Random.Range(0.95f, 1.05f) * (loudness < 1f ? 1.15f : 1f);
+            shotAudio.PlayOneShot(shotAudio.clip, Mathf.Clamp01(Mathf.Lerp(0.25f, 1f, loudness)));
+        }
+
         Noise.Emit(transform.position, Noise.Gunshot * loudness, Noise.Kind.Gunshot);
 
         nextFireTime = Time.time + (1f / FireRate);
@@ -655,10 +674,11 @@ public class Gun : MonoBehaviour
         AttachmentsChanged?.Invoke();
     }
 
-    // A suppressor can on the end of the barrel, and the laser line for a laser sight.
-    private void UpdateAttachmentVisuals()
+    // A suppressor can on the end of the barrel, and the laser line for a laser sight. A gun
+    // drawn as a sprite gets no 3D can (GunSprite draws one on the sprite and calls this when added).
+    public void UpdateAttachmentVisuals()
     {
-        bool suppressed = HidesFlash;
+        bool suppressed = HidesFlash && GetComponent<GunSprite>() == null;
 
         if (suppressed && suppressorModel == null && muzzle != null)
         {

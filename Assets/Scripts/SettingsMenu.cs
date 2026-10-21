@@ -8,10 +8,11 @@ using UnityEngine.UI;
 // The settings screen, opened from the pause and main menus, with two tabs along the top.
 // CONTROLS: one row per action with a keyboard/mouse column and a controller column; pick a cell
 // and press the new key or button (moving and aiming on the controller stay on the sticks).
-// Bindings are saved by GameInput. AUDIO / VIDEO: volumes, display mode, resolution, frame rate
-// and CRT strength (GameSettings); click or press to step a value on, right-click or left/right
-// to step it either way. Rows are built at runtime, so adding one is a line in BuildControls or
-// BuildOptions.
+// Bindings are saved by GameInput. AUDIO / VIDEO: volume sliders (click or drag, or left/right in
+// 5% steps), then display mode, resolution, frame rate and CRT strength (GameSettings), each with
+// clickable arrows either side to cycle it (clicking the value steps on, right-click steps back,
+// left/right on the keyboard or controller too). Rows are built at runtime, so adding one is a
+// line in BuildControls or BuildOptions.
 public class SettingsMenu : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -39,6 +40,13 @@ public class SettingsMenu : MonoBehaviour
         public int Tab = -1;          // a tab button: the page it opens
         public Func<string> Value;    // an option: its current value...
         public Action<int> Step;      // ...and how to move it on (+1) or back (-1)
+        public CrtButton Left;        // an option's arrows
+        public CrtButton Right;
+        public Func<float> Level;     // a slider: its 0-1 value...
+        public Action<float, bool> SetLevel;   // ...and how to set it (bool: save now)
+        public RectTransform Track;
+        public RectTransform Fill;
+        public RectTransform Handle;
     }
 
     private const int ControlsPage = 0;
@@ -59,12 +67,18 @@ public class SettingsMenu : MonoBehaviour
     private float nextMove;
     private bool held;
 
+    private Cell dragging;            // the slider held down with the mouse
+    private int hoverArrow;           // -1 / +1 while the pointer is over an option's arrow
+    private Camera uiCamera;
+
     private InputActionRebindingExtensions.RebindingOperation rebinding;
     private Cell pendingRebind;
     private int ignoreCancelUntilFrame;
 
     private void Awake()
     {
+        Canvas canvas = rowContainer.GetComponentInParent<Canvas>(true);
+        uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         BuildRows();
         panel.SetActive(false);
     }
@@ -83,6 +97,7 @@ public class SettingsMenu : MonoBehaviour
         if (rebinding != null)
             rebinding.Cancel();
 
+        EndDrag();
         pendingRebind = null;
         IsOpen = false;
         panel.SetActive(false);
@@ -95,9 +110,7 @@ public class SettingsMenu : MonoBehaviour
         for (int i = 0; i < pageRoots.Length; i++)
             pageRoots[i].gameObject.SetActive(i == page);
 
-        status.text = page == OptionsPage
-            ? (GameInput.UsingGamepad ? "> LEFT / RIGHT TO CHANGE A SETTING" : "> CLICK TO CHANGE // RIGHT-CLICK OR LEFT / RIGHT TO GO BACK")
-            : "";
+        status.text = "";
         row = GameInput.UsingGamepad ? 0 : -1;
         column = page;
         RefreshLabels();
@@ -119,6 +132,16 @@ public class SettingsMenu : MonoBehaviour
             return false;
         }
 
+        if (dragging != null)
+        {
+            if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+                DragTo(dragging, false);
+            else
+                EndDrag();
+
+            return false;
+        }
+
         if (GameInput.Cancel.WasPressedThisFrame() && Time.frameCount > ignoreCancelUntilFrame)
             return true;
 
@@ -127,7 +150,8 @@ public class SettingsMenu : MonoBehaviour
         Highlight();
 
         // Right-click steps an option back.
-        if (hovered != null && hovered.Step != null && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+        if (hovered != null && hovered.Step != null && hovered.SetLevel == null && Mouse.current != null
+            && Mouse.current.rightButton.wasPressedThisFrame)
         {
             hovered.Step(-1);
             RefreshLabels();
@@ -140,13 +164,22 @@ public class SettingsMenu : MonoBehaviour
         if (chosen == null)
             return false;
 
-        if (chosen.Tab >= 0)
+        if (chosen.SetLevel != null)
+        {
+            // Sliders: the mouse grabs the handle; Submit does nothing (left/right moves them).
+            if (clicked)
+            {
+                dragging = chosen;
+                DragTo(chosen, false);
+            }
+        }
+        else if (chosen.Tab >= 0)
         {
             ShowPage(chosen.Tab);
         }
         else if (chosen.Step != null)
         {
-            chosen.Step(1);
+            chosen.Step(clicked && hoverArrow != 0 ? hoverArrow : 1);
             RefreshLabels();
         }
         else if (chosen == controlsResetCell)
@@ -252,9 +285,9 @@ public class SettingsMenu : MonoBehaviour
         y -= rowHeight * 0.5f;
 
         AddSection(ref y, "AUDIO");
-        AddOption(ref y, "MASTER VOLUME", () => GameSettings.Percent(GameSettings.MasterVolume), GameSettings.StepMaster);
-        AddOption(ref y, "EFFECTS VOLUME", () => GameSettings.Percent(GameSettings.EffectsVolume), GameSettings.StepEffects);
-        AddOption(ref y, "MUSIC VOLUME", () => GameSettings.Percent(GameSettings.MusicVolume), GameSettings.StepMusic);
+        AddSlider(ref y, "MASTER VOLUME", () => GameSettings.MasterVolume, GameSettings.SetMasterVolume);
+        AddSlider(ref y, "EFFECTS VOLUME", () => GameSettings.EffectsVolume, GameSettings.SetEffectsVolume);
+        AddSlider(ref y, "MUSIC VOLUME", () => GameSettings.MusicVolume, GameSettings.SetMusicVolume);
 
         y -= rowHeight * 0.5f;
         AddSection(ref y, "VIDEO");
@@ -295,9 +328,68 @@ public class SettingsMenu : MonoBehaviour
     {
         MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), UiColours.Phosphor, TextAlignmentOptions.Left);
         Cell cell = new Cell { Value = value, Step = step };
-        cell.Button = MakeButton(name + " Value", "", new Vector2(250f, y), new Vector2(410f, rowHeight));
+        cell.Left = MakeButton(name + " Left", "<", new Vector2(250f, y), new Vector2(40f, rowHeight));
+        cell.Button = MakeButton(name + " Value", "", new Vector2(296f, y), new Vector2(318f, rowHeight));
+        cell.Right = MakeButton(name + " Right", ">", new Vector2(620f, y), new Vector2(40f, rowHeight));
         grid.Add(new[] { cell });
         y -= rowHeight + 4f;
+    }
+
+    // A volume row: a track with a filled part and a handle, the percentage at the right end.
+    private void AddSlider(ref float y, string name, Func<float> level, Action<float, bool> setLevel)
+    {
+        MakeText(name + " Label", name, new Vector2(0f, y), new Vector2(240f, rowHeight), UiColours.Phosphor, TextAlignmentOptions.Left);
+        Cell cell = new Cell { Level = level, SetLevel = setLevel };
+        cell.Step = d => setLevel(GameSettings.StepVolume(level(), d), true);
+        cell.Button = MakeButton(name + " Slider", "", new Vector2(250f, y), new Vector2(410f, rowHeight));
+        cell.Button.Label.alignment = TextAlignmentOptions.Right;
+
+        RectTransform buttonRect = (RectTransform)cell.Button.transform;
+        cell.Track = MakeImage(buttonRect, "Track", UiColours.WithAlpha(UiColours.Phosphor, 0.3f));
+        cell.Track.anchorMin = new Vector2(0f, 0.5f);
+        cell.Track.anchorMax = new Vector2(1f, 0.5f);
+        cell.Track.offsetMin = new Vector2(16f, -2f);
+        cell.Track.offsetMax = new Vector2(-76f, 2f);
+
+        cell.Fill = MakeImage(cell.Track, "Fill", UiColours.WithAlpha(UiColours.Phosphor, 0.85f));
+        cell.Fill.anchorMin = Vector2.zero;
+        cell.Fill.offsetMin = cell.Fill.offsetMax = Vector2.zero;
+
+        cell.Handle = MakeImage(cell.Track, "Handle", UiColours.Phosphor);
+        cell.Handle.sizeDelta = new Vector2(8f, rowHeight - 10f);
+
+        grid.Add(new[] { cell });
+        y -= rowHeight + 4f;
+    }
+
+    private static RectTransform MakeImage(RectTransform parent, string name, Color colour)
+    {
+        RectTransform rect = CrtPanel.MakeRect(parent, name, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.color = colour;
+        image.raycastTarget = false;
+        return rect;
+    }
+
+    // Sets a slider from where the pointer is along its track.
+    private void DragTo(Cell cell, bool save)
+    {
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(cell.Track, GameInput.Pointer, uiCamera, out Vector2 local))
+            return;
+
+        Rect track = cell.Track.rect;
+        cell.SetLevel(Mathf.Round(Mathf.InverseLerp(track.xMin, track.xMax, local.x) * 100f) / 100f, save);
+        RefreshLabels();
+    }
+
+    private void EndDrag()
+    {
+        if (dragging == null)
+            return;
+
+        dragging.SetLevel(dragging.Level(), true);
+        dragging = null;
+        RefreshLabels();
     }
 
     private Cell Part(InputAction action, string part)
@@ -385,10 +477,21 @@ public class SettingsMenu : MonoBehaviour
                     if (cell.Action != null && cell.BindingIndex >= 0)
                         cell.Button.Label.text = GameInput.BindingLabel(cell.Action, cell.BindingIndex);
                     else if (cell.Value != null)
-                        cell.Button.Label.text = $"<    {cell.Value()}    >";
+                        cell.Button.Label.text = cell.Value();
+                    else if (cell.Level != null)
+                        ShowLevel(cell);
                 }
             }
         }
+    }
+
+    private static void ShowLevel(Cell cell)
+    {
+        float level = cell.Level();
+        cell.Button.Label.text = GameSettings.Percent(level);
+        cell.Fill.anchorMax = new Vector2(level, 1f);
+        cell.Handle.anchorMin = cell.Handle.anchorMax = new Vector2(level, 0.5f);
+        cell.Handle.anchoredPosition = Vector2.zero;
     }
 
     // ---------- Rebinding ----------
@@ -414,16 +517,20 @@ public class SettingsMenu : MonoBehaviour
             return null;
 
         Cell hovered = null;
+        hoverArrow = 0;
 
         for (int r = 0; r < grid.Count; r++)
         {
             for (int c = 0; c < grid[r].Length; c++)
             {
                 Cell cell = grid[r][c];
+                int arrow = cell.Left != null && cell.Left.IsPointerOver() ? -1
+                    : cell.Right != null && cell.Right.IsPointerOver() ? 1 : 0;
 
-                if (cell.Button != null && cell.Button.IsPointerOver())
+                if (arrow != 0 || (cell.Button != null && cell.Button.IsPointerOver()))
                 {
                     hovered = cell;
+                    hoverArrow = arrow;
 
                     if (GameInput.PointerMovedThisFrame)
                     {
@@ -516,6 +623,12 @@ public class SettingsMenu : MonoBehaviour
 
                 if (cell.Button != null)
                     cell.Button.SetHighlighted(cell == selected || openTab);
+
+                if (cell.Left != null)
+                {
+                    cell.Left.SetHighlighted(cell == selected && hoverArrow == -1);
+                    cell.Right.SetHighlighted(cell == selected && hoverArrow == 1);
+                }
             }
         }
     }

@@ -217,6 +217,26 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private AudioClip roomClearedSound;
     [SerializeField, Range(0f, 1f)] private float roomClearedVolume = 0.45f;
 
+    [Header("Footsteps")]
+    [Tooltip("Footstep clips for the player and enemies, one picked at random per step. Leave empty for generated steps.")]
+    [SerializeField] private AudioClip[] footstepSounds;
+
+    [Header("Suppressed Shot")]
+    [Tooltip("Played by every gun with a suppressor instead of its own shot. Leave empty to play the gun's own shot quieter.")]
+    [SerializeField] private AudioClip suppressedShotSound;
+
+    [Header("Scream")]
+    [Tooltip("The scream for screamers, the Butcher (pitched down) and the Howler (warbled). Leave empty for a generated scream.")]
+    [SerializeField] private AudioClip screamSound;
+
+    [Header("Music")]
+    [Tooltip("Looping track for the main menu and the hideout.")]
+    [SerializeField] private AudioClip hideoutMusic;
+    [Tooltip("Looping track for the floors.")]
+    [SerializeField] private AudioClip backgroundMusic;
+    [Tooltip("Looping track that takes over while a boss fight is on.")]
+    [SerializeField] private AudioClip bossMusic;
+
     [Header("Treasure")]
     [SerializeField] private GameObject pickupPrefab;
     [SerializeField] private GameObject[] treasureWeapons;
@@ -250,6 +270,9 @@ public partial class FloorGenerator : MonoBehaviour
 
     public IReadOnlyList<Room> Rooms => rooms;
     public Room CurrentRoom { get; private set; }
+    public AudioClip HideoutMusic => hideoutMusic;
+    public AudioClip BackgroundMusic => backgroundMusic;
+    public AudioClip BossMusic => bossMusic;
     public int CurrentSeed { get; private set; }
     public int FloorNumber { get; private set; } = 1;
     public int TotalFloors => totalFloors;
@@ -339,6 +362,9 @@ public partial class FloorGenerator : MonoBehaviour
         MaterialVisuals.Use(materialVisuals);
         StationVisuals.Use(stationVisuals);
         CharacterVisuals.Use(characterVisuals);
+        Footsteps.UseClips(footstepSounds);
+        ScreamSound.Use(screamSound);
+        Gun.SuppressedShot = suppressedShotSound;
 
         // Thrown things and effects are built from the pickups' material, even before any
         // pickup has spawned.

@@ -3,7 +3,8 @@ using UnityEngine;
 // The bloater: slow and swollen. When it gets close to the player it stops, swells and bursts
 // a moment later, hurting everything around it, zombies included. Killing it first bursts it
 // too (a beat after it drops, so shooting one in a crowd sets off the crowd), so the safe way
-// to deal with one is from range.
+// to deal with one is from range. It bursts in a spray of acid (Blast.Settings.Acid: the pixel
+// acid burst) and leaves an AcidPool that burns the player and other zombies for a few seconds.
 [RequireComponent(typeof(Enemy))]
 public class EnemyBloater : MonoBehaviour
 {
@@ -26,7 +27,8 @@ public class EnemyBloater : MonoBehaviour
         BreaksProps = true,
         HotColour = new Color(0.8f, 1f, 0.4f),
         CoolColour = new Color(0.25f, 0.45f, 0.05f),
-        LightColour = new Color(0.6f, 1f, 0.3f)
+        LightColour = new Color(0.6f, 1f, 0.3f),
+        Acid = true
     };
 
     private Enemy enemy;

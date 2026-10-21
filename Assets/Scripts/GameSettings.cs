@@ -95,17 +95,26 @@ public static class GameSettings
 
     // ---------- Changing values (each saves and applies) ----------
 
-    public static void StepMaster(int direction) => SetVolume(direction, v => MasterVolume = v, MasterVolume);
-    public static void StepEffects(int direction) => SetVolume(direction, v => EffectsVolume = v, EffectsVolume);
-    public static void StepMusic(int direction) => SetVolume(direction, v => MusicVolume = v, MusicVolume);
+    // Volumes are set straight from the settings sliders. While a slider is being dragged only the
+    // mixer is updated (`save` false); letting go saves and applies everything.
+    public static void SetMasterVolume(float value, bool save = true) => SetVolume(v => MasterVolume = v, value, save);
+    public static void SetEffectsVolume(float value, bool save = true) => SetVolume(v => EffectsVolume = v, value, save);
+    public static void SetMusicVolume(float value, bool save = true) => SetVolume(v => MusicVolume = v, value, save);
 
-    private static void SetVolume(int direction, Action<float> set, float current)
+    // Steps of 5% for the keyboard and controller, stopping at 0% and 100%.
+    public static float StepVolume(float current, int direction)
     {
-        // Steps of 10%, wrapping from 100% back to 0% (and the other way).
-        int step = Mathf.RoundToInt(current * 10f) + direction;
-        step = (step % 11 + 11) % 11;
-        set(step / 10f);
-        Commit();
+        return Mathf.Clamp(Mathf.Round(current * 20f) + direction, 0f, 20f) / 20f;
+    }
+
+    private static void SetVolume(Action<float> set, float value, bool save)
+    {
+        set(Mathf.Clamp01(value));
+
+        if (save)
+            Commit();
+        else
+            GameAudio.SetVolumes(MasterVolume, EffectsVolume, MusicVolume);
     }
 
     public static void StepDisplayMode(int direction)

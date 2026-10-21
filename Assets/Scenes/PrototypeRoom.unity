@@ -3555,7 +3555,7 @@ MonoBehaviour:
   quietVolume: 0.13
   loudVolume: 0.26
   pitch: 1
-  pitchVariation: 0.2
+  pitchVariation: 0.06
   alertsEnemies: 1
   spatialBlend: 0
   fullVolumeDistance: 14
@@ -4339,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80246}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7530,6 +7530,15 @@ MonoBehaviour:
   furniturePerCell: {x: 1, y: 3}
   roomClearedSound: {fileID: 0}
   roomClearedVolume: 0.45
+  footstepSounds:
+  - {fileID: 8300000, guid: 89c869c434e5f72428578267567756ea, type: 3}
+  - {fileID: 8300000, guid: aae64d06ba252b9448853b1e690b0aee, type: 3}
+  - {fileID: 8300000, guid: b38481360c41a7f4d95413469c444a80, type: 3}
+  suppressedShotSound: {fileID: 8300000, guid: 08bec65613c06d144a1906533c376a4a, type: 3}
+  screamSound: {fileID: 8300000, guid: e2e5656a482044e4da46dc586e8dbd2e, type: 3}
+  hideoutMusic: {fileID: 8300000, guid: 0d715d527507d9b4ebd3731041b79bbc, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 5f74ad1ba036697409183711c945c3ad, type: 3}
+  bossMusic: {fileID: 8300000, guid: 99c232f88d0e82d41a5d7b8c2d20d95f, type: 3}
   pickupPrefab: {fileID: 8820733638236343572, guid: 28d7fb57f98dc11439500aadc959bbdf, type: 3}
   treasureWeapons:
   - {fileID: 1053666970914164882, guid: e234c78874a42be4dabafedcf819552c, type: 3}
@@ -8544,7 +8553,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8552,7 +8561,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80246}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

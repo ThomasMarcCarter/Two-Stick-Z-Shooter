@@ -10,6 +10,9 @@ using UnityEngine;
 // distance ahead). It stands upright just in front of its holder's sprite, or just behind when
 // they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight), tips up
 // while reloading and swings through an arc in a melee bash (PlayerMelee.SwingProgress). Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
+// A suppressor or laser sight is drawn on it as sprites of their own (SpriteVisuals.gunAttachments)
+// that turn, flip and tip with the drawn barrel: the can on the muzzle (shots then come out of the
+// can's end), the laser under the barrel's front with the beam starting at its lens.
 [DefaultExecutionOrder(260)]
 public class GunSprite : MonoBehaviour
 {
@@ -17,6 +20,13 @@ public class GunSprite : MonoBehaviour
     private const float ReloadTip = 40f;   // degrees the gun tips up mid-reload
     private const float MeleeArc = 150f;   // degrees the gun sweeps through in a melee swing
     private const float FloorClearance = 0.05f;  // lowest the gun's quad may reach, in metres
+    private const float AttachmentGap = 0.01f;   // metres an attachment sits in front of the gun
+    private const float SuppressorLength = 8f;   // gun pixels the can reaches past the muzzle
+    private const float LaserSetBack = 2f;       // gun pixels the laser's front sits behind the muzzle
+    // The laser's front on the barrel line is 5 px right of and 2 px above its sheet's pivot (the
+    // sheet's one pivot suits the can), and its lens is at (-0.5, -2.5) from that front.
+    private static readonly Vector2 LaserFront = new Vector2(5f, 2f);
+    private static readonly Vector2 LensOffset = new Vector2(-0.5f, -2.5f);
 
     private Gun gun;
     private SpriteSheet sheet;
@@ -27,6 +37,10 @@ public class GunSprite : MonoBehaviour
     private Vector2 aim = Vector2.right;
     private Light flashlight;
     private float flashlightThrow;   // how far ahead the flashlight's beam meets the floor
+    private PixelSprite suppressor;
+    private PixelSprite laserModule;
+    private Vector2 screenGrip;      // this frame's grip on screen and screen pixels per metre
+    private float screenScale;
 
     public static GunSprite Attach(Gun gun, SpriteSheet sheet)
     {
@@ -64,6 +78,8 @@ public class GunSprite : MonoBehaviour
             gunSprite.flashlightThrow = Mathf.Max(1f, light.transform.position.y / drop);
         }
 
+        // A 3D suppressor fitted before the sprite came goes (the sprite draws its own).
+        gun.UpdateAttachmentVisuals();
         return gunSprite;
     }
 
@@ -99,6 +115,11 @@ public class GunSprite : MonoBehaviour
         float pixelsPerMetre = Vector2.Distance(hands, camera.WorldToScreenPoint(handsWorld + camera.transform.right));
         Vector2 grip = hands + aim * reach * pixelsPerMetre;
         float barrel = (sheet.muzzle - sheet.pivot).magnitude / Mathf.Max(1f, sheet.pixelsPerUnit);
+        bool canDrawn = gun.Suppressed && AttachmentArt != null;
+
+        if (canDrawn)
+            barrel += SuppressorLength / Mathf.Max(1f, sheet.pixelsPerUnit);
+
         Vector2 tip = grip + aim * barrel * pixelsPerMetre;
 
         float target = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
@@ -166,6 +187,89 @@ public class GunSprite : MonoBehaviour
 
         if (lowest < FloorClearance && view.y < -0.01f)
             sprite.DepthOffset -= (FloorClearance - lowest) / -view.y;
+
+        screenGrip = grip;
+        screenScale = pixelsPerMetre;
+        PlaceAttachments(camera, target, left, gun.IsReloading || bash >= 0f, view);
+    }
+
+    private static SpriteSheet AttachmentArt => SpriteVisuals.Current != null ? SpriteVisuals.Current.gunAttachments : null;
+
+    // Where a pixel of the gun's sheet is on screen as the gun is drawn this frame.
+    private Vector2 ScreenOf(Vector2 pixel)
+    {
+        Vector2 offset = (pixel - sheet.pivot) / Mathf.Max(1f, sheet.pixelsPerUnit);
+
+        if (sprite.MirrorY)
+            offset.y = -offset.y;
+
+        float radians = sprite.Angle * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(radians), sin = Mathf.Sin(radians);
+        return screenGrip + new Vector2(offset.x * cos - offset.y * sin, offset.x * sin + offset.y * cos) * screenScale;
+    }
+
+    // The suppressor and laser sprites on the drawn barrel (barrelAngle is its angle on screen),
+    // and the laser's beam from the drawn lens.
+    private void PlaceAttachments(Camera camera, float barrelAngle, bool left, bool tipped, Vector3 view)
+    {
+        SpriteSheet art = AttachmentArt;
+        LaserSight laser = gun.Laser;
+        Vector2 laserMount = new Vector2(sheet.muzzle.x - LaserSetBack, sheet.pivot.y);
+
+        suppressor = Show(suppressor, art, gun.Suppressed, 0, "Suppressor Sprite");
+        laserModule = Show(laserModule, art, laser != null, 1, "Laser Sprite");
+        PlaceAttachment(suppressor, camera, sheet.muzzle, barrelAngle, left, view);
+        PlaceAttachment(laserModule, camera, laserMount - LaserFront, barrelAngle, left, view);
+
+        if (laser == null)
+            return;
+
+        Vector2 lens = laserModule != null ? ScreenOf(laserMount + LensOffset) : ScreenOf(sheet.muzzle);
+        Vector3 way = OnAimPlane(camera, ScreenOf(sheet.muzzle)) - OnAimPlane(camera, ScreenOf(sheet.pivot));
+        way.y = 0f;
+        laser.transform.position = OnAimPlane(camera, lens);
+
+        if (way.sqrMagnitude > 0.0001f)
+            laser.transform.rotation = Quaternion.LookRotation(way.normalized, Vector3.up);
+
+        laser.FollowBarrel = tipped;
+    }
+
+    // Makes the attachment's sprite the first time it's fitted; shown while fitted and the gun shows.
+    private PixelSprite Show(PixelSprite part, SpriteSheet art, bool fitted, int frame, string name)
+    {
+        if (part == null && fitted && art != null)
+        {
+            part = PixelSprite.Create(name, gun.transform, art, PixelSprite.Mode.Facing, sprite.Renderer.renderingLayerMask);
+            part.Standing = true;
+            part.Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            part.SetFrame(frame, 0, false);
+            part.Scale = art.pixelsPerUnit / Mathf.Max(1f, sheet.pixelsPerUnit);
+        }
+
+        if (part != null)
+            part.Renderer.enabled = fitted && sprite.Renderer.enabled;
+
+        return part;
+    }
+
+    // Its pivot on the given pixel of the gun, along the barrel, just in front of the gun and
+    // clear of the floor (as the gun is kept clear above).
+    private void PlaceAttachment(PixelSprite part, Camera camera, Vector2 mount, float barrelAngle, bool left, Vector3 view)
+    {
+        if (part == null || !part.Renderer.enabled)
+            return;
+
+        part.Angle = barrelAngle;
+        part.MirrorY = left;
+        part.Position = OnAimPlane(camera, ScreenOf(mount));
+        part.DepthOffset = sprite.DepthOffset - AttachmentGap;
+
+        float drop = part.StandingDrop() * CameraFollow.VerticalScale / Mathf.Max(0.25f, CameraFollow.Foreshortening);
+        float lowest = part.Position.y + view.y * part.DepthOffset - drop;
+
+        if (lowest < FloorClearance && view.y < -0.01f)
+            part.DepthOffset -= (FloorClearance - lowest) / -view.y;
     }
 
     // The point at Gun.AimHeight under a screen point.

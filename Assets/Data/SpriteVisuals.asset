@@ -51,6 +51,7 @@ MonoBehaviour:
     sheet: {fileID: 11400000, guid: 6483fac4d4f0f51489f34b9e1d4a0fbe, type: 2}
   - gun: Revolver
     sheet: {fileID: 11400000, guid: 0712fdc33ea9b6345948c648f300e642, type: 2}
+  gunAttachments: {fileID: 11400000, guid: 1ed6863b7c90d6341a5233f6a7a0c7ae, type: 2}
   floor: {fileID: 2100000, guid: 4b57af4cdbc02394597401faa6150a6f, type: 2}
   floorVariant: {fileID: 2100000, guid: 78d4fdfcc8e906740b3d0f8342d7effe, type: 2}
   corridorFloor: {fileID: 2100000, guid: d0657ef77c898444db2ca7ebbb08b1e7, type: 2}
@@ -58,3 +59,10 @@ MonoBehaviour:
   door: {fileID: 2100000, guid: b729cab1d5f39774e8445995578aec7c, type: 2}
   particle: {fileID: 2100000, guid: fdbb028ac0342934f9a380cf11bc741f, type: 2}
   muzzleFlame: {fileID: 2100000, guid: 508bfb5953e9a444f9bdb67acdffa6b5, type: 2}
+  glowSprite: {fileID: 2100000, guid: 0db1df26f2158f44da184bd2cf65829d, type: 2}
+  explosion: {fileID: 11400000, guid: a42bd635aa5adfe4b80aada061edefc2, type: 2}
+  flame: {fileID: 11400000, guid: 4ce8f0291567e7040af729e0b2f07a12, type: 2}
+  firePool: {fileID: 11400000, guid: 7c50672c6d32cc445bc40832e8f77a06, type: 2}
+  acidBurst: {fileID: 11400000, guid: bd04e414132c0914c877f3ce52f7b76e, type: 2}
+  acidPool: {fileID: 11400000, guid: 3b49902bcec0ec4439a1a573898631cc, type: 2}
+  acidGlob: {fileID: 11400000, guid: 7f9e17711e331904eada058d873c829e, type: 2}

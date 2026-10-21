@@ -55,6 +55,8 @@ public class SpriteVisuals : ScriptableObject
 
     [Header("Guns (by Gun prefab name)")]
     public GunEntry[] guns = new GunEntry[0];
+    [Tooltip("Attachments drawn on held gun sprites: frame 0 suppressor, frame 1 laser sight (see GunSprite).")]
+    public SpriteSheet gunAttachments;
 
     [Header("Rooms")]
     public Material floor;
@@ -68,6 +70,24 @@ public class SpriteVisuals : ScriptableObject
     public Material particle;
     [Tooltip("Pixel flame for muzzle flashes.")]
     public Material muzzleFlame;
+    [Tooltip("Unlit, alpha-cut base material for sprites that glow (acid); each sheet gets a copy with its texture.")]
+    public Material glowSprite;
+
+    [Header("Fire")]
+    [Tooltip("A grenade going off: one row of frames, standing up from the floor.")]
+    public SpriteSheet explosion;
+    [Tooltip("One tongue of a molotov's fire: row 0 flickering loop, row 1 dying down.")]
+    public SpriteSheet flame;
+    [Tooltip("A molotov's burning fuel from above: row 0 burning loop, row 1 dying to char.")]
+    public SpriteSheet firePool;
+
+    [Header("Acid")]
+    [Tooltip("A bloater bursting / a glob splashing: one row of frames, standing up from the floor.")]
+    public SpriteSheet acidBurst;
+    [Tooltip("The acid pool from above: row 0 bubbling loop, row 1 drying up.")]
+    public SpriteSheet acidPool;
+    [Tooltip("The Broodmother's glob: row 0 wobbling in flight (trail to the left), row 1 its shadow.")]
+    public SpriteSheet acidGlob;
 
     [System.Serializable]
     public class GunEntry

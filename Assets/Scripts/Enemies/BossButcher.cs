@@ -210,7 +210,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
         phase = Phase.WindUp;
         phaseEnds = Time.time + WindUpTime;
         enemy.ExternalControl = true;
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 1f, 0.45f);
+        ScreamSound.PlayAt(transform.position, 1f, 0.45f);
         Noise.Emit(transform.position, Noise.Gunshot, Noise.Kind.Scream);
     }
 
@@ -261,7 +261,7 @@ public class BossButcher : MonoBehaviour, IBossMoves
         enemy.FacingOverride = sweepDirection;
         sweepMarker = FloorMarker.Sector(Bosses.Flat(transform.position), sweepDirection, SweepRange, SweepArc, SweepColour, SweepWindUp,
             enemy.Room != null ? enemy.Room.transform : null, null);
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 0.8f, 0.35f);
+        ScreamSound.PlayAt(transform.position, 0.8f, 0.35f);
     }
 
     // The blow: everyone and everything breakable in the wedge.

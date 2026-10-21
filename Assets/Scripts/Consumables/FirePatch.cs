@@ -4,6 +4,10 @@ using UnityEngine;
 // A pool of burning fuel from a molotov: flickering flames and an orange light for a few
 // seconds, hurting any zombie standing in it every half second, and the player too if they
 // walk through (the hit's knockback pushes them out). Dies down over its last second.
+// With the sprite art it's a burning pixel puddle on the floor (SpriteVisuals.firePool, above any
+// litter) with a cluster of standing pixel flames flickering out of step across it (flame),
+// all unlit so they glow, dying down to embers and char at the end (each sheet's second row).
+// Without it, a glow on the floor with flickering block flames.
 public class FirePatch : MonoBehaviour
 {
     public const float Radius = 1.8f;
@@ -11,6 +15,10 @@ public class FirePatch : MonoBehaviour
     private const float FadeTime = 1f;
     private const float TickTime = 0.5f;
     private const int FlameCount = 24;
+    private const int SpriteFlameCount = 9;
+    private const float FlameFps = 12f;
+    private const float PoolFps = 6f;
+    private const float SpriteLift = 0.025f;   // above floor litter
 
     private readonly List<Transform> flames = new List<Transform>();
     private readonly List<Vector3> flameSizes = new List<Vector3>();
@@ -22,6 +30,10 @@ public class FirePatch : MonoBehaviour
     private float started;
     private float nextTick;
     private float seed;
+    private PixelSprite poolSprite;
+    private readonly List<PixelSprite> flameSprites = new List<PixelSprite>();
+    private readonly List<float> flamePhase = new List<float>();
+    private readonly List<bool> flameMirror = new List<bool>();
 
     public static FirePatch Create(Vector3 position, Transform room)
     {
@@ -33,49 +45,13 @@ public class FirePatch : MonoBehaviour
         fire.started = Time.time;
         fire.nextTick = Time.time + 0.1f;
         fire.seed = Random.value * 100f;
-        Material material = ConsumablePickup.DefaultMaterial;
 
-        // A soft orange glow on the floor under it, like the ammo pickups' (none if there's no
-        // glow material set up).
-        AmmoVisuals visuals = AmmoVisuals.Current;
+        SpriteVisuals sprites = SpriteVisuals.Current;
 
-        if (visuals != null && visuals.glowMaterial != null)
-        {
-            GameObject pool = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            pool.name = "Glow";
-            Destroy(pool.GetComponent<Collider>());
-            pool.transform.SetParent(root.transform, false);
-            pool.transform.localPosition = Vector3.up * 0.015f;
-            pool.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            pool.transform.localScale = Vector3.one * Radius * 2.6f;
-            fire.poolRenderer = pool.GetComponent<Renderer>();
-            fire.poolRenderer.sharedMaterial = visuals.glowMaterial;
-            fire.poolRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            fire.poolRenderer.receiveShadows = false;
-        }
-
-        for (int i = 0; i < FlameCount; i++)
-        {
-            GameObject flame = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            flame.name = "Flame";
-            Destroy(flame.GetComponent<Collider>());
-            flame.transform.SetParent(root.transform, false);
-
-            // Bunched towards the middle, where the fuel is deepest.
-            Vector2 spot = Random.insideUnitCircle * Radius * Mathf.Lerp(0.3f, 0.9f, i / (float)FlameCount);
-            flame.transform.localPosition = new Vector3(spot.x, 0f, spot.y);
-            flame.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 90f), 0f);
-
-            Renderer renderer = flame.GetComponent<Renderer>();
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-            if (material != null)
-                renderer.sharedMaterial = material;
-
-            fire.flames.Add(flame.transform);
-            fire.flameSizes.Add(new Vector3(Random.Range(0.07f, 0.14f), Random.Range(0.4f, 1.1f), Random.Range(0.07f, 0.14f)));
-            fire.flameRenderers.Add(renderer);
-        }
+        if (sprites != null && sprites.flame != null && sprites.firePool != null)
+            fire.BuildSprites(sprites.firePool, sprites.flame);
+        else
+            fire.BuildModel();
 
         GameObject light = new GameObject("Glow");
         light.transform.SetParent(root.transform, false);
@@ -101,6 +77,81 @@ public class FirePatch : MonoBehaviour
         return fire;
     }
 
+    // The pixel fire: the burning puddle, and flames standing up out of it (bunched towards the
+    // middle, where the fuel is deepest), each its own size and out of step with the rest.
+    private void BuildSprites(SpriteSheet pool, SpriteSheet flame)
+    {
+        transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+        poolSprite = PixelSprite.Create("Burning Fuel", transform, pool, PixelSprite.Mode.Flat);
+        poolSprite.Scale = Radius * 2f / (pool.frameWidth / Mathf.Max(1f, pool.pixelsPerUnit));
+        poolSprite.Lift = SpriteLift;
+        poolSprite.UseGlow();
+
+        for (int i = 0; i < SpriteFlameCount; i++)
+        {
+            GameObject spot = new GameObject("Flame");
+            spot.transform.SetParent(transform, false);
+            Vector2 offset = Random.insideUnitCircle * Radius * Mathf.Lerp(0.15f, 0.75f, i / (float)SpriteFlameCount);
+            spot.transform.localPosition = new Vector3(offset.x, 0f, offset.y);
+
+            PixelSprite sprite = PixelSprite.Create("Sprite", spot.transform, flame, PixelSprite.Mode.Facing);
+            sprite.Standing = true;
+            sprite.Scale = Random.Range(0.75f, 1.25f);
+            sprite.UseGlow();
+            flameSprites.Add(sprite);
+            flamePhase.Add(Random.value * 6f);
+            flameMirror.Add(Random.value < 0.5f);
+        }
+    }
+
+    // The 3D look, without the sprite art.
+    private void BuildModel()
+    {
+        Material material = ConsumablePickup.DefaultMaterial;
+
+        // A soft orange glow on the floor under it, like the ammo pickups' (none if there's no
+        // glow material set up).
+        AmmoVisuals visuals = AmmoVisuals.Current;
+
+        if (visuals != null && visuals.glowMaterial != null)
+        {
+            GameObject pool = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            pool.name = "Glow";
+            Destroy(pool.GetComponent<Collider>());
+            pool.transform.SetParent(transform, false);
+            pool.transform.localPosition = Vector3.up * 0.015f;
+            pool.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            pool.transform.localScale = Vector3.one * Radius * 2.6f;
+            poolRenderer = pool.GetComponent<Renderer>();
+            poolRenderer.sharedMaterial = visuals.glowMaterial;
+            poolRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            poolRenderer.receiveShadows = false;
+        }
+
+        for (int i = 0; i < FlameCount; i++)
+        {
+            GameObject flame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            flame.name = "Flame";
+            Destroy(flame.GetComponent<Collider>());
+            flame.transform.SetParent(transform, false);
+
+            // Bunched towards the middle, where the fuel is deepest.
+            Vector2 spot = Random.insideUnitCircle * Radius * Mathf.Lerp(0.3f, 0.9f, i / (float)FlameCount);
+            flame.transform.localPosition = new Vector3(spot.x, 0f, spot.y);
+            flame.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 90f), 0f);
+
+            Renderer renderer = flame.GetComponent<Renderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            if (material != null)
+                renderer.sharedMaterial = material;
+
+            flames.Add(flame.transform);
+            flameSizes.Add(new Vector3(Random.Range(0.07f, 0.14f), Random.Range(0.4f, 1.1f), Random.Range(0.07f, 0.14f)));
+            flameRenderers.Add(renderer);
+        }
+    }
+
     private void Update()
     {
         float age = Time.time - started;
@@ -113,6 +164,19 @@ public class FirePatch : MonoBehaviour
 
         // 1 while burning, falling to 0 over the last second.
         float strength = Mathf.Clamp01((Duration - age) / FadeTime) * Mathf.Clamp01(age / 0.15f);
+
+        // Pixel fire: burning loops, then the dying frames over the last second.
+        float dying = 1f - (Duration - age) / FadeTime;
+        int dyingFrame = Mathf.Min(3, Mathf.FloorToInt(Mathf.Max(0f, dying) * 4f));
+
+        if (poolSprite != null)
+            poolSprite.SetFrame(dying < 0f ? Mathf.FloorToInt(age * PoolFps) % 4 : dyingFrame, dying < 0f ? 0 : 1, false);
+
+        for (int i = 0; i < flameSprites.Count; i++)
+        {
+            int frame = dying < 0f ? Mathf.FloorToInt(age * FlameFps + flamePhase[i]) % 6 : dyingFrame;
+            flameSprites[i].SetFrame(frame, dying < 0f ? 0 : 1, flameMirror[i]);
+        }
 
         for (int i = 0; i < flames.Count; i++)
         {

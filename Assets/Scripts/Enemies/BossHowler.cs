@@ -99,7 +99,7 @@ public class BossHowler : MonoBehaviour, IBossMoves
         {
             howlAt = Time.time + HowlWindUp;
             enemy.ExternalControl = true;
-            SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 0.7f, 0.75f);
+            ScreamSound.PlayWarbledAt(transform.position, 0.7f, 0.75f);
         }
     }
 
@@ -138,7 +138,7 @@ public class BossHowler : MonoBehaviour, IBossMoves
         enemy.SetGlow(restGlow);
         transform.localScale = baseScale;
 
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 1f, 0.55f);
+        ScreamSound.PlayWarbledAt(transform.position, 1f, 0.55f);
         SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("explosion", 3, ProceduralAudio.Explosion)), transform.position, 0.5f, 0.5f);
         Noise.Emit(transform.position, Noise.Gunshot * 2f, Noise.Kind.Scream);
         CameraFollow.Shake(0.4f);

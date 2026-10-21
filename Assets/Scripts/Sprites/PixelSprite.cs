@@ -28,6 +28,7 @@ public class PixelSprite : MonoBehaviour
     public enum Mode { Upright, Facing, Flat }
 
     private static readonly Dictionary<Texture, Material> materials = new Dictionary<Texture, Material>();
+    private static readonly Dictionary<Texture, Material> glowMaterials = new Dictionary<Texture, Material>();
     private static readonly int ShadowSquashId = Shader.PropertyToID("_SpriteShadowSquash");
 
     // Snap sprites to the art pixel grid. Off: the camera glides, so sprites do too.
@@ -37,6 +38,7 @@ public class PixelSprite : MonoBehaviour
     private static void ResetSession()
     {
         materials.Clear();
+        glowMaterials.Clear();
         Snap = false;
     }
 
@@ -115,6 +117,28 @@ public class PixelSprite : MonoBehaviour
         }
 
         return material;
+    }
+
+    // Draws it unlit at full brightness (glowing effects such as acid), casting no shadow.
+    // Stays lit if the visuals have no glow material.
+    public void UseGlow()
+    {
+        Texture texture = sheet != null ? sheet.texture : null;
+        Material source = SpriteVisuals.Current != null ? SpriteVisuals.Current.glowSprite : null;
+
+        if (texture == null || source == null)
+            return;
+
+        if (!glowMaterials.TryGetValue(texture, out Material material) || material == null)
+        {
+            material = new Material(source) { name = texture.name + " (glow sprite)" };
+            material.SetTexture("_BaseMap", texture);
+            glowMaterials[texture] = material;
+        }
+
+        meshRenderer.sharedMaterial = material;
+        meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        meshRenderer.receiveShadows = false;
     }
 
     // A frame by column and row (rows from the top of the sheet).

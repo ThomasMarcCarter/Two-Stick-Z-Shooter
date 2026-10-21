@@ -43,7 +43,7 @@ public class EnemyScreamer : MonoBehaviour
         // Stands its ground to scream.
         enemy.Knock(Vector3.zero, screamTime);
 
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("screamer", 3, ProceduralAudio.Scream)), transform.position, 1f, Random.Range(0.95f, 1.08f));
+        ScreamSound.PlayAt(transform.position, 1f);
         Noise.Emit(enemy.Target.position, Noise.Gunshot * loudness, Noise.Kind.Scream);
         CameraFollow.Shake(0.12f);
     }

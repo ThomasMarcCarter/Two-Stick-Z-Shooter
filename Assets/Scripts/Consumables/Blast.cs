@@ -3,9 +3,11 @@ using UnityEngine;
 
 // Something going off: a grenade, or a bloater bursting. Damage to zombies in the radius that
 // aren't behind a wall (most at the middle), a shove that staggers them, boxes and props knocked
-// about, the player hurt if too close, and a bang that carries. Shown as a quick ball of fire
-// (or gas) and a flash of light, with a shake of the camera. Also the glass shards for a molotov
-// or bottle breaking.
+// about, the player hurt if too close, and a bang that carries. Shown as a pixel-art explosion
+// (SpriteEffect, sized to the blast: a flash, a fireball, then smoke) and a flash of light, with a
+// shake of the camera. An acid blast (a bloater bursting) is the acid burst instead, flings green
+// droplets and leaves an AcidPool that burns zombies as well as the player. Without the sprite
+// art the blast is a glowing ball. Also the glass shards for a molotov or bottle breaking.
 public class Blast : MonoBehaviour
 {
     // How big and how bad a blast is.
@@ -23,6 +25,7 @@ public class Blast : MonoBehaviour
         public Color HotColour;
         public Color CoolColour;
         public Color LightColour;
+        public bool Acid;               // the acid burst look, green droplets, and a pool left behind
     }
 
     public static Settings Grenade => new Settings
@@ -42,6 +45,8 @@ public class Blast : MonoBehaviour
     };
 
     private const float Life = 0.45f;
+    private const float SpriteFps = 16f;    // the explosion's 8 frames in half a second
+    private const float SpriteWidth = 1.3f; // the explosion frame's width, in blast radii
 
     private Transform ball;
     private Light flash;
@@ -117,7 +122,14 @@ public class Blast : MonoBehaviour
         SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("explosion", 3, ProceduralAudio.Explosion)), centre, volume, Random.Range(0.92f, 1.05f) * (settings.Radius < 3f ? 1.35f : 1f));
         CameraFollow.Shake(settings.Shake);
 
-        if (haveMaterials && settings.BreaksProps)
+        if (settings.Acid)
+        {
+            if (haveMaterials)
+                ImpactEffects.Debris(centre, Vector3.up, 14, new Color(0.45f, 0.9f, 0.12f), new Color(0.8f, 1f, 0.45f), materials);
+
+            AcidPool.Create(centre, room, true);
+        }
+        else if (haveMaterials && settings.BreaksProps)
         {
             for (int i = 0; i < 6; i++)
                 ImpactEffects.Sparks(centre, (Random.onUnitSphere + Vector3.up).normalized, materials);
@@ -155,16 +167,12 @@ public class Blast : MonoBehaviour
         blast.started = Time.time;
         blast.settings = settings;
 
-        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.name = "Fireball";
-        Destroy(sphere.GetComponent<Collider>());
-        sphere.transform.SetParent(root.transform, false);
-        blast.ball = sphere.transform;
-        blast.ballRenderer = sphere.GetComponent<Renderer>();
-        blast.ballRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        SpriteVisuals visuals = SpriteVisuals.Current;
+        SpriteSheet burst = visuals == null ? null : settings.Acid ? visuals.acidBurst : visuals.explosion;
 
-        if (ConsumablePickup.DefaultMaterial != null)
-            blast.ballRenderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
+        // The sprite stands in for the ball (the flash stays).
+        if (SpriteEffect.Play(burst, 0, SpriteFps, centre, settings.Radius * SpriteWidth, room) == null)
+            blast.CreateBall();
 
         GameObject light = new GameObject("Flash");
         light.transform.SetParent(root.transform, false);
@@ -178,6 +186,20 @@ public class Blast : MonoBehaviour
         blast.Update();
     }
 
+    private void CreateBall()
+    {
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.name = "Fireball";
+        Destroy(sphere.GetComponent<Collider>());
+        sphere.transform.SetParent(transform, false);
+        ball = sphere.transform;
+        ballRenderer = sphere.GetComponent<Renderer>();
+        ballRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        if (ConsumablePickup.DefaultMaterial != null)
+            ballRenderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
+    }
+
     private void Update()
     {
         float t = (Time.time - started) / Life;
@@ -189,11 +211,15 @@ public class Blast : MonoBehaviour
         }
 
         // Swells fast, then shrinks away as it cools.
-        float full = settings.Radius * 0.7f;
-        float size = t < 0.15f ? Mathf.Lerp(0.4f, full, t / 0.15f) : Mathf.Lerp(full, 0f, (t - 0.15f) / 0.85f);
-        ball.localScale = Vector3.one * size;
-        Color heat = Color.Lerp(settings.HotColour, settings.CoolColour, t);
-        ConsumableModel.Tint(ballRenderer, heat * 0.5f, heat * Mathf.Lerp(12f, 1f, t));
+        if (ball != null)
+        {
+            float full = settings.Radius * 0.7f;
+            float size = t < 0.15f ? Mathf.Lerp(0.4f, full, t / 0.15f) : Mathf.Lerp(full, 0f, (t - 0.15f) / 0.85f);
+            ball.localScale = Vector3.one * size;
+            Color heat = Color.Lerp(settings.HotColour, settings.CoolColour, t);
+            ConsumableModel.Tint(ballRenderer, heat * 0.5f, heat * Mathf.Lerp(12f, 1f, t));
+        }
+
         flash.intensity = Mathf.Lerp(18f, 0f, Mathf.Sqrt(t)) * Mathf.Clamp01(settings.Radius / 3.5f);
     }
 }

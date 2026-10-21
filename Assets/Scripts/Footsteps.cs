@@ -3,11 +3,13 @@ using UnityEngine;
 // Footstep sounds driven by how fast the Rigidbody is actually moving: one step per stride
 // travelled, so steps come quicker the faster it goes, and they get louder towards sprinting
 // speed. Used by the player (2D, always heard) and enemies (positional, lower and heavier).
-// Uses generated steps unless clips are set.
+// Each step is a random clip (never the same twice running) with a small random pitch change.
+// Clips come from this component's own list, else the shared set (the FloorGenerator's
+// Footstep Sounds), else generated steps.
 [RequireComponent(typeof(Rigidbody))]
 public class Footsteps : MonoBehaviour
 {
-    [Tooltip("Leave empty to use generated footsteps.")]
+    [Tooltip("Leave empty to use the FloorGenerator's footstep sounds (or generated ones if those are empty too).")]
     [SerializeField] private AudioClip[] clips;
 
     [Header("Timing")]
@@ -23,7 +25,7 @@ public class Footsteps : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float loudVolume = 0.26f;
     [SerializeField] private float pitch = 1f;
     [Tooltip("Random pitch change per step, either way, for variety.")]
-    [SerializeField, Range(0f, 0.4f)] private float pitchVariation = 0.2f;
+    [SerializeField, Range(0f, 0.4f)] private float pitchVariation = 0.06f;
 
     [Header("Noise")]
     [Tooltip("Steps can be heard by enemies (the player's). Quiet when slow, loud when sprinting.")]
@@ -37,6 +39,19 @@ public class Footsteps : MonoBehaviour
     [SerializeField] private float silentDistance = 24f;
 
     private static AudioClip[] generated;
+    private static AudioClip[] shared;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        shared = null;
+    }
+
+    // The footstep clips for everything without its own (set by the FloorGenerator).
+    public static void UseClips(AudioClip[] stepClips)
+    {
+        shared = stepClips != null && stepClips.Length > 0 ? stepClips : null;
+    }
 
     private Rigidbody rb;
     private AudioSource source;
@@ -63,20 +78,6 @@ public class Footsteps : MonoBehaviour
         source = GameAudio.Route(gameObject.AddComponent<AudioSource>());
         source.playOnAwake = false;
         ApplySourceSettings();
-
-        // Generated clips are shared by everything with footsteps. Rebuilt if a previous Play
-        // session's clips were destroyed (statics outlive it with domain reload off).
-        if (clips != null && clips.Length > 0)
-        {
-            steps = clips;
-        }
-        else
-        {
-            if (generated == null || generated[0] == null)
-                generated = new[] { ProceduralAudio.Footstep(3), ProceduralAudio.Footstep(17), ProceduralAudio.Footstep(41), ProceduralAudio.Footstep(66) };
-
-            steps = generated;
-        }
 
         // Start part-way through a stride, so a group of enemies setting off together don't
         // all step in time.
@@ -116,9 +117,28 @@ public class Footsteps : MonoBehaviour
         Step(speed);
     }
 
+    // Picked on the first step, as the player's Awake can run before the FloorGenerator's.
+    private AudioClip[] Clips()
+    {
+        if (clips != null && clips.Length > 0)
+            return clips;
+
+        if (shared != null)
+            return shared;
+
+        // Generated clips are shared by everything with footsteps. Rebuilt if a previous Play
+        // session's clips were destroyed (statics outlive it with domain reload off).
+        if (generated == null || generated[0] == null)
+            generated = new[] { ProceduralAudio.Footstep(3), ProceduralAudio.Footstep(17), ProceduralAudio.Footstep(41), ProceduralAudio.Footstep(66) };
+
+        return generated;
+    }
+
     private void Step(float speed)
     {
-        if (steps == null || steps.Length == 0)
+        steps ??= Clips();
+
+        if (steps.Length == 0)
             return;
 
         // Never the same clip twice in a row.

@@ -1,25 +1,31 @@
-using System.Threading.Tasks;
 using UnityEngine;
 
-// Background music: the two ProceduralMusic layers looping together. The ambient bed always
-// plays; the tension layer fades in while the player is in a locked combat room (fully for the
-// boss) and out once it's cleared or a menu/end screen is up. Created in code when the game
-// starts and kept across scene reloads, so a new run doesn't restart the track. Its sources
-// play through the mixer's Music group, so the music volume is that group's fader (without the
-// mixer they set GameSettings.MusicLevel themselves). The clips are built on a worker thread to
-// avoid a hitch.
+// Background music: three looping tracks set on the FloorGenerator's Music fields, crossfading
+// into one another. The hideout track plays on the main menu and in the hideout; the background
+// track on the floors (and on the death/victory screens); the boss track while a boss fight is on
+// (the player is in a locked boss room). A track that fades out pauses and picks up where it left
+// off when it comes back, except the boss track, which starts from the top for each fight. Created
+// in code when the game starts and kept across scene reloads, so a new run doesn't restart the
+// music. Its sources play through the mixer's Music group, so the music volume is that group's
+// fader (without the mixer they set GameSettings.MusicLevel themselves).
 public class MusicPlayer : MonoBehaviour
 {
-    private const float AmbientLevel = 0.55f;
-    private const float FadeSpeed = 0.35f;     // volume per second
+    private const float FadeSpeed = 0.5f;     // mix per second
+
+    private class Track
+    {
+        public AudioSource Source;
+        public float Level;                   // volume at full mix, before the music setting
+        public bool Restart;                  // start from the top each time it comes in
+        public float Mix;
+    }
 
     private static MusicPlayer instance;
 
-    private AudioSource ambient;
-    private AudioSource tension;
-    private Task<float[]> ambientData;
-    private Task<float[]> tensionData;
-    private float tensionMix;
+    private Track hideout;
+    private Track background;
+    private Track boss;
+    private Track[] tracks;
     private FloorGenerator floor;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -41,12 +47,10 @@ public class MusicPlayer : MonoBehaviour
 
     private void Awake()
     {
-        ambient = MakeSource("Ambient");
-        tension = MakeSource("Tension");
-
-        int seed = Random.Range(0, int.MaxValue);
-        ambientData = Task.Run(() => ProceduralMusic.Ambient(seed));
-        tensionData = Task.Run(() => ProceduralMusic.Tension(seed + 1));
+        hideout = MakeTrack("Hideout", 0.275f, false);
+        background = MakeTrack("Background", 0.275f, false);
+        boss = MakeTrack("Boss", 0.4f, true);
+        tracks = new[] { hideout, background, boss };
     }
 
     private void Start()
@@ -54,7 +58,7 @@ public class MusicPlayer : MonoBehaviour
         GameAudio.Reapply();
     }
 
-    private AudioSource MakeSource(string label)
+    private Track MakeTrack(string label, float level, bool restart)
     {
         AudioSource source = gameObject.AddComponent<AudioSource>();
         source.loop = true;
@@ -64,63 +68,80 @@ public class MusicPlayer : MonoBehaviour
         source.ignoreListenerPause = true;    // keeps playing (quietly) behind the pause menu
         source.volume = 0f;
         source.name = label;
-        return GameAudio.Route(source, true);
+        return new Track { Source = GameAudio.Route(source, true), Level = level, Restart = restart };
     }
 
     private void Update()
     {
-        StartWhenReady(ambient, ref ambientData, "Ambient Music");
-        StartWhenReady(tension, ref tensionData, "Tension Music");
+        if (floor == null)
+            floor = FindAnyObjectByType<FloorGenerator>();
 
-        // Tension: up in a fight, all the way for the boss; down in menus and on end screens.
-        float target = 0f;
-
-        if (!MainMenu.IsOpen && !VictoryScreen.IsShowing && !DeathScreen.IsShowing)
+        if (floor != null)
         {
-            if (floor == null)
-                floor = FindAnyObjectByType<FloorGenerator>();
-
-            Room room = floor != null ? floor.CurrentRoom : null;
-
-            if (room != null && room.IsLocked)
-                target = room.Type == RoomType.Boss ? 1f : 0.75f;
+            SetClip(hideout, floor.HideoutMusic);
+            SetClip(background, floor.BackgroundMusic);
+            SetClip(boss, floor.BossMusic);
         }
 
-        tensionMix = Mathf.MoveTowards(tensionMix, target, FadeSpeed * Time.unscaledDeltaTime);
-
+        Track wanted = Wanted();
         float paused = Time.timeScale == 0f && !MainMenu.IsOpen ? 0.5f : 1f;
         float level = (GameAudio.Music != null ? 1f : GameSettings.MusicLevel) * paused;
-        ambient.volume = level * AmbientLevel * (1f - tensionMix * 0.35f);
-        tension.volume = level * tensionMix;
 
-        // Start the tension layer in step with the ambient one, so the two stay in time.
-        if (tension.clip != null && ambient.isPlaying && !tension.isPlaying)
+        foreach (Track track in tracks)
         {
-            tension.timeSamples = ambient.timeSamples % tension.clip.samples;
-            tension.Play();
+            AudioSource source = track.Source;
+            float target = track == wanted ? 1f : 0f;
+
+            if (target > 0f && !source.isPlaying)
+            {
+                if (track.Restart || source.time <= 0f)
+                {
+                    source.time = 0f;
+                    source.Play();
+                }
+                else
+                {
+                    source.UnPause();
+                }
+            }
+
+            track.Mix = Mathf.MoveTowards(track.Mix, target, FadeSpeed * Time.unscaledDeltaTime);
+
+            if (track.Mix <= 0f && source.isPlaying)
+            {
+                if (track.Restart)
+                    source.Stop();
+                else
+                    source.Pause();
+            }
+
+            source.volume = level * track.Level * track.Mix;
         }
     }
 
-    private static void StartWhenReady(AudioSource source, ref Task<float[]> data, string clipName)
+    // Which track should be playing now (null if it has no clip).
+    private Track Wanted()
     {
-        if (data == null || !data.IsCompleted)
-            return;
+        Track wanted = background;
 
-        if (data.Status == TaskStatus.RanToCompletion)
+        if (MainMenu.IsOpen || (floor != null && floor.IsHideout))
         {
-            float[] samples = data.Result;
-            AudioClip clip = AudioClip.Create(clipName, samples.Length, 1, ProceduralMusic.SampleRate, false);
-            clip.SetData(samples, 0);
-            source.clip = clip;
-
-            if (clipName == "Ambient Music")
-                source.Play();
+            wanted = hideout;
         }
-        else
+        else if (floor != null && !VictoryScreen.IsShowing && !DeathScreen.IsShowing)
         {
-            Debug.LogWarning($"MusicPlayer: couldn't build {clipName}: {data.Exception?.GetBaseException().Message}");
+            Room room = floor.CurrentRoom;
+
+            if (room != null && room.IsLocked && room.Type == RoomType.Boss)
+                wanted = boss;
         }
 
-        data = null;
+        return wanted.Source.clip != null ? wanted : background;
+    }
+
+    private static void SetClip(Track track, AudioClip clip)
+    {
+        if (track.Source.clip == null)
+            track.Source.clip = clip;
     }
 }

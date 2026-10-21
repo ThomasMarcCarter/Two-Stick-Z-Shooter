@@ -3,7 +3,10 @@ using UnityEngine;
 // The beam of a laser sight attachment: a thin red line from the muzzle along the gun's aim to
 // the first thing a shot would hit (found at Gun.ShotHeight, where shots travel; the beam itself
 // is drawn level from the muzzle), with a brighter dot where it lands. Bright enough to bloom, so it
-// shows the aim in the dark. A child of the muzzle, so it holsters with the gun.
+// shows the aim in the dark. A child of the muzzle, so it holsters with the gun. A gun sprite
+// moves it to the lens of the laser drawn under its barrel each frame (so it runs after GunSprite),
+// and while the gun is tipped (reloading, a melee bash) has it follow the barrel, not the cursor.
+[DefaultExecutionOrder(270)]
 public class LaserSight : MonoBehaviour
 {
     private const float Range = 25f;
@@ -13,6 +16,9 @@ public class LaserSight : MonoBehaviour
     private Transform gun;
     private LineRenderer line;
     private Transform dot;
+
+    // The beam goes this transform's way (set by GunSprite) instead of toward the cursor.
+    public bool FollowBarrel { get; set; }
 
     public static LaserSight Create(Transform gun, Transform muzzle)
     {
@@ -68,7 +74,7 @@ public class LaserSight : MonoBehaviour
     {
         Vector3 start = transform.position;
         Vector3 probe = new Vector3(start.x, Gun.ShotHeight, start.z);
-        Vector3 direction = gun.forward;
+        Vector3 direction = FollowBarrel ? transform.forward : gun.forward;
         direction.y = 0f;
 
         if (direction.sqrMagnitude < 0.0001f)
@@ -77,7 +83,7 @@ public class LaserSight : MonoBehaviour
         direction.Normalize();
 
         // Toward the point under the cursor, as shots go (see Gun.Fire), while that's ahead.
-        if (Gun.PointerAimPoint(out Vector3 aim))
+        if (!FollowBarrel && Gun.PointerAimPoint(out Vector3 aim))
         {
             Vector3 toAim = aim - probe;
             toAim.y = 0f;
