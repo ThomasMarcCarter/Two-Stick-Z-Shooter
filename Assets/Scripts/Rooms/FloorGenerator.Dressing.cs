@@ -524,6 +524,7 @@ public partial class FloorGenerator
 
                 pillar.tag = "Wall";
                 pillar.GetComponent<Collider>().sharedMaterial = slidePhysics;
+                FurnitureSprite.Apply(pillar, "Pillar", Vector3.back, new Vector3(pillarSize, pillarHeight, pillarSize), position);
                 placed.Add(position);
             }
         }

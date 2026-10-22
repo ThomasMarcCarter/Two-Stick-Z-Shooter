@@ -131,13 +131,36 @@ public partial class FloorGenerator
         foreach (Vector2 corner in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
         {
             Vector3 post = hatchAt + new Vector3(corner.x * 1.9f, 0f, corner.y * 1.9f);
-            HideoutProp("Post", parent, post + Vector3.up * 0.5f, new Vector3(0.18f, 1f, 0.18f), yellow, yellow * 0.15f, true);
+            GameObject postProp = HideoutProp("Post", parent, post + Vector3.up * 0.5f, new Vector3(0.18f, 1f, 0.18f), yellow, yellow * 0.15f, true);
+
+            // The sprite has the stripes painted on.
+            if (FurnitureSprite.Apply(postProp, "HatchPost", Vector3.back, new Vector3(0.18f, 1f, 0.18f), post) != null)
+                continue;
+
             HideoutProp("Post Stripe", parent, post + Vector3.up * 0.75f, new Vector3(0.2f, 0.12f, 0.2f), dark, Color.black, false);
             HideoutProp("Post Stripe", parent, post + Vector3.up * 0.35f, new Vector3(0.2f, 0.12f, 0.2f), dark, Color.black, false);
         }
 
-        HideoutProp("Rail", parent, hatchAt + new Vector3(-1.9f, 0.7f, 0f), new Vector3(0.08f, 0.08f, 3.8f), yellow, Color.black, false);
-        HideoutProp("Rail", parent, hatchAt + new Vector3(1.9f, 0.7f, 0f), new Vector3(0.08f, 0.08f, 3.8f), yellow, Color.black, false);
+        foreach (float x in new[] { -1.9f, 1.9f })
+        {
+            GameObject rail = HideoutProp("Rail", parent, hatchAt + new Vector3(x, 0.7f, 0f), new Vector3(0.08f, 0.08f, 3.8f), yellow, Color.black, false);
+
+            // As sprites, in short lengths: one long upright sprite would be drawn over anyone
+            // standing beside its far end.
+            if (!FurnitureSprite.Has("Rail"))
+                continue;
+
+            for (int i = 0; i < 4; i++)
+            {
+                GameObject length = new GameObject("Rail Length");
+                length.transform.SetParent(rail.transform, false);
+                Vector3 at = hatchAt + new Vector3(x, 0.66f, -1.425f + i * 0.95f);
+                length.transform.position = at;
+                FurnitureSprite.Apply(length, "Rail", Vector3.back, new Vector3(0.08f, 0.08f, 0.95f), at);
+            }
+
+            rail.GetComponent<Renderer>().enabled = false;
+        }
 
         Light beam = new GameObject("Hatch Light").AddComponent<Light>();
         beam.transform.SetParent(parent, false);
@@ -205,8 +228,12 @@ public partial class FloorGenerator
         // A burning barrel with crates round it to sit on, west of the walk in: the hub's warm
         // corner.
         Vector3 fire = centre + new Vector3(-9f, 0f, -5.5f);
-        Furniture("FireBarrel", "Fire Barrel", parent, fire, Vector3.back, new Vector3(0.6f, 0.9f, 0.6f), new Color(0.2f, 0.12f, 0.08f), true, PrimitiveType.Cylinder);
+        GameObject barrel = Furniture("FireBarrel", "Fire Barrel", parent, fire, Vector3.back, new Vector3(0.6f, 0.9f, 0.6f), new Color(0.2f, 0.12f, 0.08f), true, PrimitiveType.Cylinder);
         Renderer flame = HideoutProp("Flame", parent, fire + Vector3.up * 0.95f, new Vector3(0.5f, 0.24f, 0.5f), new Color(1f, 0.5f, 0.15f), new Color(1f, 0.45f, 0.1f) * 2f, false, PrimitiveType.Cylinder).GetComponent<Renderer>();
+
+        // The barrel's sprite has its flames drawn in.
+        if (barrel.GetComponent<FurnitureSprite>() != null)
+            flame.enabled = false;
         Light warmth = new GameObject("Fire Light").AddComponent<Light>();
         warmth.transform.SetParent(parent, false);
         warmth.transform.position = fire + Vector3.up * 1.6f;
@@ -225,7 +252,18 @@ public partial class FloorGenerator
         }
 
         // A rug under the planning table.
-        HideoutProp("Rug", parent, table + Vector3.up * 0.01f, new Vector3(4f, 0.02f, 2.6f), new Color(0.35f, 0.12f, 0.1f), Color.black, false);
+        GameObject rug = HideoutProp("Rug", parent, table + Vector3.up * 0.01f, new Vector3(4f, 0.02f, 2.6f), new Color(0.35f, 0.12f, 0.1f), Color.black, false);
+        SpriteVisuals.FurnitureEntry rugSprite = SpriteVisuals.Current != null ? SpriteVisuals.Current.ForFurniture("Rug") : null;
+
+        // On an unscaled holder: the block is squashed flat, which would stretch a sprite under it.
+        if (rugSprite != null)
+        {
+            GameObject flat = new GameObject("Rug Sprite");
+            flat.transform.SetParent(parent, false);
+            flat.transform.position = rug.transform.position;
+            ItemSprite.ApplyFlat(flat, rugSprite.sheet, Vector2Int.zero, 4f);
+            rug.GetComponent<Renderer>().enabled = false;
+        }
 
         // A trophy on a shelf for each victory (up to five).
         int trophies = Mathf.Min(5, MetaProgress.Victories);
@@ -233,7 +271,8 @@ public partial class FloorGenerator
         if (trophies > 0)
         {
             Vector3 shelf = new Vector3(eastWall + 0.5f, 1.3f, centre.z);
-            HideoutProp("Trophy Shelf", parent, shelf, new Vector3(0.4f, 0.08f, 3f), new Color(0.35f, 0.25f, 0.15f), Color.black, false);
+            GameObject board = HideoutProp("Trophy Shelf", parent, shelf, new Vector3(0.4f, 0.08f, 3f), new Color(0.35f, 0.25f, 0.15f), Color.black, false);
+            FurnitureSprite.Apply(board, "TrophyShelf", Vector3.left, new Vector3(3f, 0.08f, 0.4f), shelf - Vector3.up * 0.04f);
 
             for (int i = 0; i < trophies; i++)
             {
@@ -279,9 +318,10 @@ public partial class FloorGenerator
         StationConsole.Create(Npcs.Station(area.Owner), station, inward, room.transform);
 
         // The medic stands by the far bed, seeing to it, well clear of the med station's front so
-        // talking to them and using the station don't get in each other's way.
+        // talking to them and using the station don't get in each other's way, and just clear of
+        // the bed's side so its sprite doesn't cut into them.
         if (area.Owner == NpcKind.Medic)
-            HideoutNpc.Create(area.Owner, station + inward * 3.2f - side * 1.7f, -side, room.transform);
+            HideoutNpc.Create(area.Owner, station + inward * 2.9f - side * 1.7f, -side, room.transform);
         else
             HideoutNpc.Create(area.Owner, station + inward * 2.2f + side * 1.8f, inward, room.transform);
         DressArea(area.Owner, room, middle, back, side, area.Depth, area.Width);
@@ -297,8 +337,10 @@ public partial class FloorGenerator
         Color sheet = new Color(0.52f, 0.5f, 0.45f);
 
         // A sheet thrown over something big, and a smaller lump beside it.
-        HideoutProp("Dust Sheet", parent, spot + Vector3.up * 0.55f, RotateSize(Quaternion.LookRotation(inward), new Vector3(2.3f, 1.1f, 1.2f)), sheet, Color.black, true);
-        HideoutProp("Dust Sheet", parent, spot + side * 1.9f + Vector3.up * 0.35f, RotateSize(Quaternion.LookRotation(inward), new Vector3(0.9f, 0.7f, 0.8f)), sheet * 0.95f, Color.black, true);
+        GameObject big = HideoutProp("Dust Sheet", parent, spot + Vector3.up * 0.55f, RotateSize(Quaternion.LookRotation(inward), new Vector3(2.3f, 1.1f, 1.2f)), sheet, Color.black, true);
+        GameObject small = HideoutProp("Dust Sheet", parent, spot + side * 1.9f + Vector3.up * 0.35f, RotateSize(Quaternion.LookRotation(inward), new Vector3(0.9f, 0.7f, 0.8f)), sheet * 0.95f, Color.black, true);
+        FurnitureSprite.Apply(big, "DustSheet", inward, new Vector3(2.3f, 1.1f, 1.2f), spot);
+        FurnitureSprite.Apply(small, "DustSheetSmall", inward, new Vector3(0.9f, 0.7f, 0.8f), spot + side * 1.9f);
 
         Color wood = new Color(0.3f, 0.24f, 0.16f);
         Color metal = new Color(0.22f, 0.23f, 0.24f);
@@ -345,6 +387,13 @@ public partial class FloorGenerator
     {
         if (prop == null)
             return;
+
+        // A sprite has its own dusty frames.
+        if (prop.TryGetComponent(out FurnitureSprite sprite))
+        {
+            sprite.Dusty = true;
+            return;
+        }
 
         Color dust = new Color(0.42f, 0.4f, 0.36f);
         MaterialPropertyBlock block = new MaterialPropertyBlock();
@@ -524,6 +573,7 @@ public partial class FloorGenerator
 
         pillar.tag = "Wall";
         pillar.GetComponent<Collider>().sharedMaterial = slidePhysics;
+        FurnitureSprite.Apply(pillar, "Pillar", Vector3.back, new Vector3(pillarSize, pillarHeight, pillarSize), position);
     }
 
     // Cardboard box clusters at given spots against walls (position, the wall's outward direction).
@@ -566,7 +616,8 @@ public partial class FloorGenerator
 
     // A furniture model stood on the floor at `position`, facing `front`, stretched to fit `size`
     // (its own width, height, depth) so it takes the same space the block did; solid ones get a
-    // box collider that size (the navmesh is built from colliders). Null without a model.
+    // box collider that size (the navmesh is built from colliders), and with the sprite art it's
+    // drawn as its sprite. Null without a model.
     private GameObject PropModel(string model, string name, Transform parent, Vector3 position, Vector3 front, Vector3 size,
         bool solid = true)
     {
@@ -605,6 +656,8 @@ public partial class FloorGenerator
             box.size = size;
         }
 
+        // With the sprite art, drawn as its pixel sprite (the model keeps casting the shadow).
+        FurnitureSprite.Apply(root, model, front, size, position);
         return root;
     }
 

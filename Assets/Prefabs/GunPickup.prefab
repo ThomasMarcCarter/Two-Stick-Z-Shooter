@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8a9a779f1e669a04c857887fd2ec9324, type: 2}
+  m_sharedMaterial: {fileID: 6454179766285137459, guid: 8a9a779f1e669a04c857887fd2ec9324, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -253,7 +253,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb5acdbed76e3794aade1d2de9b0e524, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunPickupUI
-  pickupText: {fileID: 2230051416938206585}
 --- !u!1 &5323582094695017441
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,5 +433,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aaae0a141f289b4b9faffaac76807a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GunPickup
+  modelScale: 1.6
+  modelHeight: 0.25
+  floorHeight: 0.5
   weaponPrefab: {fileID: 1053666970914164882, guid: e234c78874a42be4dabafedcf819552c, type: 3}
   pickupUI: {fileID: 1784551192435840416}
+  startWithFullAmmo: 0

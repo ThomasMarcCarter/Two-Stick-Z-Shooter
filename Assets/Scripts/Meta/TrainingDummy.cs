@@ -6,6 +6,8 @@ using UnityEngine;
 // flashes it, pops up the damage as a floating number, and its label keeps score: the last hit,
 // damage per second over the last few seconds, and the total. Guns don't use ammo in the hideout
 // (Gun.FreeAmmo), so trying them out costs nothing. Built in code by the FloorGenerator.
+// With the sprite art it's drawn as a pixel sprite (SpriteVisuals.trainingDummy) that rocks on
+// screen as the model's bag would and flashes white when hit; the model only casts the shadow.
 public class TrainingDummy : MonoBehaviour
 {
     private const float DpsWindow = 3f;
@@ -20,6 +22,8 @@ public class TrainingDummy : MonoBehaviour
     private float flash;
     private int lastHit;
     private int total;
+    private PixelSprite sprite;
+    private MaterialPropertyBlock spriteFlash;
 
     public static TrainingDummy Create(Vector3 position, Vector3 facing, Transform parent)
     {
@@ -62,9 +66,53 @@ public class TrainingDummy : MonoBehaviour
         body.height = 2f;
         body.radius = 0.32f;
 
+        dummy.UseSprite(facing);
+
         // Above the dummy on screen, not over it, so it can be seen being hit while reading the score.
         ProximityLabel.Add(root, 2.3f, 6f, new Color(0.35f, 1f, 0.55f), dummy.LabelText, 0.8f);
         return dummy;
+    }
+
+    // Its pixel sprite, standing on its base and facing the way it does (the art faces right); the
+    // model's parts only cast the shadow.
+    private void UseSprite(Vector3 facing)
+    {
+        SpriteSheet sheet = SpriteVisuals.Current != null ? SpriteVisuals.Current.trainingDummy : null;
+
+        if (sheet == null)
+            return;
+
+        sprite = PixelSprite.Create("Dummy Sprite", transform, sheet, PixelSprite.Mode.Facing);
+        sprite.Standing = true;
+        sprite.Position = transform.position;
+        sprite.Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        Camera camera = Camera.main;
+        bool left = camera != null && Vector3.Dot(facing, camera.transform.right) < 0f;
+        sprite.SetFrame(0, 0, left);
+
+        foreach (Renderer part in GetComponentsInChildren<Renderer>())
+        {
+            if (part.GetComponent<PixelSprite>() == null)
+                part.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        }
+    }
+
+    // The sprite leans the way the bag does on screen, and flashes white as it's hit.
+    private void UpdateSprite()
+    {
+        Camera camera = Camera.main;
+
+        if (camera != null)
+        {
+            Vector3 up = bag.up;
+            sprite.Angle = Mathf.Atan2(-Vector3.Dot(up, camera.transform.right), Mathf.Max(0.01f, Vector3.Dot(up, Vector3.up))) * Mathf.Rad2Deg;
+        }
+
+        spriteFlash ??= new MaterialPropertyBlock();
+        spriteFlash.SetColor("_BaseColor", Color.white);
+        spriteFlash.SetColor("_EmissionColor", Color.white * flash * 0.8f);
+        sprite.Renderer.SetPropertyBlock(spriteFlash);
     }
 
     private static Renderer Part(Transform parent, string name, PrimitiveType shape, Vector3 position, Vector3 size, Material material,
@@ -117,6 +165,9 @@ public class TrainingDummy : MonoBehaviour
         tilt += tiltSpeed * dt;
         tilt = Vector2.ClampMagnitude(tilt, 25f);
         bag.localRotation = Quaternion.Euler(tilt.x, 0f, tilt.y);
+
+        if (sprite != null)
+            UpdateSprite();
 
         if (flash > 0f)
         {

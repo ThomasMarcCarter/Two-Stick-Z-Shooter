@@ -38,8 +38,15 @@ MonoBehaviour:
     frames: 1
     fps: 1
     directional: 0
+  - name: corpse
+    row: 16
+    frames: 4
+    fps: 1
+    directional: 0
   bodyRadius: 0.2
+  hitRadius: 0
   bodyHeight: 1.35
   holdHeight: 15
   holdReach: 0.3
   muzzle: {x: 15, y: 10}
+  footprint: {x: 1, y: 1, z: 1}

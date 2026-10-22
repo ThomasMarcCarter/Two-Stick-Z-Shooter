@@ -8,7 +8,8 @@ using UnityEngine.AI;
 // anything earned or picked up afterwards.
 // Its label lists what's waiting to go, its screen glows (brighter for a moment after sending),
 // the beacon on its aerial blinks, and the radio confirms what the hideout received. The body is
-// the Uplink model (FloorGenerator), or a plain block without one.
+// the Uplink model (FloorGenerator), or a plain block without one; with the sprite art it's drawn
+// as its pixel sprite (FurnitureSprite), screen and beacon included.
 public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
 {
     private static readonly Color ScreenColour = new Color(0.35f, 1f, 0.55f);
@@ -75,6 +76,10 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
         obstacle.carving = true;
 
         terminal.label = PickupLabel.Create(root.transform, 2.5f);
+
+        // With the sprite art, drawn as its pixel sprite (screen and blinking beacon included).
+        Vector3 middle = root.transform.TransformPoint(box.center);
+        FurnitureSprite.Apply(root, "Uplink", facing, box.size, new Vector3(middle.x, 0f, middle.z));
         return terminal;
     }
 

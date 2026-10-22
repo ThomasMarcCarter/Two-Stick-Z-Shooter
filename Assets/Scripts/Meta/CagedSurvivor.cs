@@ -9,7 +9,9 @@ using UnityEngine.AI;
 // walk to the door along the floor's navmesh (round boxes and pillars), and head off to the
 // hideout, where they set up their station from then on.
 // The cage is solid, built before the floor's navmesh so zombies path round it, and stops
-// bullets. Built in code by the FloorGenerator.
+// bullets. Built in code by the FloorGenerator. With the sprite art it's drawn as pixel sprites in
+// two layers, the bars behind the survivor and the bars (and roof) in front of them, on a flat base
+// plate (FurnitureSprite "CageBack"/"CageFront", "CageBase"); the open door is their second rows.
 public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
 {
     private const float CageSize = 1.7f;
@@ -31,6 +33,7 @@ public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
     private bool freed;
     private float freedAt;
     private List<Vector3> route;
+    private FurnitureSprite[] layers = new FurnitureSprite[0];
 
     public NpcKind Kind => kind;
     public bool Freed => freed;
@@ -54,6 +57,7 @@ public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
         cage.room = room;
         cage.exit = exit;
         cage.BuildCage(barMaterial);
+        cage.UseSprites();
 
         GameObject body = new GameObject(Npcs.Name(kind));
         body.transform.SetParent(root.transform, false);
@@ -123,6 +127,44 @@ public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
         solid.center = new Vector3(0f, CageHeight / 2f, 0f);
         solid.size = new Vector3(CageSize + 0.1f, CageHeight, CageSize + 0.1f);
         gameObject.tag = "Wall";
+    }
+
+    // With the sprite art: the cage's model only casts the shadow, and it's drawn as two layers of
+    // bars, the back one just behind the middle (where the survivor stands) and the front one on
+    // its south edge, over a flat base plate.
+    private void UseSprites()
+    {
+        if (!FurnitureSprite.Has("CageFront") || !FurnitureSprite.Has("CageBack"))
+            return;
+
+        foreach (Renderer part in GetComponentsInChildren<Renderer>())
+            part.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+
+        Camera camera = Camera.main;
+        Vector3 away = camera != null ? camera.transform.forward : Vector3.forward;
+        away.y = 0f;
+        away = away.sqrMagnitude > 0.0001f ? away.normalized : Vector3.forward;
+        float full = CageSize + 0.1f;
+        const float back = 0.88f;
+
+        layers = new[]
+        {
+            FurnitureSprite.Apply(Layer("Cage Back"), "CageBack", transform.forward, new Vector3(back, CageHeight, back),
+                transform.position + away * (back / 2f + 0.02f)),
+            FurnitureSprite.Apply(Layer("Cage Front"), "CageFront", transform.forward, new Vector3(full, CageHeight, full), transform.position)
+        };
+
+        SpriteVisuals.FurnitureEntry plate = SpriteVisuals.Current.ForFurniture("CageBase");
+
+        if (plate != null)
+            ItemSprite.ApplyFlat(Layer("Cage Base"), plate.sheet, Vector2Int.zero, full, 0.01f);
+    }
+
+    private GameObject Layer(string name)
+    {
+        GameObject layer = new GameObject(name);
+        layer.transform.SetParent(transform, false);
+        return layer;
     }
 
     private static void Block(string name, Vector3 position, Vector3 size, Material material, Color colour, Transform parent)
@@ -226,6 +268,12 @@ public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
 
         // The door swings open; the cage stays solid but the survivor steps out through it.
         door.localRotation = Quaternion.Euler(0f, -110f, 0f);
+
+        foreach (FurnitureSprite layer in layers)
+        {
+            if (layer != null)
+                layer.Open = true;
+        }
 
         if (animator != null)
         {

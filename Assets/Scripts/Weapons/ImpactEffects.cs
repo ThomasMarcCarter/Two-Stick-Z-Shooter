@@ -6,10 +6,17 @@ using UnityEngine;
 // particle systems (one burst per hit, so heavy fire stays cheap). Scorch marks are small decals
 // parented to what was hit: a zombie's go with it, and wall marks are capped, oldest first.
 // Built the first time a bullet hits anything; the materials come from that bullet.
+// With the sprite art, blood is pixel art too: a spray out of the wound (a lit SpriteEffect, toward
+// the way the shot went), a spatter on the floor beyond it, and a pool where a zombie fell, all
+// flat sprites from SpriteVisuals' blood sheets (Tools/Sprites/blood.py), oldest first past the cap.
+// The few square droplets left die on the floor instead of falling through it.
 public static class ImpactEffects
 {
     private const int MaxWallMarks = 80;
     private const int MaxFloorSplats = 60;
+    private const int MaxDrips = 120;
+    private const float SplashWidth = 1.2f;
+    private const float SplashFps = 18f;
 
     private static ParticleSystem sparks;
     private static ParticleSystem blood;
@@ -18,6 +25,7 @@ public static class ImpactEffects
     private static Mesh quad;
     private static readonly Queue<GameObject> wallMarks = new Queue<GameObject>();
     private static readonly Queue<GameObject> floorSplats = new Queue<GameObject>();
+    private static readonly Queue<GameObject> drips = new Queue<GameObject>();
     private static MaterialPropertyBlock markBlock;
     private static Materials known;
     private static bool haveKnown;
@@ -36,6 +44,7 @@ public static class ImpactEffects
         haveKnown = false;
         wallMarks.Clear();
         floorSplats.Clear();
+        drips.Clear();
     }
 
     // Walls are boxes scaled unevenly, which would skew a mark parented to them, so wall marks
@@ -45,6 +54,10 @@ public static class ImpactEffects
         Ensure(materials);
         Burst(sparks, point, normal, 10, 3f, 8f, 0.1f, 0.25f, 0.08f, 0.14f, 70f,
             new Color(1f, 0.95f, 0.75f), new Color(1f, 0.55f, 0.15f));
+
+        // A pillar drawn as a sprite has no surface to mark.
+        if (wall != null && wall.GetComponentInParent<FurnitureSprite>() != null)
+            return;
 
         GameObject mark = Mark(point, normal, wall != null ? wall.parent : null, WallScorch, Random.Range(0.2f, 0.3f));
 
@@ -80,6 +93,20 @@ public static class ImpactEffects
             debris = MakeSystem("Impact Debris", materials.Blood, 3f, false);
 
         Burst(debris, point, normal, count, 1.5f, 4f, 0.35f, 0.7f, 0.05f, 0.11f, 65f, a, b);
+    }
+
+    // With the sprite art: a pixel pool of blood where a zombie fell, size across, randomly turned
+    // (parented to its room, oldest first past the cap). False without the sheet.
+    public static bool FloorPool(Vector3 position, float size, Transform room)
+    {
+        SpriteSheet sheet = SpriteVisuals.Current != null ? SpriteVisuals.Current.bloodPool : null;
+
+        if (sheet == null || sheet.texture == null)
+            return false;
+
+        Vector2 turn = Random.insideUnitCircle.normalized;
+        Decal(sheet, position, new Vector3(turn.x, 0f, turn.y), size, room, floorSplats, MaxFloorSplats);
+        return true;
     }
 
     // A pool of blood on the floor where a zombie fell, size across, randomly turned. Parented to
@@ -147,12 +174,74 @@ public static class ImpactEffects
 
         Color dark = new Color(0.35f, 0.02f, 0.02f);
         Color bright = new Color(0.6f, 0.04f, 0.03f);
-        Burst(blood, point, normal, 9, 1.5f, 4f, 0.3f, 0.5f, 0.12f, 0.22f, 60f, bright, dark);
-        Burst(blood, point, incoming.normalized, 6, 1.5f, 3.5f, 0.25f, 0.45f, 0.1f, 0.18f, 35f, dark, bright);
+        bool sprites = SpriteVisuals.Current != null && SpriteVisuals.Current.bloodSplash != null;
+        Burst(blood, point, normal, sprites ? 3 : 9, 1.5f, 4f, 0.3f, 0.5f, 0.12f, 0.22f, 60f, bright, dark);
+        Burst(blood, point, incoming.normalized, sprites ? 3 : 6, 1.5f, 3.5f, 0.25f, 0.45f, 0.1f, 0.18f, 35f, dark, bright);
+
+        if (sprites)
+            SprayAndSpatter(point, incoming, body);
 
         // Goes with the zombie (and is destroyed with it). Sprites have no surface to mark.
         if (body == null || body.GetComponent<SpriteCharacter>() == null)
             Mark(point, normal, surface, FleshScorch, Random.Range(0.16f, 0.24f));
+    }
+
+    // The sprite art's blood for a hit: a spray in the air out of the wound, toward the way the shot
+    // went (mirrored when that's to the left on screen), and a spatter on the floor beyond the body.
+    private static void SprayAndSpatter(Vector3 point, Vector3 incoming, Transform body)
+    {
+        SpriteVisuals visuals = SpriteVisuals.Current;
+        Enemy enemy = body != null ? body.GetComponent<Enemy>() : null;
+        Transform room = enemy != null && enemy.Room != null ? enemy.Room.transform : null;
+        Vector3 along = new Vector3(incoming.x, 0f, incoming.z);
+
+        if (along.sqrMagnitude < 0.0001f)
+        {
+            Vector2 any = Random.insideUnitCircle.normalized;
+            along = new Vector3(any.x, 0f, any.y);
+        }
+
+        along.Normalize();
+        Camera camera = Camera.main;
+        bool left = camera != null && Vector3.Dot(along, camera.transform.right) < 0f;
+        SpriteSheet splash = visuals.bloodSplash;
+        int variants = Mathf.Max(1, splash.texture.height / splash.frameHeight);
+        SpriteEffect.Play(splash, Random.Range(0, variants), SplashFps, point, SplashWidth, room, false, point.y, left);
+
+        if (visuals.bloodDrip != null && visuals.bloodDrip.texture != null)
+        {
+            Vector3 origin = body != null ? body.position : point;
+            Decal(visuals.bloodDrip, origin + along * Random.Range(0.35f, 1.1f), along, Random.Range(0.5f, 0.8f), room, drips, MaxDrips);
+        }
+    }
+
+    // A flat pixel sprite on the floor (blood), size across, its art's right turned along `along`,
+    // a random variant from the sheet's first row, sometimes flipped. Capped per queue.
+    private static void Decal(SpriteSheet sheet, Vector3 position, Vector3 along, float size, Transform room, Queue<GameObject> queue, int cap)
+    {
+        GameObject holder = new GameObject(sheet.name + " Decal");
+        holder.transform.SetPositionAndRotation(new Vector3(position.x, 0f, position.z),
+            Quaternion.LookRotation(along) * Quaternion.Euler(0f, -90f, 0f));
+
+        if (room != null)
+            holder.transform.SetParent(room, true);
+
+        PixelSprite sprite = PixelSprite.Create("Sprite", holder.transform, sheet, PixelSprite.Mode.Flat);
+        sprite.Scale = size / (sheet.frameWidth / Mathf.Max(1f, sheet.pixelsPerUnit));
+        // Slightly different heights, so overlapping ones don't flicker; above the litter.
+        sprite.Lift = Random.Range(0.002f, 0.008f);
+        sprite.Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        sprite.SetFrame(Random.Range(0, Mathf.Max(1, sheet.texture.width / sheet.frameWidth)), 0, false, Random.value < 0.5f);
+
+        queue.Enqueue(holder);
+
+        while (queue.Count > cap)
+        {
+            GameObject oldest = queue.Dequeue();
+
+            if (oldest != null)
+                Object.Destroy(oldest);
+        }
     }
 
     // Where a shot along `incoming` through `point` meets the body's model (its "Model" child):
@@ -333,12 +422,23 @@ public static class ImpactEffects
         size.enabled = true;
         size.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(1f, stretched ? 0.3f : 0.6f)));
 
-        // Blood soon loses its speed in the air; sparks keep going until they burn out.
+        // Blood soon loses its speed in the air, and dies on the floor rather than falling through
+        // it; sparks keep going until they burn out.
         if (!stretched)
         {
             ParticleSystem.LimitVelocityOverLifetimeModule drag = system.limitVelocityOverLifetime;
             drag.enabled = true;
             drag.drag = 2f;
+
+            Transform floor = new GameObject("Floor").transform;
+            floor.SetParent(go.transform, false);
+            ParticleSystem.CollisionModule collision = system.collision;
+            collision.enabled = true;
+            collision.type = ParticleSystemCollisionType.Planes;
+            collision.SetPlane(0, floor);
+            collision.bounce = 0f;
+            collision.dampen = 1f;
+            collision.lifetimeLoss = 1f;
         }
 
         ParticleSystemRenderer renderer = go.GetComponent<ParticleSystemRenderer>();

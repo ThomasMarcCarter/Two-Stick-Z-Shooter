@@ -126,7 +126,7 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private GameObject[] floorLitter = new GameObject[0];
     [Tooltip("Small things that get knocked about: cans, bottles, cups, bags.")]
     [SerializeField] private GameObject[] smallTrash = new GameObject[0];
-    [Tooltip("Big pieces: barriers, cinder blocks, tyres, trash bags.")]
+    [Tooltip("Big pieces: cinder blocks, tyres, trash bags.")]
     [SerializeField] private GameObject[] largeTrash = new GameObject[0];
     [SerializeField] private Vector2Int litterPerCell = new Vector2Int(8, 14);
     [SerializeField] private Vector2Int smallTrashPerCell = new Vector2Int(6, 12);

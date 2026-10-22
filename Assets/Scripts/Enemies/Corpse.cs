@@ -1,13 +1,15 @@
 using UnityEngine;
 
-// What's left of a zombie (or boss) drawn as a sprite: its sheet's "dead" frame, lying where it
-// fell, facing the way it was going, for a few seconds after the kill. Then it sinks out of sight
+// What's left of a zombie (or boss) drawn as a sprite: one of its sheet's "corpse" frames (the
+// dead frame bloodied, dirtied and tinted a few ways by Tools/Sprites/corpses.py; the plain "dead"
+// frame without them), lying where it fell, facing the way it was going, for a few seconds after
+// the kill. Then it sinks out of sight
 // through the floor (the floor hides it as it goes down) and is removed. No collider: it's only
 // to look at. Parented to the room, so a new floor clears them. Left by Enemy when it dies.
 public class Corpse : MonoBehaviour
 {
-    private const float Lifetime = 8f;
-    private const float SinkTime = 1f;
+    private const float Lifetime = 4f;
+    private const float SinkTime = 0.6f;
     private const float SinkDepth = 0.6f;
 
     private PixelSprite sprite;
@@ -17,7 +19,7 @@ public class Corpse : MonoBehaviour
     {
         SpriteCharacter body = enemy != null ? enemy.GetComponent<SpriteCharacter>() : null;
         SpriteSheet sheet = body != null && body.Sprite != null ? body.Sprite.Sheet : null;
-        SpriteSheet.Clip dead = sheet != null ? sheet.Find("dead") : null;
+        SpriteSheet.Clip dead = sheet != null ? sheet.Find("corpse") ?? sheet.Find("dead") : null;
 
         if (dead == null)
             return;
@@ -32,7 +34,7 @@ public class Corpse : MonoBehaviour
 
         // Lying head to the right in the art: mirrored when it fell facing left.
         bool left = body.CurrentFacing.Mirror;
-        corpse.sprite.SetFrame(0, dead.row, left);
+        corpse.sprite.SetFrame(Random.Range(0, Mathf.Max(1, dead.frames)), dead.row, left);
         corpse.sinkAt = Time.time + Lifetime;
     }
 

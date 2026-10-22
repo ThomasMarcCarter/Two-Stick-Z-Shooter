@@ -37,6 +37,8 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet supplyCrate;
     [Tooltip("The floor hatch from above: closed, then open.")]
     public SpriteSheet hatch;
+    [Tooltip("The hideout range's training dummy, standing, facing right (TrainingDummy).")]
+    public SpriteSheet trainingDummy;
 
     [Header("Clutter (see ClutterSprites)")]
     public SpriteSheet clutterBoxes;
@@ -51,6 +53,33 @@ public class SpriteVisuals : ScriptableObject
             case ClutterSprites.Sheet.Small: return clutterSmall;
             default: return clutterFlat;
         }
+    }
+
+    [Header("Furniture (see FurnitureSprite)")]
+    [Tooltip("Furniture, stations, the uplink and pillars by name (Tools/Sprites/furniture.py).")]
+    public FurnitureEntry[] furniture = new FurnitureEntry[0];
+
+    [System.Serializable]
+    public class FurnitureEntry
+    {
+        public string name = "Crate";
+        [Tooltip("Rows: facing the camera, right, away, left, then the same four dusty; columns: animation frames.")]
+        public SpriteSheet sheet;
+        [Tooltip("The glowing pixels (screens, lamps, fire) in the same layout, drawn unlit on top. Optional.")]
+        public SpriteSheet glow;
+        public int frames = 1;
+        public float fps;
+    }
+
+    public FurnitureEntry ForFurniture(string name)
+    {
+        foreach (FurnitureEntry entry in furniture)
+        {
+            if (entry != null && entry.name == name && entry.sheet != null)
+                return entry;
+        }
+
+        return null;
     }
 
     [Header("Guns (by Gun prefab name)")]
@@ -80,6 +109,14 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet flame;
     [Tooltip("A molotov's burning fuel from above: row 0 burning loop, row 1 dying to char.")]
     public SpriteSheet firePool;
+
+    [Header("Blood")]
+    [Tooltip("Where a zombie fell, from above: one row of pools (Tools/Sprites/blood.py).")]
+    public SpriteSheet bloodPool;
+    [Tooltip("A shot's spatter on the floor, from above, thrown toward the right: one row of variants.")]
+    public SpriteSheet bloodDrip;
+    [Tooltip("A shot's spray in the air, standing, toward the right: a row of frames per variant.")]
+    public SpriteSheet bloodSplash;
 
     [Header("Acid")]
     [Tooltip("A bloater bursting / a glob splashing: one row of frames, standing up from the floor.")]

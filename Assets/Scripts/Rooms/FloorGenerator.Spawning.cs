@@ -322,7 +322,9 @@ public partial class FloorGenerator
         {
             EnemiesKilled++;
             lastDeaths[room] = dead.transform.position;
-            if (bloodSplatMaterials != null && bloodSplatMaterials.Length > 0)
+            // The sprite art's pixel pool, else a splat decal.
+            if (!ImpactEffects.FloorPool(dead.transform.position, boss ? 3f : 1.6f, room.transform)
+                && bloodSplatMaterials != null && bloodSplatMaterials.Length > 0)
             {
                 Material splat = bloodSplatMaterials[UnityEngine.Random.Range(0, bloodSplatMaterials.Length)];
                 ImpactEffects.FloorSplat(dead.transform.position, boss ? 3f : 1.5f, room.transform, splat);

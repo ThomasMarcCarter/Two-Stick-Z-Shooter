@@ -308,6 +308,10 @@ public class Gun : MonoBehaviour
         if (Time.time < nextFireTime)
             return;
 
+        // Debug god mode: the magazine never runs dry.
+        if (HolderInGodMode)
+            currentAmmo = GetMagazineSize();
+
         if (currentAmmo <= 0)
         {
             if (!dryClickedThisPull)
@@ -408,8 +412,8 @@ public class Gun : MonoBehaviour
             );
         }
 
-        // One shell per shot, however many pellets it holds (none in the hideout).
-        if (!FreeAmmo)
+        // One shell per shot, however many pellets it holds (none in the hideout, or in god mode).
+        if (!FreeAmmo && !HolderInGodMode)
             currentAmmo--;
 
         if (muzzleFlash != null && !HidesFlash)
@@ -617,6 +621,9 @@ public class Gun : MonoBehaviour
     {
         return Mathf.Max(1, Mathf.RoundToInt(magazineSize * Product(a => a.magazineMultiplier)));
     }
+
+    // Held by the player with the debug menu's god mode on.
+    private bool HolderInGodMode => transform.root.TryGetComponent(out PlayerHealth holder) && holder.GodMode;
 
     public void SetCurrentAmmo(int ammo)
     {

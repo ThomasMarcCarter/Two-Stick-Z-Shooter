@@ -48,6 +48,10 @@ public class SpriteSheet : ScriptableObject
     [Tooltip("The muzzle's pixel, from the bottom-left of the frame (guns only).")]
     public Vector2 muzzle = new Vector2(15f, 10f);
 
+    [Header("Furniture")]
+    [Tooltip("The size the piece is drawn for, in metres (width, height, depth in its own axes); FurnitureSprite scales it to the piece it stands in for.")]
+    public Vector3 footprint = Vector3.one;
+
     public float HitRadius => hitRadius > 0f ? hitRadius : bodyRadius;
 
     public Clip Find(string name)

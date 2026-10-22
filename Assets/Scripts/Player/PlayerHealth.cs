@@ -28,7 +28,7 @@ public class PlayerHealth : MonoBehaviour
     public bool IsFull => Health >= maxHealth;
     public bool IsInvulnerable => Time.time < invulnerableUntil;
 
-    // Debug: ignore all damage.
+    // Debug: ignore all damage, and the held gun's magazine never runs dry (Gun).
     public bool GodMode { get; set; }
 
     public event Action<PlayerHealth> Damaged;

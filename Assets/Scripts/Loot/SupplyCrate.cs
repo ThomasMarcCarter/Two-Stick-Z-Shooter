@@ -25,6 +25,7 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
     private Light glow;
     private bool opened;
     private ItemSprite sprite;
+    private FurnitureSprite furnitureSprite;
     private bool vanishing;
     private float lidAngle;
 
@@ -105,7 +106,13 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
         label = PickupLabel.Create(transform, 1.6f);
         label.Compactable = true;
 
-        sprite = ItemSprite.Apply(gameObject, SpriteVisuals.Current != null ? SpriteVisuals.Current.supplyCrate : null, Vector2Int.zero, castsShadow: true);
+        // With the sprite art: seen from its side like the furniture (shut and lit, shut and dark,
+        // open), the model casting the shadow; the older single-view sprite without that sheet.
+        Vector3 middle = transform.TransformPoint(box.center);
+        furnitureSprite = FurnitureSprite.Apply(gameObject, "SupplyCrate", transform.forward, box.size, new Vector3(middle.x, 0f, middle.z));
+
+        if (furnitureSprite == null)
+            sprite = ItemSprite.Apply(gameObject, SpriteVisuals.Current != null ? SpriteVisuals.Current.supplyCrate : null, Vector2Int.zero, castsShadow: true);
     }
 
     private static Renderer Part(string name, Transform parent, Vector3 position, Vector3 size, Material material, Color colour,
@@ -262,6 +269,9 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
 
         if (glow != null)
             glow.intensity = opened ? 0.5f : on ? 1.6f : 0.8f;
+
+        if (furnitureSprite != null)
+            furnitureSprite.Column = opened ? 2 : on ? 0 : 1;
     }
 
     private string LabelText()

@@ -29,9 +29,191 @@ MonoBehaviour:
   items: {fileID: 11400000, guid: 836e2ec9e8a13154a864df5dffe00629, type: 2}
   supplyCrate: {fileID: 11400000, guid: 70af3724c8872674dad2a774c3720816, type: 2}
   hatch: {fileID: 11400000, guid: 93fcc0b51182bc744a663d6f4d03965a, type: 2}
+  trainingDummy: {fileID: 11400000, guid: 5ed0ac8e31d638b4cb9323f6c6e4a3ba, type: 2}
   clutterBoxes: {fileID: 11400000, guid: 38a4b204c1e21674ab8ea68975846bbe, type: 2}
   clutterSmall: {fileID: 11400000, guid: 1a7fdc08647ebaa41b28fc7c07943960, type: 2}
   clutterFlat: {fileID: 11400000, guid: 5456c460880b67d4787671c8ba848e9a, type: 2}
+  furniture:
+  - name: Crate
+    sheet: {fileID: 11400000, guid: 23d05292d41f39a4fb07356e2b0151b7, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DrumRed
+    sheet: {fileID: 11400000, guid: b1248c0c2cf7ebe4da0a004e19465bc3, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DrumBlue
+    sheet: {fileID: 11400000, guid: a1b02dd3d7ac9e64592fb97fe27d96e3, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Shelving
+    sheet: {fileID: 11400000, guid: ecdc8de4009dd8d43ae60dd161e54857, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: AmmoCrate
+    sheet: {fileID: 11400000, guid: e8f41bf62621b974a92ea74977a44aaa, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: HospitalBed
+    sheet: {fileID: 11400000, guid: 5ec07e89bda25f84ca70aac3cc95bc10, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: MedCabinet
+    sheet: {fileID: 11400000, guid: 76625c590004296418d5a123191e8202, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Screen
+    sheet: {fileID: 11400000, guid: 1a9894cba448c65468a2b515da6c4af6, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BunkBed
+    sheet: {fileID: 11400000, guid: e5087092576c667478132fc66d354de7, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Locker
+    sheet: {fileID: 11400000, guid: 2e76f7ffc0e8f0141b2175542dd69aa5, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: StashLocker
+    sheet: {fileID: 11400000, guid: 6df3bf39bd1258e4eac0612d2ccdebee, type: 2}
+    glow: {fileID: 11400000, guid: 3e01bb6612a2225488556b4facec8959, type: 2}
+    frames: 1
+    fps: 0
+  - name: Tyres
+    sheet: {fileID: 11400000, guid: 2f5d6ef4fc1df0640808593195a2eb8e, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Bench
+    sheet: {fileID: 11400000, guid: f54465f1109a8cc4ea8027ac14ea7814, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: GunRack
+    sheet: {fileID: 11400000, guid: 44a80a78e412f9d45b64d7b6eb571f72, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Sandbags
+    sheet: {fileID: 11400000, guid: fcc78323121b78c43b6885b58d90cba7, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Counter
+    sheet: {fileID: 11400000, guid: 9f145d4bb9e368f4e830ed7a268baf85, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: FireBarrel
+    sheet: {fileID: 11400000, guid: a5593ab836eecf248af0f37785c7d072, type: 2}
+    glow: {fileID: 11400000, guid: 84a1dacb7ec08194fa93a1ed288e1d35, type: 2}
+    frames: 4
+    fps: 9
+  - name: Trophy
+    sheet: {fileID: 11400000, guid: 72aea3a1640e8e0469eb061439c1a1f9, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: TrophyShelf
+    sheet: {fileID: 11400000, guid: e297c0adce6b2d546be1402f3e6ac36e, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: HatchPost
+    sheet: {fileID: 11400000, guid: 622e11693fc4df142b085b6e5bc5a03b, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Rail
+    sheet: {fileID: 11400000, guid: 609dc95a131ed3a4c8e47cbb2e02068e, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DustSheet
+    sheet: {fileID: 11400000, guid: c12639e42bb13304db17d08b80310bd3, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DustSheetSmall
+    sheet: {fileID: 11400000, guid: 5ec7a9bb6be6b0448bae1537bef6c274, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Pillar
+    sheet: {fileID: 11400000, guid: c7d9899e05be10c4a9e4e3200eab8c29, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Uplink
+    sheet: {fileID: 11400000, guid: 589142eaf84bd6c499bdf445390abcf2, type: 2}
+    glow: {fileID: 11400000, guid: e80ff424f2826ef439a76476daf9a58b, type: 2}
+    frames: 2
+    fps: 1.5
+  - name: StationGenerator
+    sheet: {fileID: 11400000, guid: 76a9fdd33daf2d946b9252d70adb862d, type: 2}
+    glow: {fileID: 11400000, guid: fcca000831c7e7148b42c4985e86c352, type: 2}
+    frames: 4
+    fps: 8
+  - name: StationWorkbench
+    sheet: {fileID: 11400000, guid: f274f3c3a90af02438fb5dcaaea5100f, type: 2}
+    glow: {fileID: 11400000, guid: bbb6abaebc765af4994df9a60f33288e, type: 2}
+    frames: 1
+    fps: 0
+  - name: StationMedStation
+    sheet: {fileID: 11400000, guid: 70eabb931c0050f4193bf2f944381de8, type: 2}
+    glow: {fileID: 11400000, guid: d17ceb787daf8d444aeb33a36d50d098, type: 2}
+    frames: 1
+    fps: 0
+  - name: StationIntelDesk
+    sheet: {fileID: 11400000, guid: 7edb2107d0836644c92fd685e83bd2ab, type: 2}
+    glow: {fileID: 11400000, guid: fc22155580c361d44bf151f020da4886, type: 2}
+    frames: 1
+    fps: 0
+  - name: StationTradePost
+    sheet: {fileID: 11400000, guid: ed23b5fbe9323f54199cdf94af6ac0c2, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: StationAmmoPress
+    sheet: {fileID: 11400000, guid: ae568f4286809aa4eaa14f282095ed91, type: 2}
+    glow: {fileID: 11400000, guid: 05283d9f163518a488554cbbff44b0d4, type: 2}
+    frames: 4
+    fps: 4
+  - name: SupplyCrate
+    sheet: {fileID: 11400000, guid: 95b8f38367e5f104dbc7b94bf468f365, type: 2}
+    glow: {fileID: 11400000, guid: 788ab1033c60da341820759e70b49e7c, type: 2}
+    frames: 3
+    fps: 0
+  - name: Rug
+    sheet: {fileID: 11400000, guid: cd5eb60067f1bda4c9d80b87d85c5ffe, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: CageBack
+    sheet: {fileID: 11400000, guid: 27762d2f83b7edb4d8a6180977279ae1, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: CageFront
+    sheet: {fileID: 11400000, guid: 7f6d905fa6525bd42ace8f0ab7b2aa3f, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: CageBase
+    sheet: {fileID: 11400000, guid: 362d70b4516e8664f88cffda6c2f1117, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}
@@ -63,6 +245,9 @@ MonoBehaviour:
   explosion: {fileID: 11400000, guid: a42bd635aa5adfe4b80aada061edefc2, type: 2}
   flame: {fileID: 11400000, guid: 4ce8f0291567e7040af729e0b2f07a12, type: 2}
   firePool: {fileID: 11400000, guid: 7c50672c6d32cc445bc40832e8f77a06, type: 2}
+  bloodPool: {fileID: 11400000, guid: dcafeae931d2caf468c5010159ccea6b, type: 2}
+  bloodDrip: {fileID: 11400000, guid: 97f02217873798d479e0b09e5e11518b, type: 2}
+  bloodSplash: {fileID: 11400000, guid: 3444980f251650c4faed5cc01d5471f8, type: 2}
   acidBurst: {fileID: 11400000, guid: bd04e414132c0914c877f3ce52f7b76e, type: 2}
   acidPool: {fileID: 11400000, guid: 3b49902bcec0ec4439a1a573898631cc, type: 2}
   acidGlob: {fileID: 11400000, guid: 7f9e17711e331904eada058d873c829e, type: 2}

@@ -3,7 +3,8 @@ using UnityEngine;
 // A station in the hideout that upgrades are bought at: the generator, the mechanic's workbench,
 // the medic's med station or the quartermaster's ammo press; or the trader's stall, where the
 // StationScreen is a shop instead. Each is a piece of kit built from
-// blocks with a small glowing control screen and a soft light in the station's colour. Walking
+// blocks with a small glowing control screen and a soft light in the station's colour (with the
+// sprite art, drawn as its pixel sprite: FurnitureSprite, "Station<name>"). Walking
 // up to it shows a label (its name and levels); pressing Interact opens the StationScreen for it.
 // Built in code by the FloorGenerator when it lays out the hideout.
 public class StationConsole : MonoBehaviour, FloorPickups.IPickup
@@ -160,6 +161,10 @@ public class StationConsole : MonoBehaviour, FloorPickups.IPickup
         console.glow.shadows = LightShadows.None;
 
         console.label = PickupLabel.Create(t, 2.4f);
+
+        // With the sprite art, drawn as its pixel sprite over the footprint of its body.
+        Vector3 middle = t.TransformPoint(body.center);
+        FurnitureSprite.Apply(root, "Station" + station, facing, body.size, new Vector3(middle.x, 0f, middle.z));
         return console;
     }
 
