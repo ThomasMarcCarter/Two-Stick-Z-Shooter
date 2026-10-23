@@ -27,6 +27,7 @@ MonoBehaviour:
   quartermaster: {fileID: 11400000, guid: 804af694f2d8d6044b07ed19a48a6518, type: 2}
   trader: {fileID: 11400000, guid: 9274defdec528544a987ef9f488cd1db, type: 2}
   items: {fileID: 11400000, guid: 836e2ec9e8a13154a864df5dffe00629, type: 2}
+  storyItems: {fileID: 11400000, guid: dfc37a9d1ee2d934e8b640cd3e38c813, type: 2}
   supplyCrate: {fileID: 11400000, guid: 70af3724c8872674dad2a774c3720816, type: 2}
   hatch: {fileID: 11400000, guid: 93fcc0b51182bc744a663d6f4d03965a, type: 2}
   trainingDummy: {fileID: 11400000, guid: 5ed0ac8e31d638b4cb9323f6c6e4a3ba, type: 2}
@@ -213,6 +214,11 @@ MonoBehaviour:
     sheet: {fileID: 11400000, guid: 362d70b4516e8664f88cffda6c2f1117, type: 2}
     glow: {fileID: 0}
     frames: 1
+    fps: 0
+  - name: Truck
+    sheet: {fileID: 11400000, guid: fdb6d45d3eebd224483c7f8979d8c6d1, type: 2}
+    glow: {fileID: 11400000, guid: b78defa24b03a35478dd20231a569b44, type: 2}
+    frames: 4
     fps: 0
   guns:
   - gun: Pistol

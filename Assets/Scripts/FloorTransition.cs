@@ -48,11 +48,18 @@ public class FloorTransition : MonoBehaviour
 
     public void Play(int floorNumber, int totalFloors, Action buildFloor)
     {
-        if (!IsActive)
-            StartCoroutine(Run(floorNumber, totalFloors, buildFloor));
+        Play($"> DESCENDING TO FLOOR {floorNumber}", $"FLOOR {floorNumber} / {totalFloors} // LINK ESTABLISHED", buildFloor);
     }
 
-    private IEnumerator Run(int floorNumber, int totalFloors, Action buildFloor)
+    // Any other descent (the supply room under the last floor): the heading, and the line shown
+    // once the bar is full.
+    public void Play(string heading, string arrived, Action buildFloor)
+    {
+        if (!IsActive)
+            StartCoroutine(Run(heading, arrived, buildFloor));
+    }
+
+    private IEnumerator Run(string heading, string arrived, Action buildFloor)
     {
         IsActive = true;
         float previousTimeScale = Time.timeScale;
@@ -60,7 +67,7 @@ public class FloorTransition : MonoBehaviour
 
         string[] lines = PickLines();
 
-        title.text = $"> DESCENDING TO FLOOR {floorNumber}";
+        title.text = heading;
         status.text = lines[0];
         SetBar(0f);
         panel.SetActive(true);
@@ -78,7 +85,7 @@ public class FloorTransition : MonoBehaviour
         }
 
         SetBar(1f);
-        status.text = $"FLOOR {floorNumber} / {totalFloors} // LINK ESTABLISHED";
+        status.text = arrived;
 
         yield return new WaitForSecondsRealtime(holdTime);
         yield return Fade(1f, 0f);

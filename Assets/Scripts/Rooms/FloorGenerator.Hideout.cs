@@ -5,8 +5,9 @@ using UnityEngine;
 // applying the station upgrades at the start of a run, crafting-material drops, banking them at
 // checkpoints, and the caged survivor waiting on each floor until they're rescued.
 //   The hideout is one big hall: the deploy hatch in the middle, the generator on the north
-// wall, the intel desk, a shooting range, a fire, a barracks corner with the stash, and an area
-// along the walls for each survivor (the mechanic's workshop, the medic's med bay, the
+// wall, the intel desk, a shooting range, a fire, a barracks corner with the stash, the truck
+// bay (the military truck the mechanic is putting back together), and an area along the walls
+// for each survivor (the mechanic's workshop, the medic's med bay, the
 // quartermaster's supply room, the trader's stall). An area lies abandoned under dust sheets and
 // empty boxes until its survivor is rescued on a run; then they tidy it up and set up there.
 public partial class FloorGenerator
@@ -215,7 +216,6 @@ public partial class FloorGenerator
         // Sandbags along the south wall.
         Color crate = new Color(0.3f, 0.33f, 0.2f);
         Color sand = new Color(0.45f, 0.4f, 0.3f);
-        float eastWall = centre.x + HallHalf.x - 0.9f;
         float southWall = centre.z - HallHalf.y + 0.9f;
 
         Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 8.5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
@@ -265,26 +265,74 @@ public partial class FloorGenerator
             rug.GetComponent<Renderer>().enabled = false;
         }
 
-        // A trophy on a shelf for each victory (up to five).
-        int trophies = Mathf.Min(5, MetaProgress.Victories);
+        BuildTruckBay(hall);
+        SpawnTrash(hall);
+    }
 
-        if (trophies > 0)
+    // The truck bay in the middle of the south wall, behind the spawn: the military truck the mechanic is
+    // putting back together, side on, nose to the east. It's drawn as the wreck until parts come
+    // home (one per won run), then in stages: parts in the engine bay, its tyres back on, and
+    // running, headlights lit. Its label lists the parts fitted and missing.
+    private void BuildTruckBay(Room hall)
+    {
+        Vector3 size = new Vector3(2.6f, 2.9f, 7.7f);
+        Vector3 at = HallCentre + new Vector3(0.5f, 0f, -HallHalf.y + size.x / 2f + 0.6f);
+        GameObject truck = HideoutProp("Truck", hall.transform, at + Vector3.up * size.y / 2f, RotateSize(Quaternion.LookRotation(Vector3.right), size),
+            new Color(0.34f, 0.38f, 0.23f), Color.black, true);
+
+        int parts = StoryItems.TruckPartsRecovered;
+        int stage = parts >= 5 ? 3 : parts >= 4 ? 2 : parts >= 1 ? 1 : 0;
+        FurnitureSprite sprite = FurnitureSprite.Apply(truck, "Truck", Vector3.right, size, at);
+
+        if (sprite != null)
+            sprite.Column = stage;
+
+        // A work lamp hung over the bay.
+        Light lamp = new GameObject("Truck Bay Lamp").AddComponent<Light>();
+        lamp.transform.SetParent(hall.transform, false);
+        lamp.transform.position = at + new Vector3(0f, 4.5f, 1.5f);
+        lamp.transform.rotation = Quaternion.LookRotation(at + Vector3.up - lamp.transform.position);
+        lamp.type = LightType.Spot;
+        lamp.spotAngle = 100f;
+        lamp.range = 9f;
+        lamp.intensity = 7f;
+        lamp.color = new Color(1f, 0.88f, 0.65f);
+        lamp.shadows = LightShadows.None;
+
+        // Running: its headlights throw light across the floor ahead of it.
+        if (stage == 3)
         {
-            Vector3 shelf = new Vector3(eastWall + 0.5f, 1.3f, centre.z);
-            GameObject board = HideoutProp("Trophy Shelf", parent, shelf, new Vector3(0.4f, 0.08f, 3f), new Color(0.35f, 0.25f, 0.15f), Color.black, false);
-            FurnitureSprite.Apply(board, "TrophyShelf", Vector3.left, new Vector3(3f, 0.08f, 0.4f), shelf - Vector3.up * 0.04f);
-
-            for (int i = 0; i < trophies; i++)
-            {
-                Vector3 spot = shelf + new Vector3(0f, 0.04f, (i - (trophies - 1) / 2f) * 0.55f);
-
-                if (PropModel("Trophy", "Trophy", parent, spot, Vector3.left, new Vector3(0.3f, 0.36f, 0.22f), false) == null)
-                    HideoutProp("Trophy", parent, spot + Vector3.up * 0.18f, new Vector3(0.22f, 0.36f, 0.22f),
-                        new Color(1f, 0.8f, 0.3f), new Color(0.5f, 0.35f, 0.05f), false, PrimitiveType.Cylinder);
-            }
+            Light beam = new GameObject("Headlights").AddComponent<Light>();
+            beam.transform.SetParent(truck.transform, true);
+            beam.transform.position = at + new Vector3(size.z / 2f + 0.2f, 1.3f, 0f);
+            beam.transform.rotation = Quaternion.LookRotation(new Vector3(1f, -0.35f, 0f));
+            beam.type = LightType.Spot;
+            beam.spotAngle = 70f;
+            beam.range = 9f;
+            beam.intensity = 6f;
+            beam.color = new Color(1f, 0.93f, 0.7f);
+            beam.shadows = LightShadows.None;
         }
 
-        SpawnTrash(hall);
+        GameObject label = new GameObject("Truck Bay");
+        label.transform.SetParent(hall.transform, false);
+        label.transform.position = at + Vector3.forward * (size.x / 2f + 0.3f);
+        ProximityLabel.Add(label, 2.4f, 4.5f, StoryItems.Colour(StoryItem.Battery), TruckText);
+        StationMarker.Add(label, HideoutStation.TruckBay, false);
+    }
+
+    private static string TruckText()
+    {
+        NpcKind mechanic = NpcKind.Mechanic;
+        string header = $"MILITARY TRUCK  <size=70%><alpha=#99>// {StoryItems.Progress(mechanic)}</size>\n<size=65%>";
+
+        foreach (StoryItem part in StoryItems.Goal(mechanic))
+            header += MetaProgress.HasStoryItem(part) ? $"<color={StoryItems.Hex(part)}>{StoryItems.Name(part)}</color>  " : $"<alpha=#55>{StoryItems.Name(part)}<alpha=#FF>  ";
+
+        if (StoryItems.Complete(mechanic))
+            return header + $"\n<color={UiColours.AmberHex}>RUNNING // READY TO DRIVE</color></size>";
+
+        return header + "\n<alpha=#99>ONE PART COMES HOME WITH EACH COMPLETED RUN // FROM THE SUPPLY ROOM UNDER THE LAST FLOOR</size>";
     }
 
     // A survivor's area. Rescued: tidied up, with their station against the wall, them beside
@@ -413,15 +461,15 @@ public partial class FloorGenerator
         }
     }
 
-    // What an abandoned area's note says: how many more completed runs until the survivor's
-    // signal can be picked up, or that it's out there now.
+    // What an abandoned area's note says: how to find the survivor (how many more truck parts
+    // until their signal can be picked up), or that it's out there now.
     private static string SealedText(string area, NpcKind owner, string state)
     {
         string header = area + $"  <size=70%><alpha=#99>// {state}</size>\n";
-        int needed = Npcs.RequiredVictories(owner) - MetaProgress.Victories;
+        string hint = Npcs.FindHint(owner);
 
-        if (needed > 0)
-            return header + $"<size=70%><alpha=#BB>NO SIGNAL // COMPLETE {needed} MORE RUN{(needed == 1 ? "" : "S")} TO PICK UP THE {Npcs.Role(owner)}</size>";
+        if (hint != null)
+            return header + $"<size=70%><alpha=#BB>{hint}</size>";
 
         return header + $"<size=70%><color={UiColours.AmberHex}>DISTRESS SIGNAL ACTIVE // FIND THE {Npcs.Role(owner)} ON A RUN</color></size>";
     }
@@ -763,6 +811,10 @@ public partial class FloorGenerator
             foreach (WeaponAttachment attachment in PickAttachments(gunsmith, () => UnityEngine.Random.value))
                 backpack.AddAttachment(attachment);
         }
+
+        // Until the mechanic's been found, every run starts with their call from the supply room.
+        if (!MetaProgress.IsRescued(NpcKind.Mechanic))
+            StartCoroutine(DistressCall(NpcKind.Mechanic));
     }
 
     // ---------- Crafting materials ----------

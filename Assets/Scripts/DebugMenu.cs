@@ -131,6 +131,7 @@ public class DebugMenu : MonoBehaviour
         Add("TELEPORT: SPAWN", () => TeleportTo(RoomType.Start), true);
         Add("REVEAL MAP", RevealMap, false);
         Add("SKIP TO NEXT FLOOR", SkipFloor, true);
+        Add("GO TO THE SUPPLY ROOM", () => floor.DebugEnterSupplyRoom(), true);
         Add("REGENERATE FLOOR", RegenerateFloor, true);
 
         Section(0, "ENEMIES");
@@ -143,7 +144,7 @@ public class DebugMenu : MonoBehaviour
         Add(() => $"GIVE 10 OF EACH MATERIAL (PARTS {MetaProgress.MaterialCount(MaterialType.Parts)})", () => MetaProgress.AddEveryMaterial(10), false);
         Add(() => $"RESCUE ALL SURVIVORS ({MetaProgress.RescuedCount()}/{Npcs.All.Length})", MetaProgress.RescueAll, false);
         Add("SPAWN ALL MATERIALS", SpawnMaterials, true);
-        Add(() => $"+1 COMPLETED RUN ({MetaProgress.Victories})", MetaProgress.AddVictory, false);
+        Add(() => $"+1 TRUCK PART ({StoryItems.Progress(NpcKind.Mechanic)})", MetaProgress.GrantNextStoryItem, false);
         Add("SURVIVOR ON NEXT FLOOR", FloorGenerator.ForceSurvivorOnNextFloor, false);
 
         Section(1, "PLAYER");
@@ -306,7 +307,7 @@ public class DebugMenu : MonoBehaviour
 
     private void SkipFloor()
     {
-        floor.UseExit(floor.FloorNumber < floor.TotalFloors ? FloorExit.Kind.NextFloor : FloorExit.Kind.Trophy);
+        floor.UseExit(floor.IsSupplyRoom ? FloorExit.Kind.Extraction : FloorExit.Kind.NextFloor);
     }
 
     private void RegenerateFloor()

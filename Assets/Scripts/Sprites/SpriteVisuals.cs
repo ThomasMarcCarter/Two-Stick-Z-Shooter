@@ -33,6 +33,8 @@ public class SpriteVisuals : ScriptableObject
     [Header("Items")]
     [Tooltip("The items atlas: consumables, ammo, materials, melee upgrades, attachments (see ItemSprites).")]
     public SpriteSheet items;
+    [Tooltip("Story items and the supply room's loot: row 0 the truck parts (StoryItem order), row 1 scrap piles small to big (SupplyShelfItem).")]
+    public SpriteSheet storyItems;
     [Tooltip("The supply crate: closed, then open.")]
     public SpriteSheet supplyCrate;
     [Tooltip("The floor hatch from above: closed, then open.")]

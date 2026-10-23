@@ -89,20 +89,35 @@ public class StationMarker : MonoBehaviour
 
         if (Abandoned && owner is NpcKind missing)
         {
-            int needed = Npcs.RequiredVictories(missing) - MetaProgress.Victories;
+            int needed = Npcs.RequiredParts(missing) - StoryItems.TruckPartsRecovered;
             text.AppendLine($"<color={UiColours.DangerHex}>ABANDONED</color>");
             text.AppendLine();
             text.AppendLine($"{dim}RESCUE THE{undim}");
             text.AppendLine($"{Npcs.Role(missing)} TO OPEN IT");
             text.AppendLine();
-            text.AppendLine(needed > 0
-                ? $"{dim}NO SIGNAL YET\n{dim}{needed} MORE RUN{(needed == 1 ? "" : "S")} TO GO{undim}"
+            text.AppendLine(Npcs.FoundInSupplyRoom(missing)
+                ? $"{dim}HELD IN THE SUPPLY\n{dim}ROOM UNDER THE\n{dim}LAST FLOOR{undim}"
+                : needed > 0
+                ? $"{dim}NO SIGNAL YET\n{dim}{needed} MORE TRUCK PART{(needed == 1 ? "" : "S")}{undim}"
                 : $"<color={UiColours.AmberHex}>SIGNAL ACTIVE</color>");
             return text.ToString();
         }
 
         text.AppendLine((owner is NpcKind runBy ? $"{dim}RUN BY {Npcs.Name(runBy)}" : $"{dim}NO OPERATOR NEEDED") + undim);
         text.AppendLine();
+
+        if (Station == HideoutStation.TruckBay)
+        {
+            text.AppendLine(StoryItems.Progress(NpcKind.Mechanic));
+            text.AppendLine();
+
+            foreach (StoryItem part in StoryItems.Goal(NpcKind.Mechanic))
+                text.AppendLine(MetaProgress.HasStoryItem(part) ? $"[#] {StoryItems.Name(part)}" : $"{dim}[-] {StoryItems.Name(part)}{undim}");
+
+            text.AppendLine();
+            text.AppendLine(StoryItems.Complete(NpcKind.Mechanic) ? $"<color={UiColours.AmberHex}>READY TO DRIVE</color>" : $"{dim}ONE PART PER\n{dim}COMPLETED RUN{undim}");
+            return text.ToString();
+        }
 
         if (Station == HideoutStation.TradePost)
         {

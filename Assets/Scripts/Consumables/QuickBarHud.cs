@@ -7,15 +7,18 @@ using static MapMesh;
 // picture of what's in each (ConsumableSilhouette), how many are left, and the button that uses it. The selected slot (mouse wheel or D-pad to
 // change it) is lit like the gun in hand on the equipment panel: tinted, a bright frame and a
 // bar under it, and it shows the use button (RMB or RB); on a keyboard the others show 3-6. The slot being used fills up, with a ring at the cursor like a
-// reload, and adrenaline's time left shows above the bar. Hidden while the inventory is open,
-// which has its own copy of the bar. Built in code by EquipmentHud.
+// reload, and adrenaline's time left shows above the bar. Past the four slots, while the player
+// carries one, is the story slot: the run's truck part as a wireframe with its name. Hidden while
+// the inventory is open, which has its own copy of the bar. Built in code by EquipmentHud.
 public class QuickBarHud : MaskableGraphic
 {
     private const float SlotSize = 54f;
     private const float Gap = 6f;
     private const float RingRadius = 22f;
+    private const float StoryWidth = 96f;
 
     private QuickBar bar;
+    private StorySlot story;
     private PlayerStamina stamina;
     private TMP_FontAsset font;
     private Color phosphor;
@@ -23,6 +26,7 @@ public class QuickBarHud : MaskableGraphic
 
     private TMP_Text header;
     private TMP_Text status;
+    private TMP_Text storyName;
     private readonly TMP_Text[] counts = new TMP_Text[QuickBar.SlotCount];
     private readonly TMP_Text[] keys = new TMP_Text[QuickBar.SlotCount];
 
@@ -42,6 +46,7 @@ public class QuickBarHud : MaskableGraphic
         QuickBarHud hud = go.AddComponent<QuickBarHud>();
         hud.raycastTarget = false;
         hud.bar = player.QuickBar;
+        hud.story = StorySlot.For(player.gameObject);
         hud.stamina = player.GetComponent<PlayerStamina>();
         hud.font = font;
         hud.phosphor = phosphor;
@@ -54,6 +59,9 @@ public class QuickBarHud : MaskableGraphic
     {
         return new Rect(slot * (SlotSize + Gap), 0f, SlotSize, SlotSize);
     }
+
+    // Past the quick slots, with a wider gap.
+    private Rect StoryRect => new Rect(QuickBar.SlotCount * (SlotSize + Gap) + Gap * 2f, 0f, StoryWidth, SlotSize);
 
     private void BuildText()
     {
@@ -69,6 +77,12 @@ public class QuickBarHud : MaskableGraphic
             counts[i] = MakeText("", 11, new Rect(slot.xMin + 4f, slot.yMin + 4f, slot.width - 8f, 14f), dim, TextAlignmentOptions.BottomRight, 1f);
             keys[i] = MakeText("", 9, new Rect(slot.xMin + 4f, slot.yMax - 15f, slot.width - 8f, 12f), dim, TextAlignmentOptions.TopLeft, 1f);
         }
+
+        Rect storySlot = StoryRect;
+        storyName = MakeText("", 9, new Rect(storySlot.xMin + 3f, storySlot.yMin + 3f, storySlot.width - 6f, 12f), dim, TextAlignmentOptions.Bottom, 1f);
+        storyName.enableAutoSizing = true;
+        storyName.fontSizeMin = 6f;
+        storyName.fontSizeMax = 9f;
     }
 
     private TMP_Text MakeText(string text, float size, Rect rect, Color colour, TextAlignmentOptions alignment, float spacing = 6f)
@@ -111,6 +125,8 @@ public class QuickBarHud : MaskableGraphic
             counts[i].text = type != null ? "x" + count : "";
             keys[i].text = KeyLabel(i);
         }
+
+        storyName.text = story != null && story.Item is StoryItem item ? StoryItems.Name(item) : "";
 
         status.text = stamina != null && stamina.Boosted
             ? $"<color=#{ColorUtility.ToHtmlStringRGB(ConsumableInfo.Colour(ConsumableType.Adrenaline))}>ADRENALINE  {stamina.BoostLeft:0.0}S</color>"
@@ -175,8 +191,26 @@ public class QuickBarHud : MaskableGraphic
             OutlineRect(vh, slot, selected ? 2.5f : 1f, Fade(phosphor, selected ? 1f : 0.25f));
         }
 
+        DrawStorySlot(vh, origin);
+
         if (bar.IsUsing)
             DrawUseRing(vh);
+    }
+
+    private void DrawStorySlot(VertexHelper vh, Vector2 origin)
+    {
+        if (story == null || !(story.Item is StoryItem item))
+            return;
+
+        Rect slot = StoryRect;
+        slot.position += origin;
+        Color colour = StoryItems.Colour(item);
+
+        FillRect(vh, slot, new Color(0f, 0.04f, 0.02f, 0.75f));
+        FillRect(vh, slot, Fade(colour, 0.14f));
+        FillRect(vh, new Rect(slot.xMin, slot.yMax - 3f, slot.width, 3f), colour);
+        StoryItemSilhouette.Draw(vh, item, new Rect(slot.xMin + 8f, slot.yMin + 16f, slot.width - 16f, slot.height - 24f), Color.Lerp(colour, Color.white, 0.35f));
+        OutlineRect(vh, slot, 1.5f, Fade(colour, 0.8f));
     }
 
     // At the cursor, like the reload ring, in the item's colour.

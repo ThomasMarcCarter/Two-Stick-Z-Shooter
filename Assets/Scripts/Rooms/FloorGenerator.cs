@@ -5,11 +5,13 @@ using UnityEngine.AI;
 
 // Builds an Isaac/Gungeon-style floor: rooms of different shapes (1x1, long, L, T, 2x2) on a
 // grid, joined by doors and short corridors. The start room is always at the world origin.
-// Beating a floor's boss opens a hatch to the next floor; the last floor's boss leaves a trophy.
+// Beating a floor's boss opens a hatch to the next floor; under the last floor's boss room is the
+// supply room, whose ladder out ends the run as a win (FloorGenerator.SupplyRoom.cs).
 // Floors are rebuilt in place, so the player (and their health, gun and ammo) carries over.
 // Split into partials: enemies in FloorGenerator.Spawning.cs, loot in FloorGenerator.Loot.cs,
 // boxes/trash/pillars/lights in FloorGenerator.Dressing.cs, and the hideout (floor 0), run-start
-// upgrades, crafting materials and caged survivors in FloorGenerator.Hideout.cs.
+// upgrades, crafting materials and caged survivors in FloorGenerator.Hideout.cs, and the supply
+// room in FloorGenerator.SupplyRoom.cs.
 public partial class FloorGenerator : MonoBehaviour
 {
     private static readonly Vector2Int[] Directions =
@@ -20,8 +22,7 @@ public partial class FloorGenerator : MonoBehaviour
     [Header("Floors")]
     [SerializeField] private int totalFloors = 3;
     [SerializeField] private Material exitMaterial;
-    [SerializeField] private Material trophyMaterial;
-    [Tooltip("Seconds after the boss dies before the hatch or trophy can be used (the hatch doors swing open over it).")]
+    [Tooltip("Seconds after the boss dies before the hatch can be used (its doors swing open over it).")]
     [SerializeField] private float exitArmDelay = 1.6f;
     [Tooltip("The hatch's frame (coaming, shaft, lamps). Without it the hatch is a flat block.")]
     [SerializeField] private GameObject hatchModel;
@@ -290,13 +291,14 @@ public partial class FloorGenerator : MonoBehaviour
                     return FloorNumber;
             }
 
-            return Mathf.Max(0, FloorNumber - 1);
+            // The supply room lies under the last floor, whose boss is dead.
+            return IsSupplyRoom ? FloorNumber : Mathf.Max(0, FloorNumber - 1);
         }
     }
 
     // Floor 0 is the hideout: the hub with the stations, the rescued survivors and the hatch to floor 1.
     public bool IsHideout => FloorNumber == 0;
-    public string FloorName => IsHideout ? "HIDEOUT" : $"FLOOR {FloorNumber}";
+    public string FloorName => IsHideout ? "HIDEOUT" : IsSupplyRoom ? "SUPPLY ROOM" : $"FLOOR {FloorNumber}";
 
     // When floor 1 of this run began, for the victory screen's mission time.
     public float RunStartTime { get; private set; }
@@ -459,6 +461,12 @@ public partial class FloorGenerator : MonoBehaviour
             return;
         }
 
+        if (IsSupplyRoom)
+        {
+            GenerateSupplyRoom();
+            return;
+        }
+
         List<PlannedRoom> plan = GenerateLayout();
 
         floorRoot = new GameObject($"Floor {FloorNumber}").transform;
@@ -612,15 +620,15 @@ public partial class FloorGenerator : MonoBehaviour
 
     // ---------- Floor progression ----------
 
-    // The boss is dead: the way on opens, and an uplink turns up to send materials home. Not on
-    // the last floor: taking the trophy brings everything home anyway.
+    // The boss is dead: the hatch down opens, and an uplink turns up to send materials home. Not
+    // on the last floor: its hatch goes down to the supply room, and climbing out of there brings
+    // everything home anyway.
     private void OnBossRoomCleared(Room room)
     {
         PlayRoomCleared();
-        bool last = FloorNumber >= totalFloors;
-        SpawnExit(room, last ? FloorExit.Kind.Trophy : FloorExit.Kind.NextFloor);
+        SpawnExit(room, FloorExit.Kind.NextFloor);
 
-        if (!last)
+        if (FloorNumber < totalFloors)
             SpawnUplink(room);
     }
 
@@ -756,20 +764,19 @@ public partial class FloorGenerator : MonoBehaviour
         SoundFX.Play2D(clip, roomClearedVolume);
     }
 
-    // Called by FloorExit when the player uses the hatch or takes the trophy.
+    // Called by FloorExit when the player climbs down a hatch or out of the supply room.
     public void UseExit(FloorExit.Kind kind)
     {
-        if (kind == FloorExit.Kind.Trophy)
+        if (kind == FloorExit.Kind.Extraction)
         {
-            // The run's won: whatever materials are still in the backpack come home too.
-            int[] recovered = Backpack.For(player.gameObject).TakeAllMaterials();
-            MetaProgress.AddMaterials(recovered);
+            Extract();
+            return;
+        }
 
-            PlayerHealth health = player.GetComponent<PlayerHealth>();
-            // The rest of the run's scrap comes home with the bonus; the screen shows the run's total.
-            int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled) + MetaProgress.ScrapSentHome;
-            victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap,
-                Materials.Describe(recovered));
+        // Under the last floor: the supply room.
+        if (FloorNumber >= totalFloors && !IsHideout)
+        {
+            transition.Play("> DESCENDING TO THE SUPPLY ROOM", "SUPPLY ROOM // NO HOSTILES DETECTED", EnterSupplyRoom);
             return;
         }
 
@@ -798,32 +805,17 @@ public partial class FloorGenerator : MonoBehaviour
             Destroy(projectile.gameObject);
     }
 
-    // A hatch in the floor whose doors swing open, or a spinning gold trophy, in the middle of the
-    // boss room. Used with Interact (FloorExit), so it has no collider.
+    // A hatch in the floor, whose doors swing open, in the middle of the boss room. Used with
+    // Interact (FloorExit), so it has no collider.
     private void SpawnExit(Room room, FloorExit.Kind kind)
     {
-        bool trophy = kind == FloorExit.Kind.Trophy;
-
-        GameObject exit = new GameObject(trophy ? "Trophy" : "Hatch");
+        GameObject exit = new GameObject("Hatch");
         exit.transform.SetParent(room.transform, false);
         exit.transform.position = room.transform.position;
 
-        Transform spinning = null;
         Transform[] doors = null;
 
-        if (trophy)
-        {
-            spinning = new GameObject("Cup").transform;
-            spinning.SetParent(exit.transform, false);
-            spinning.localPosition = Vector3.up * 0.9f;
-
-            CreateVisual("Base", spinning, new Vector3(0f, -0.4f, 0f), new Vector3(0.7f, 0.15f, 0.7f), trophyMaterial);
-            CreateVisual("Stem", spinning, new Vector3(0f, -0.15f, 0f), new Vector3(0.18f, 0.4f, 0.18f), trophyMaterial);
-            CreateVisual("Bowl", spinning, new Vector3(0f, 0.25f, 0f), new Vector3(0.6f, 0.45f, 0.6f), trophyMaterial);
-            CreateVisual("Handle L", spinning, new Vector3(-0.38f, 0.28f, 0f), new Vector3(0.12f, 0.3f, 0.12f), trophyMaterial);
-            CreateVisual("Handle R", spinning, new Vector3(0.38f, 0.28f, 0f), new Vector3(0.12f, 0.3f, 0.12f), trophyMaterial);
-        }
-        else if (hatchModel != null && hatchDoorModel != null)
+        if (hatchModel != null && hatchDoorModel != null)
         {
             VisualOnly(Instantiate(hatchModel, exit.transform, false), "Frame");
 
@@ -851,20 +843,20 @@ public partial class FloorGenerator : MonoBehaviour
         // A glow so it can be found in the dark: up out of the shaft for the hatch.
         Light glow = new GameObject("Glow").AddComponent<Light>();
         glow.transform.SetParent(exit.transform, false);
-        glow.transform.localPosition = Vector3.up * (trophy ? 1.5f : 0.6f);
+        glow.transform.localPosition = Vector3.up * 0.6f;
         glow.type = LightType.Point;
-        glow.color = trophy ? new Color(1f, 0.8f, 0.3f) : new Color(0.35f, 1f, 0.55f);
+        glow.color = new Color(0.35f, 1f, 0.55f);
         glow.range = 5f;
         glow.intensity = 3f;
         glow.shadows = LightShadows.None;
 
         // With the sprite art the hatch is drawn flat from above (FloorExit opens it), a little
         // above the floor litter (up to ~2 cm) so a stray sheet or box remains goes under it.
-        if (!trophy && SpriteVisuals.Current != null)
+        if (SpriteVisuals.Current != null)
             ItemSprite.ApplyFlat(exit, SpriteVisuals.Current.hatch, Vector2Int.zero, HatchOpening + 0.6f, 0.03f);
 
         // The hideout's deploy hatch is waiting open.
-        exit.AddComponent<FloorExit>().Initialise(this, kind, IsHideout ? 0f : exitArmDelay, spinning, doors);
+        exit.AddComponent<FloorExit>().Initialise(this, kind, IsHideout ? 0f : exitArmDelay, doors);
     }
 
     // The hatch model's opening (square) and the height of its rim, where the doors hinge.
@@ -1467,7 +1459,7 @@ public partial class FloorGenerator : MonoBehaviour
         if (player == null)
             return;
 
-        Vector3 spawn = IsHideout ? HideoutSpawn : CellToWorld(Vector2Int.zero) + spawnOffset;
+        Vector3 spawn = IsHideout ? HideoutSpawn : IsSupplyRoom ? SupplyRoomSpawn : CellToWorld(Vector2Int.zero) + spawnOffset;
 
         Rigidbody playerBody = player.GetComponent<Rigidbody>();
 

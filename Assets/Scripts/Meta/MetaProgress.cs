@@ -51,6 +51,7 @@ public static class MetaProgress
         public int[] levels = new int[0];
         public int[] materials = new int[0];
         public int[] rescued = new int[0];
+        public int[] story = new int[0];
     }
 
     // What the main menu shows for a profile without switching to it.
@@ -101,6 +102,7 @@ public static class MetaProgress
         data = null;
         runActive = false;
         ScrapSentHome = 0;
+        BonusScrap = 0;
         profile = 0;
         Changed = null;
     }
@@ -198,6 +200,39 @@ public static class MetaProgress
         Changed?.Invoke();
     }
 
+    // ---------- Story items ----------
+
+    public static bool HasStoryItem(StoryItem item)
+    {
+        int index = (int)item;
+        return index < Data.story.Length && Data.story[index] != 0;
+    }
+
+    // A story item brought home (a won run's truck part): kept for good.
+    public static void AddStoryItem(StoryItem item)
+    {
+        if (HasStoryItem(item))
+            return;
+
+        int index = (int)item;
+
+        if (Data.story.Length <= index)
+            Array.Resize(ref Data.story, StoryItems.All.Length);
+
+        Data.story[index] = 1;
+        Save();
+        Changed?.Invoke();
+    }
+
+    // Debug: the next truck part, as if a run had brought it home.
+    public static void GrantNextStoryItem()
+    {
+        StoryItem? next = StoryItems.Next(NpcKind.Mechanic);
+
+        if (next != null)
+            AddStoryItem(next.Value);
+    }
+
     // ---------- Upgrades ----------
 
     // Why the next level can't be bought right now (station locked, generator too low, short of
@@ -275,6 +310,20 @@ public static class MetaProgress
     {
         runActive = true;
         ScrapSentHome = 0;
+        BonusScrap = 0;
+    }
+
+    // Scrap picked up as it is on this run (the supply room's shelves), on top of what kills and
+    // floors earn. Carried like the rest: banked with the win, lost on a death.
+    public static int BonusScrap { get; private set; }
+
+    public static void AddBonusScrap(int amount)
+    {
+        if (!runActive || amount <= 0)
+            return;
+
+        BonusScrap += amount;
+        Changed?.Invoke();
     }
 
     // Scrap this run has already sent home from uplinks (banked).
@@ -326,11 +375,11 @@ public static class MetaProgress
         return earned;
     }
 
-    // The generator adds 10% a level.
+    // The generator adds 10% a level (not to scrap picked up as it is).
     public static int ScrapFor(bool victory, int floorsCleared, int kills)
     {
         int basic = kills * ScrapPerKill + floorsCleared * ScrapPerFloor + (victory ? ScrapForVictory : 0);
-        return Mathf.RoundToInt(basic * (1f + 0.1f * Level(MetaUpgrade.Generator)));
+        return Mathf.RoundToInt(basic * (1f + 0.1f * Level(MetaUpgrade.Generator))) + BonusScrap;
     }
 
     // Debug: some scrap to spend.
@@ -477,7 +526,8 @@ public static class MetaProgress
         saved.levels ??= new int[0];
         saved.materials ??= new int[0];
         saved.rescued ??= new int[0];
-        saved.version = 2;
+        saved.story ??= new int[0];
+        saved.version = 3;
         return saved;
     }
 

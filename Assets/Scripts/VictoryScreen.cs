@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-// Shown when the player takes the trophy after the last boss. Pauses the game, shows the run's
+// Shown when the player climbs out of the supply room under the last floor. Pauses the game, shows the run's
 // stats and the scrap it earned for the hideout, and offers a new run, the hideout or the main menu. Works with mouse or controller (CrtMenu).
 public class VictoryScreen : MonoBehaviour
 {
@@ -23,8 +23,9 @@ public class VictoryScreen : MonoBehaviour
         menu = new CrtMenu(newRunButton, hideoutButton, mainMenuButton);
     }
 
-    // recovered: the materials still in the backpack, sent home with the win ("" for none).
-    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned, string recovered = "")
+    // recovered: the materials still in the backpack, sent home with the win ("" for none); story:
+    // the story item brought home and the goal's progress ("" for none).
+    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned, string recovered = "", string story = "")
     {
         IsShowing = true;
         Time.timeScale = 0f;
@@ -40,6 +41,10 @@ public class VictoryScreen : MonoBehaviour
             $"<color={UiColours.AmberHex}>SCRAP SALVAGED     +{scrapEarned}  ({MetaProgress.Scrap} BANKED)</color>";
 
         notice.text = recovered.Length > 0 ? $"<size=80%>MATERIALS BROUGHT HOME: {recovered}</size>" : "";
+
+        if (story.Length > 0)
+            notice.text = $"<color={UiColours.AmberHex}>{story}</color>" + (notice.text.Length > 0 ? "\n" + notice.text : "");
+
         panel.SetActive(true);
         menu.Open();
     }

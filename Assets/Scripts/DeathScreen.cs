@@ -104,6 +104,10 @@ public class DeathScreen : MonoBehaviour
 
         if (lost.Length > 0)
             notice.text += $"\n<size=80%><color={UiColours.DangerHex}>LOST MATERIALS NOT SENT HOME:</color> {lost}</size>";
+
+        // So is a truck part that never made it out of the supply room.
+        if (player != null && StorySlot.For(player.gameObject).Take() is StoryItem part)
+            notice.text += $"\n<size=80%><color={UiColours.DangerHex}>LOST:</color> {StoryItems.Name(part)}</size>";
         panel.SetActive(true);
         menu.Open();
         StartCoroutine(FadeIn());

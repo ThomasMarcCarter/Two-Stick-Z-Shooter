@@ -79,6 +79,27 @@ public partial class InventoryScreen
             bool bright = hovered || consumableCarried || selected;
             OutlineRect(vh, slot, bright ? 2f : 1f, Fade(UiColours.Phosphor, bright ? 0.9f : 0.3f));
         }
+
+        DrawStorySlot(vh);
+    }
+
+    // The story slot: the truck part in its colour as a wireframe, or a dashed empty frame.
+    private void DrawStorySlot(VertexHelper vh)
+    {
+        Rect slot = StorySlotRect;
+        bool hovered = hover.Kind == SpotKind.Story;
+
+        if (Story == null || !(Story.Item is StoryItem item))
+        {
+            DashedOutlineRect(vh, slot, hovered ? 2f : 1f, 4f, Fade(UiColours.Phosphor, hovered ? 0.6f : 0.2f));
+            return;
+        }
+
+        Color colour = StoryItems.Colour(item);
+        FillRect(vh, slot, Fade(colour, 0.14f));
+        FillRect(vh, new Rect(slot.xMin, slot.yMax - 4f, slot.width, 4f), colour);
+        StoryItemSilhouette.Draw(vh, item, new Rect(slot.center.x - 40f, slot.yMin + 20f, 80f, slot.height - 26f), Color.Lerp(colour, Color.white, 0.4f));
+        OutlineRect(vh, slot, hovered ? 2f : 1f, Fade(colour, hovered ? 1f : 0.6f));
     }
 
     private void DrawModSlot(VertexHelper vh, int gunIndex, int slotIndex, Gun gun, WeaponAttachment carried)

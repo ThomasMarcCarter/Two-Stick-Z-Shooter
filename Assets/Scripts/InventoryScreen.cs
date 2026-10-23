@@ -12,7 +12,8 @@ using static MapMesh;
 // or out of the panel to drop them on the floor. Ammo and consumable stacks can be moved around
 // the grid, merged into another stack of the same kind, or dropped on the floor too. Dragging a
 // consumable onto a quick slot sets that slot to it (the stack stays in the backpack); dragging
-// a quick slot onto another swaps them, and anywhere else clears it.
+// a quick slot onto another swaps them, and anywhere else clears it. Beside the quick bar is the
+// story slot: the run's story item (a truck part), which can't be moved or dropped.
 // A press and release in place picks an item up to carry, for placing with a second press.
 // Hovering a slot or item shows what it is and does.
 // The game keeps running while it's open: the player can walk but not shoot, so checking it
@@ -74,6 +75,7 @@ public partial class InventoryScreen : MonoBehaviour
         ModSlot,
         Card,
         QuickSlot,
+        Story,
         Outside
     }
 
@@ -111,6 +113,7 @@ public partial class InventoryScreen : MonoBehaviour
     private TMP_Text meleeUpgrades;
     private TMP_Text capacity;
     private TMP_Text footer;
+    private TMP_Text storyLabel;
 
     // Drawn over everything else: the carried item and the hover tooltip.
     private RectTransform overlay;
@@ -361,6 +364,18 @@ public partial class InventoryScreen : MonoBehaviour
         return new Rect(Middle + 14f + index * (cell + CellGap), top - height, cell, height);
     }
 
+    // The story slot: the rest of the quick bar's row, past its four slots.
+    private Rect StorySlotRect
+    {
+        get
+        {
+            Rect first = QuickSlotRect(QuickBar.SlotCount);
+            return Rect.MinMaxRect(first.xMin, first.yMin, Right, first.yMax);
+        }
+    }
+
+    private StorySlot Story => weapons != null ? StorySlot.For(weapons.gameObject) : null;
+
     private Rect PanelBounds => new Rect(-size.x / 2f, -size.y / 2f, size.x, size.y);
 
     private QuickBar Quick => weapons != null ? weapons.QuickBar : null;
@@ -395,6 +410,10 @@ public partial class InventoryScreen : MonoBehaviour
             quickMain[i] = MakeText(panel.transform, "", 14, new Rect(slot.xMin + 2f, slot.yMin + 17f, slot.width - 4f, 20f), UiColours.Phosphor, TextAlignmentOptions.Center, 2f);
             quickSub[i] = MakeLabel(panel.transform, new Rect(slot.xMin + 2f, slot.yMin + 6f, slot.width - 4f, 12f), dim);
         }
+
+        Rect story = StorySlotRect;
+        MakeText(panel.transform, "STORY ITEM", 11, new Rect(story.xMin, lastCell.yMin - 24f, story.width, 18f), dim, TextAlignmentOptions.Left);
+        storyLabel = MakeLabel(panel.transform, new Rect(story.xMin + 2f, story.yMin + 6f, story.width - 4f, 12f), dim);
 
         Rect lastQuick = QuickSlotRect(QuickBar.SlotCount - 1);
         footer = MakeText(panel.transform, "", 10, new Rect(Middle + 14f, lastQuick.yMin - 40f, Right - Middle - 14f, 34f), dim, TextAlignmentOptions.TopLeft, 3f);
@@ -514,6 +533,9 @@ public partial class InventoryScreen : MonoBehaviour
             if (QuickSlotRect(i).Contains(point))
                 return new Spot { Kind = SpotKind.QuickSlot, Index = i };
         }
+
+        if (StorySlotRect.Contains(point))
+            return new Spot { Kind = SpotKind.Story };
 
         for (int g = 0; g < 2; g++)
         {

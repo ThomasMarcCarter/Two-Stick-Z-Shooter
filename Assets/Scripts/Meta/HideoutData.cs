@@ -23,7 +23,8 @@ public enum NpcKind
 }
 
 // The hideout's stations. Each holds some of the permanent upgrades (the trade post sells
-// supplies instead); all but the generator need their NPC rescued first.
+// supplies instead, and the truck bay holds the truck being repaired); all but the generator,
+// the intel desk and the truck bay need their NPC rescued first.
 public enum HideoutStation
 {
     Generator,
@@ -31,7 +32,8 @@ public enum HideoutStation
     MedStation,
     AmmoPress,
     TradePost,
-    IntelDesk
+    IntelDesk,
+    TruckBay
 }
 
 // What each material is called and looks like.
@@ -131,15 +133,31 @@ public static class Npcs
         }
     }
 
-    // Completed runs (final boss beaten) before their distress signal can be picked up: the
-    // mechanic after the first, the medic after the second, the quartermaster after the third,
-    // the trader after the fourth.
-    public static int RequiredVictories(NpcKind kind) => (int)kind + 1;
+    // The mechanic isn't out on the floors: they're held in the supply room under the last floor,
+    // found on the first run that gets that far, with the truck's first part.
+    public static bool FoundInSupplyRoom(NpcKind kind) => kind == NpcKind.Mechanic;
 
-    // Their signal is out there: enough runs completed, and not rescued yet.
+    // Truck parts recovered (one per completed run) before their distress signal can be picked
+    // up on a run: the medic after the second, the quartermaster after the third, the trader after
+    // the fourth (the mechanic comes with the first; see FoundInSupplyRoom).
+    public static int RequiredParts(NpcKind kind) => FoundInSupplyRoom(kind) ? 0 : (int)kind + 1;
+
+    // Their signal is out there: enough truck parts recovered, and not rescued yet.
     public static bool Findable(NpcKind kind)
     {
-        return !MetaProgress.IsRescued(kind) && MetaProgress.Victories >= RequiredVictories(kind);
+        return !MetaProgress.IsRescued(kind) && !FoundInSupplyRoom(kind)
+            && StoryItems.TruckPartsRecovered >= RequiredParts(kind);
+    }
+
+    // How to find them, for their abandoned area's sign (short lines, upper case), or null once
+    // their signal is out there.
+    public static string FindHint(NpcKind kind)
+    {
+        if (FoundInSupplyRoom(kind))
+            return $"HELD IN THE SUPPLY ROOM UNDER THE LAST FLOOR // FINISH A RUN TO REACH THE {Role(kind)}";
+
+        int needed = RequiredParts(kind) - StoryItems.TruckPartsRecovered;
+        return needed > 0 ? $"NO SIGNAL // RECOVER {needed} MORE TRUCK PART{(needed == 1 ? "" : "S")} TO PICK UP THE {Role(kind)}" : null;
     }
 
     // Who a run can turn up: the earliest findable survivor, or null if there's none.
@@ -159,10 +177,10 @@ public static class Npcs
     {
         switch (kind)
         {
-            case NpcKind.Mechanic: return "...ANYONE? THIS IS RIGGS... THEY'VE GOT ME LOCKED UP... SOMEWHERE ON THIS LEVEL...";
-            case NpcKind.Medic: return "...MAYDAY... DR. OKAFOR... CAGED... DEEP IN... PLEASE HURRY...";
+            case NpcKind.Mechanic: return "...ANYONE? THIS IS RIGGS... LOCKED IN THE SUPPLY ROOM UNDER THIS BASE... THERE'S A TRUCK PART DOWN HERE... GET ME OUT AND I'LL GET YOUR TRUCK RUNNING...";
+            case NpcKind.Medic: return "...MAYDAY... DR. OKAFOR... CAGED... DEEP IN... I HEARD YOUR TRUCK'S COMING TOGETHER... TAKE ME WITH YOU...";
             case NpcKind.Trader: return "...MAGPIE HERE... GOT GOODS TO TRADE... IF SOMEONE GETS ME OUT OF THIS BOX...";
-            default: return "...SERGEANT VOSS, PINNED DOWN... CAGED IN THE FAR ROOMS... REQUEST EXTRACTION...";
+            default: return "...SERGEANT VOSS, PINNED DOWN... CAGED IN THE FAR ROOMS... HEARD YOU'VE GOT A TRUCK... REQUEST EXTRACTION...";
         }
     }
 
@@ -216,6 +234,35 @@ public static class Npcs
         }
     }
 
+    // The mechanic on the truck: what it still needs, or that it's ready to go.
+    public static string TruckProgress()
+    {
+        StoryItem? next = StoryItems.Next(NpcKind.Mechanic);
+
+        if (next == null)
+            return "TRUCK'S READY. TANK'S FULL. SAY THE WORD AND WE'RE OUT OF HERE.";
+
+        int have = StoryItems.Recovered(NpcKind.Mechanic);
+
+        if (have == 0)
+            return $"THAT TRUCK NEEDS FIVE PARTS. FIRST ON THE LIST: {StoryItems.Name(next.Value)}. CHECK THE SUPPLY ROOM UNDER THE BASE.";
+
+        return $"{have} OF 5 PARTS IN. NEXT ON THE LIST: {StoryItems.Name(next.Value)}. THE SUPPLY ROOM SHOULD HAVE ONE.";
+    }
+
+    // The mechanic on the radio when the player takes a truck part off the supply room's shelf.
+    public static string PartTaken(StoryItem part)
+    {
+        switch (part)
+        {
+            case StoryItem.Battery: return "THAT'S A TRUCK BATTERY! BRING IT HOME AND SHE'LL AT LEAST TURN OVER.";
+            case StoryItem.FuelPump: return "FUEL PUMP. GOOD. NOW SHE CAN DRINK. GET IT BACK HERE.";
+            case StoryItem.Alternator: return "AN ALTERNATOR? YOU BEAUTY. CLIMB OUT AND BRING IT HOME.";
+            case StoryItem.Tyres: return "TYRES! NO MORE RIMS ON CONCRETE. GET OUT OF THERE IN ONE PIECE.";
+            default: return "THE ENGINE BLOCK... THAT'S THE LAST ONE. GET IT HOME AND WE'RE DRIVING OUT OF HERE.";
+        }
+    }
+
     // Shouted from the cage while zombies are still in the room.
     public static readonly string[] CagedPleas =
     {
@@ -235,7 +282,7 @@ public static class Npcs
     {
         switch (kind)
         {
-            case NpcKind.Mechanic: return "OWE YOU ONE. I'LL CLEAR OUT THAT DUSTY CORNER AND GET A WORKBENCH RUNNING.";
+            case NpcKind.Mechanic: return "OWE YOU ONE. GRAB THAT PART - THERE'S A TRUCK AT YOUR HIDEOUT I CAN GET RUNNING.";
             case NpcKind.Medic: return "THANK GOD. I'LL CLEAN UP A MED BAY AT THE HIDEOUT AND PATCH YOU UP.";
             case NpcKind.Trader: return "A PLEASURE DOING BUSINESS. I'LL CLEAR A CORNER OF YOUR HIDEOUT AND SET UP SHOP.";
             default: return "GOOD TIMING, SOLDIER. I'LL TIDY UP YOUR SUPPLY ROOM AND SORT YOUR SUPPLY LINES.";
@@ -248,7 +295,7 @@ public static class Npcs
         switch (kind)
         {
             case NpcKind.Mechanic:
-                return new[] { "BRING ME PARTS AND WIRE, I'LL BUILD YOU SOMETHING.", "BENCH IS WARM. WHAT ARE WE MAKING?", "STILL IN ONE PIECE? GOOD." };
+                return new[] { TruckProgress(), TruckProgress(), "BRING ME PARTS AND WIRE, I'LL BUILD YOU SOMETHING.", "STILL IN ONE PIECE? GOOD." };
             case NpcKind.Medic:
                 return new[] { "LET ME SEE THOSE CUTS.", "CHEMICALS. I ALWAYS NEED MORE CHEMICALS.", "STAY STILL. THIS WON'T HURT. MUCH." };
             case NpcKind.Trader:
@@ -264,7 +311,8 @@ public static class Npcs
         switch (kind)
         {
             case NpcKind.Mechanic:
-                return new[] { "WHERE'D I PUT THAT WRENCH...", "THIS GENERATOR IS HELD TOGETHER WITH TAPE.", "*HUMMING*" };
+                return new[] { "WHERE'D I PUT THAT WRENCH...", "THIS GENERATOR IS HELD TOGETHER WITH TAPE.", "*HUMMING*",
+                    StoryItems.Complete(NpcKind.Mechanic) ? "SHE PURRS. WELL, SHE GROWLS." : "COME ON, OLD GIRL. NOT LONG NOW." };
             case NpcKind.Medic:
                 return new[] { "STERILE. MOSTLY.", "I USED TO HAVE A CLINIC, YOU KNOW.", "SOMEONE KEEPS STEALING THE GAUZE." };
             case NpcKind.Trader:
@@ -301,12 +349,13 @@ public static class Stations
             case HideoutStation.MedStation: return "MED STATION";
             case HideoutStation.TradePost: return "TRADE POST";
             case HideoutStation.IntelDesk: return "INTEL DESK";
+            case HideoutStation.TruckBay: return "TRUCK BAY";
             default: return "AMMO PRESS";
         }
     }
 
-    // The NPC who has to be rescued before it can be used; null for the generator and the intel
-    // desk, which are there from the start.
+    // The NPC who has to be rescued before it can be used; null for the generator, the intel desk
+    // and the truck bay, which are there from the start.
     public static NpcKind? Owner(HideoutStation station)
     {
         switch (station)
@@ -328,6 +377,7 @@ public static class Stations
             case HideoutStation.MedStation: return new[] { MetaUpgrade.Toughness, MetaUpgrade.Conditioning, MetaUpgrade.FieldKit };
             case HideoutStation.TradePost: return new MetaUpgrade[0];
             case HideoutStation.IntelDesk: return new[] { MetaUpgrade.Recon };
+            case HideoutStation.TruckBay: return new MetaUpgrade[0];
             default: return new[] { MetaUpgrade.AmmoCache, MetaUpgrade.Scavenger };
         }
     }
@@ -341,6 +391,7 @@ public static class Stations
             case HideoutStation.MedStation: return new Color(0.45f, 0.9f, 1f);
             case HideoutStation.TradePost: return new Color(1f, 0.85f, 0.35f);
             case HideoutStation.IntelDesk: return new Color(0.35f, 1f, 0.55f);
+            case HideoutStation.TruckBay: return new Color(1f, 0.72f, 0.25f);
             default: return new Color(0.85f, 1f, 0.35f);
         }
     }

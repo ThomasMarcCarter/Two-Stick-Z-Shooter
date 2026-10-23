@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.AI;
 
 // A survivor locked in a cage in one of a floor's combat rooms (at most one a run, and only once
-// enough runs have been completed; see Npcs.NextToFind and FloorGenerator.PlaceCagedSurvivor). While the room's zombies are alive they cower and shout for
+// enough truck parts have been recovered; see Npcs.NextToFind and FloorGenerator.PlaceCagedSurvivor),
+// or, for the mechanic, in the supply room under the last floor. While the room's zombies are alive they cower and shout for
 // help; once it's clear the player can open the cage with Interact. Freeing them saves the
 // rescue straight away (MetaProgress.Rescue): they thank the player, step out of the cage and
 // walk to the door along the floor's navmesh (round boxes and pillars), and head off to the

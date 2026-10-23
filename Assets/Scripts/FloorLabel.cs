@@ -10,7 +10,7 @@ public class FloorLabel : MonoBehaviour
     [SerializeField] private string format = "> TACTICAL MAP // FLOOR {0}";
 
     private TMP_Text label;
-    private int shownFloor = -1;
+    private string shownName;
 
     private void Awake()
     {
@@ -19,12 +19,12 @@ public class FloorLabel : MonoBehaviour
 
     private void Update()
     {
-        if (floor == null || floor.FloorNumber == shownFloor)
+        if (floor == null || floor.FloorName == shownName)
             return;
 
-        shownFloor = floor.FloorNumber;
-        label.text = floor.IsHideout
-            ? string.Format(format.Replace("FLOOR {0} OF {1}", "{2}").Replace("FLOOR {0}", "{2}"), shownFloor, floor.TotalFloors, floor.FloorName)
-            : string.Format(format, shownFloor, floor.TotalFloors);
+        shownName = floor.FloorName;
+        label.text = floor.IsHideout || floor.IsSupplyRoom
+            ? string.Format(format.Replace("FLOOR {0} OF {1}", "{2}").Replace("FLOOR {0}", "{2}"), floor.FloorNumber, floor.TotalFloors, floor.FloorName)
+            : string.Format(format, floor.FloorNumber, floor.TotalFloors);
     }
 }

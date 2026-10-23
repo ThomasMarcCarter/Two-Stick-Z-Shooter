@@ -260,6 +260,14 @@ public static class MapSymbols
                 FillRect(vh, new Rect(position.x - t / 2f, position.y - g * 0.5f, t, g), glyph);
                 break;
 
+            case HideoutStation.TruckBay:
+                // A truck side on: the cargo bed, the cab to the right, two wheels.
+                FillRect(vh, new Rect(position.x - g, position.y - g * 0.35f, g * 1.15f, g * 0.95f), glyph);
+                FillRect(vh, new Rect(position.x + g * 0.3f, position.y - g * 0.35f, g * 0.7f, g * 0.6f), glyph);
+                Ring(vh, position + new Vector2(-g * 0.55f, -g * 0.6f), g * 0.28f, t * 0.8f, glyph);
+                Ring(vh, position + new Vector2(g * 0.6f, -g * 0.6f), g * 0.28f, t * 0.8f, glyph);
+                break;
+
             default:
                 Ring(vh, position, g * 0.7f, t * 0.8f, glyph);
                 FillRect(vh, new Rect(position.x - t / 2f, position.y + g * 0.35f, t, g * 0.65f), glyph);

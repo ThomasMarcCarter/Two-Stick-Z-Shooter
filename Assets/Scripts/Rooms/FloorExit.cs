@@ -1,56 +1,54 @@
+using System;
 using UnityEngine;
 
-// Appears in the boss room once the boss is dead: a hatch down to the next floor, or the trophy
-// on the last floor (the hideout's deploy hatch is one too). Nothing happens by walking onto
-// it: the player walks up and presses Interact, with a label saying what it does. The hatch's
-// two doors swing open over the arming delay (with a clank), and it can't be used until
-// they're open; in the hideout it starts open.
+// The ways on: the hatch that appears in the boss room once the boss is dead (down to the next
+// floor, or on the last floor down to the supply room), the hideout's deploy hatch, and the
+// supply room's ladder up to the extraction point, which ends the run as a win. Nothing happens
+// by walking onto one: the player walks up and presses Interact, with a label saying what it
+// does. The hatch's two doors swing open over the arming delay (with a clank), and it can't be
+// used until they're open; in the hideout it starts open. The ladder can be held shut by a
+// reason (`Blocked`, e.g. the truck part still on its shelf), which its label shows.
 public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 {
     public enum Kind
     {
         NextFloor,
-        Trophy
+        Extraction
     }
 
     private const float OpenAngle = 112f;
-
-    [SerializeField] private float spinSpeed = 60f;
-    [SerializeField] private float bobHeight = 0.15f;
 
     private FloorGenerator floor;
     private Kind kind;
     private float openedAt;
     private float armDelay;
     private bool used;
-    private Transform visual;
-    private Vector3 visualRest;
     private Transform[] doors;
     private Quaternion[] doorRest;
     private PickupLabel label;
     private PlayerWeapon playerWeapon;
     private bool clanked;
 
+    // Why it can't be used yet, or null when it can (the supply room's ladder: the part first).
+    public Func<string> Blocked { get; set; }
+
     public Vector3 Position => transform.position;
-    public float Reach => kind == Kind.Trophy ? 1.6f : 2.1f;
-    public bool CanTake => !used && Armed && !StationScreen.IsOpen;
+    public float Reach => kind == Kind.Extraction ? 1.8f : 2.1f;
+    public bool CanTake => !used && Armed && !StationScreen.IsOpen && BlockedReason == null;
 
     private bool Armed => Time.time >= openedAt + armDelay;
+    private string BlockedReason => Blocked?.Invoke();
 
     // doorHinges: the hatch's door pivots (on the hinge line, door lying flat along their local
     // +x), or null; they swing open about their local z.
-    public void Initialise(FloorGenerator owner, Kind exitKind, float delay, Transform spinningPart, Transform[] doorHinges)
+    public void Initialise(FloorGenerator owner, Kind exitKind, float delay, Transform[] doorHinges)
     {
         floor = owner;
         kind = exitKind;
         openedAt = Time.time;
         armDelay = Mathf.Max(0f, delay);
-        visual = spinningPart;
         doors = doorHinges;
-        label = PickupLabel.Create(transform, kind == Kind.Trophy ? 2.2f : 1.4f);
-
-        if (visual != null)
-            visualRest = visual.localPosition;
+        label = PickupLabel.Create(transform, kind == Kind.Extraction ? 2.4f : 1.4f);
 
         if (doors != null)
         {
@@ -81,19 +79,13 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     private void Update()
     {
         // The hatch's sprite (sprite art) shows it open once it's ready to use.
-        if (hatchSprite == null)
+        if (hatchSprite == null && kind == Kind.NextFloor)
             hatchSprite = GetComponent<ItemSprite>();
 
         if (hatchSprite != null && !spriteOpen && Armed)
         {
             spriteOpen = true;
             hatchSprite.SetFrame(new Vector2Int(1, 0));
-        }
-
-        if (visual != null && kind == Kind.Trophy)
-        {
-            visual.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.World);
-            visual.localPosition = visualRest + Vector3.up * (Mathf.Sin(Time.time * 2f) * bobHeight);
         }
 
         UpdateDoors();
@@ -111,7 +103,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         bool showLabel = !used && offset.magnitude <= Reach + 2.5f && !StationScreen.IsOpen;
 
         if (showLabel && !label.IsShowing)
-            label.Show(LabelText, kind == Kind.Trophy ? new Color(1f, 0.8f, 0.3f) : UiColours.Phosphor);
+            label.Show(LabelText, UiColours.Phosphor);
         else if (!showLabel && label.IsShowing)
             label.Hide();
 
@@ -146,14 +138,22 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     {
         string action = $"<size=80%><color=#FFFFFF>{InputHint.Format("[{Interact}]")} ";
 
-        if (kind == Kind.Trophy)
-            return "TROPHY  <size=70%><alpha=#99>// THE LAST FLOOR IS CLEAR</size>\n" + action + "TAKE IT AND GET OUT</color></size>";
+        if (kind == Kind.Extraction)
+        {
+            string header = "LADDER UP  <size=70%><alpha=#99>// EXTRACTION POINT</size>\n";
+            string blocked = BlockedReason;
+
+            return blocked != null
+                ? header + $"<size=70%><color={UiColours.DangerHex}>{blocked}</color></size>"
+                : header + action + "CLIMB OUT AND HEAD HOME</color></size>";
+        }
 
         if (floor != null && floor.IsHideout)
             return "DEPLOY HATCH  <size=70%><alpha=#99>// FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
 
-        string header = $"HATCH  <size=70%><alpha=#99>// DOWN TO FLOOR {(floor != null ? floor.FloorNumber + 1 : 0)}</size>\n";
-        return Armed ? header + action + "CLIMB DOWN</color></size>" : header + "<size=70%><alpha=#88>OPENING...</size>";
+        string where = floor == null ? "" : floor.FloorNumber >= floor.TotalFloors ? "DOWN TO THE SUPPLY ROOM" : $"DOWN TO FLOOR {floor.FloorNumber + 1}";
+        string hatch = $"HATCH  <size=70%><alpha=#99>// {where}</size>\n";
+        return Armed ? hatch + action + "CLIMB DOWN</color></size>" : hatch + "<size=70%><alpha=#88>OPENING...</size>";
     }
 
     private void Use()

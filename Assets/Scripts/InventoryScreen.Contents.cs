@@ -60,6 +60,8 @@ public partial class InventoryScreen
 
         RefreshMelee();
 
+        storyLabel.text = Story != null && Story.Item is StoryItem story ? StoryItems.Name(story) : "";
+
         if (Bag != null)
             capacity.text = $"{Bag.UsedCells} / {Backpack.CellCount} SLOTS";
 
@@ -195,6 +197,22 @@ public partial class InventoryScreen
 
     private string TooltipFor(Spot spot)
     {
+        if (spot.Kind == SpotKind.Story)
+        {
+            if (Story == null || !(Story.Item is StoryItem story))
+            {
+                tooltipAccent = Fade(UiColours.Phosphor, 0.5f);
+                return "STORY ITEM\n<alpha=#88><size=85%>EMPTY // THE SUPPLY ROOM UNDER THE LAST FLOOR HOLDS WHAT THE SURVIVORS NEED</size>";
+            }
+
+            tooltipAccent = StoryItems.Colour(story);
+            NpcKind owner = StoryItems.Owner(story);
+            return $"{StoryItems.Name(story)}  <alpha=#99><size=85%>// FOR {Npcs.Name(owner)}</size>\n"
+                + $"<alpha=#FF><size=85%>{StoryItems.Description(story)}</size>\n"
+                + $"<alpha=#CC><size=85%>{StoryItems.Progress(owner)} AT THE HIDEOUT</size>\n"
+                + "<alpha=#88><size=80%>LOST IF YOU DIE // CLIMB OUT OF THE SUPPLY ROOM TO BRING IT HOME</size>";
+        }
+
         if (spot.Kind == SpotKind.QuickSlot)
         {
             Backpack.Item quick = QuickItem(spot.Index);
