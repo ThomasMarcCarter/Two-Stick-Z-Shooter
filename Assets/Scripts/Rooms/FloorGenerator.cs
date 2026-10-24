@@ -307,8 +307,8 @@ public partial class FloorGenerator : MonoBehaviour
     public string ZoneName => Zones.Name(Zone);
 
     // Where the player is, zone and floor: "MILITARY BASE // FLOOR 2", "MILITARY BASE // SUPPLY
-    // ROOM", or just "HIDEOUT".
-    public string LocationName => IsHideout ? FloorName : $"{ZoneName} // {FloorName}";
+    // ROOM", "SHOPPING MALL // HIDEOUT".
+    public string LocationName => $"{ZoneName} // {FloorName}";
 
     private Zone runZone;
 
@@ -797,11 +797,8 @@ public partial class FloorGenerator : MonoBehaviour
             return;
         }
 
-        // The hideout's deploy hatch leads down into the Military Base; other zones are a drive
-        // away (TruckBay).
-        if (IsHideout)
-            MetaProgress.ChooseZone(Zone.MilitaryBase);
-
+        // A hideout's deploy hatch leads down into its own zone (MetaProgress.ChosenZone, read
+        // when floor 1 is built); other zones' hideouts are a drive away (TruckBay).
         // Under the last floor: the supply room.
         if (FloorNumber >= TotalFloors && !IsHideout)
         {

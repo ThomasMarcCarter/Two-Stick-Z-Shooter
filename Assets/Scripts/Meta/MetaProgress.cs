@@ -295,7 +295,8 @@ public static class MetaProgress
 
     // ---------- Zones ----------
 
-    // The zone the next run starts in: the one last chosen, or the Military Base if that's locked.
+    // The zone the survivors are parked in (its hideout, and where the next run starts): the one
+    // last driven to, or the Military Base if that's locked.
     public static Zone ChosenZone
     {
         get

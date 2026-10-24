@@ -33,6 +33,20 @@ public static class Zones
         }
     }
 
+    // The survivors' hideout in each zone, where the truck parks: a hangar at the base, a
+    // boarded-up store at the mall, the barred-up emergency room at the hospital and the baggage
+    // sorting room at the airport (FloorGenerator.HideoutZones.cs).
+    public static string HideoutName(Zone zone)
+    {
+        switch (zone)
+        {
+            case Zone.ShoppingMall: return "BOARDED-UP STORE";
+            case Zone.Hospital: return "EMERGENCY ROOM";
+            case Zone.Airport: return "BAGGAGE ROOM";
+            default: return "HANGAR";
+        }
+    }
+
     // The survivor whose goal is found in this zone.
     public static NpcKind Owner(Zone zone)
     {

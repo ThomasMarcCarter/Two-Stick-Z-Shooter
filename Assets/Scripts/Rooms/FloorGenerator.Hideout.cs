@@ -10,6 +10,10 @@ using UnityEngine;
 // for each survivor (the mechanic's workshop, the medic's med bay, the
 // quartermaster's supply room, the trader's stall). An area lies abandoned under dust sheets and
 // empty boxes until its survivor is rescued on a run; then they tidy it up and set up there.
+//   Each zone has its own hideout with that same layout (the survivors and the truck travel
+// together), on the zone's floor and walls and dressed for the place: a hangar at the base, a
+// boarded-up store at the mall, a barred-up emergency room at the hospital, a baggage sorting
+// room at the airport (FloorGenerator.HideoutZones.cs).
 public partial class FloorGenerator
 {
     [Header("Hideout")]
@@ -97,7 +101,7 @@ public partial class FloorGenerator
             new HashSet<(Vector2Int, Vector2Int)>());
 
         Room hall = rooms[0];
-        hall.DisplayName = "HIDEOUT";
+        hall.DisplayName = Zones.HideoutName(Zone);
 
         TraderStock.Restock(rng, attachments, treasureWeapons);
 
@@ -214,7 +218,6 @@ public partial class FloorGenerator
         // The intel desk east of the hatch: a planning table with a lit map and the radio (the
         // Recon upgrade).
         Vector3 table = centre + new Vector3(8f, 0f, 3f);
-        Color wood = new Color(0.35f, 0.25f, 0.15f);
         StationConsole.Create(HideoutStation.IntelDesk, table, Vector3.back, parent);
 
         // A shooting range down the east side: a training dummy, sandbags behind it, and a
@@ -235,17 +238,10 @@ public partial class FloorGenerator
             line.GetComponent<Renderer>().sharedMaterial = hazardStripeMaterial;
         }
 
-        // Benches either side of the walk from the spawn to the hatch.
-        Furniture("Bench", "Bench", parent, centre + new Vector3(-3.5f, 0f, -2f), Vector3.right, new Vector3(2.4f, 0.5f, 0.5f), wood);
-        Furniture("Bench", "Bench", parent, centre + new Vector3(3.5f, 0f, -2f), Vector3.left, new Vector3(2.4f, 0.5f, 0.5f), wood);
-
-        // Sandbags along the south wall, west of the truck bay (east of it is the truck's way out).
+        // Whatever the zone's hideout has: the north wall's doors and windows, seats either side
+        // of the walk to the hatch, things piled along the south wall.
+        DressHideout(hall);
         Color crate = new Color(0.3f, 0.33f, 0.2f);
-        Color sand = new Color(0.45f, 0.4f, 0.3f);
-        float southWall = centre.z - HallHalf.y + 0.9f;
-
-        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 8.5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
-        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
 
         // Four pillars framing the middle of the hall round the hatch.
         foreach (Vector2 corner in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
@@ -353,14 +349,24 @@ public partial class FloorGenerator
             HideoutNpc.Create(NpcKind.Mechanic, at + new Vector3(-size.z / 2f - 0.9f, 0f, 0.8f), Vector3.right, hall.transform);
     }
 
-    // Off to a zone in the truck (from its zone map): it drives away, then the zone's floor 1 is
-    // built behind the transition.
+    // Off to a zone in the truck (from its zone map): it drives away, then that zone's hideout is
+    // built behind the transition (TruckBay has already made it the chosen zone).
     public void DriveTo(Zone zone)
     {
         TruckBay bay = floorRoot != null ? floorRoot.GetComponentInChildren<TruckBay>() : null;
 
         if (IsHideout && bay != null)
-            bay.DriveTo(zone, transition, AdvanceFloor);
+            bay.DriveTo(zone, transition, ArriveAtHideout);
+    }
+
+    // Runs while the transition screen is fully black: the hideout again, in the new zone.
+    private void ArriveAtHideout()
+    {
+        ClearLooseObjects();
+        Generate();
+
+        if (cameraFollow != null)
+            cameraFollow.SnapToTarget();
     }
 
     private static string TruckText()

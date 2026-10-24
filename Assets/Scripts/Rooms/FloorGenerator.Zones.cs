@@ -5,7 +5,8 @@ using UnityEngine;
 // zone and overrides only what it sets: how many floors come before the supply room, the odds of
 // each kind of zombie, the loot table, the floor and boss music, and the room floors and walls.
 // Anything left empty, and any zone without an entry, uses the FloorGenerator's own settings,
-// which are the Military Base's. The hideout always keeps its own (the base's) floors and walls.
+// which are the Military Base's. Each zone's hideout uses the zone's walls and its floor (or the
+// base's bare concrete, if asked), dressed in FloorGenerator.HideoutZones.cs.
 // Bosses and room themes per zone are in code (Zones.Boss, CombatThemes).
 public partial class FloorGenerator
 {
@@ -29,6 +30,8 @@ public partial class FloorGenerator
         public Material floorVariant;
         [Tooltip("Walls, laid out like the base's (pixel walls: 32 rows of face under 4 of cap). Empty uses the wall material.")]
         public Material wall;
+        [Tooltip("This zone's hideout keeps the base's bare concrete floor instead of the zone's floor (the airport's baggage room).")]
+        public bool hideoutConcreteFloor;
     }
 
     [Header("Zones")]
@@ -53,9 +56,10 @@ public partial class FloorGenerator
             baseArtKept = true;
         }
 
-        // The hideout and the roof keep the base's bare concrete.
-        ZoneSettings settings = IsHideout || IsEvac ? null : CurrentZoneSettings;
-        floorMaterial = settings != null && settings.floor != null ? settings.floor : baseFloor;
+        // The roof keeps the base's bare concrete; a hideout takes its zone's walls and floor.
+        ZoneSettings settings = IsEvac ? null : CurrentZoneSettings;
+        bool concrete = settings != null && IsHideout && settings.hideoutConcreteFloor;
+        floorMaterial = settings != null && settings.floor != null && !concrete ? settings.floor : baseFloor;
         floorVariants = settings != null && settings.floorVariant != null ? new[] { settings.floorVariant } : baseFloorVariants;
         wallMaterial = settings != null && settings.wall != null ? settings.wall : baseWall;
     }

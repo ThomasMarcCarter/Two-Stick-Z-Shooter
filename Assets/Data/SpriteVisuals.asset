@@ -375,6 +375,46 @@ MonoBehaviour:
     glow: {fileID: 11400000, guid: 9c3ef86b2d5eaf84aa00a91163315ac7, type: 2}
     frames: 4
     fps: 16
+  - name: HangarDoor
+    sheet: {fileID: 11400000, guid: 4c38521c20a5a2644942506540f6b83d, type: 2}
+    glow: {fileID: 11400000, guid: 8025df93adac2c541ac898c553aab03d, type: 2}
+    frames: 1
+    fps: 0
+  - name: BoardedWindow
+    sheet: {fileID: 11400000, guid: 835b15bfec3206c44a325f6d7fc5fd8a, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BoardedDoor
+    sheet: {fileID: 11400000, guid: cb084d5a204e1b144a92cf7bf9221394, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BarredWindow
+    sheet: {fileID: 11400000, guid: 20ad314c5dc46c1459c4a7d311d1aa36, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BarredDoor
+    sheet: {fileID: 11400000, guid: 7bc7fce357b625b42bc28e5fb36f2541, type: 2}
+    glow: {fileID: 11400000, guid: b90655a5af82c5a439d81bbad0f3ea50, type: 2}
+    frames: 1
+    fps: 0
+  - name: BeltHatch
+    sheet: {fileID: 11400000, guid: dc26618f65cd2b74aa669e7ff76889e3, type: 2}
+    glow: {fileID: 11400000, guid: d3d66da77ad8976498d97969164f739a, type: 2}
+    frames: 1
+    fps: 0
+  - name: Conveyor
+    sheet: {fileID: 11400000, guid: 37ed4f5dfa3dfda4d96ce6f07f914262, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BaggageCart
+    sheet: {fileID: 11400000, guid: a7350c454d52d2540a35b3fc5c844682, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}

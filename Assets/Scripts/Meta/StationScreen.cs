@@ -12,10 +12,10 @@ using UnityEngine;
 // per station.
 // The trade post uses the same screen as a shop: a row per item in the trader's stock (price,
 // how many are left, how many the player already carries), bought with scrap straight into the
-// pack. The truck bay uses it as the zone map: a row per zone of the map (whose goal it holds,
-// how far along it is, open or locked); once the truck runs, picking an open zone drives there
-// (TruckBay).
-public class StationScreen : MonoBehaviour
+// pack. The truck bay uses it as the zone map: a drawn CRT map of the region with a marker per
+// zone (whose goal it holds, how far along it is, open or locked; StationScreen.ZoneMap.cs); once
+// the truck runs, picking an open zone drives there (TruckBay).
+public partial class StationScreen : MonoBehaviour
 {
     private static readonly Color Phosphor = UiColours.Phosphor;
     private static readonly Color Background = UiColours.PanelBackground;
@@ -92,7 +92,7 @@ public class StationScreen : MonoBehaviour
         title.text = garage ? "> HIDEOUT // MILITARY TRUCK // ZONE MAP" : $"> HIDEOUT // {Stations.Name(station)}";
         subtitle.text = garage
             ? TruckBay.Running
-                ? "RUNNING // PICK AN OPEN ZONE AND THE TRUCK DRIVES YOU THERE // THE DEPLOY HATCH STILL LEADS TO THE MILITARY BASE"
+                ? "RUNNING // PICK AN OPEN ZONE AND EVERYONE MOVES TO ITS HIDEOUT // THE DEPLOY HATCH LEADS INTO THE ZONE YOU'RE IN"
                 : "NOT RUNNING YET // FIT ALL FIVE PARTS AND IT CAN DRIVE YOU TO THE OTHER ZONES"
             : owner == null
             ? station == HideoutStation.Generator
@@ -123,6 +123,9 @@ public class StationScreen : MonoBehaviour
         }
 
         int chosen = menu.Update();
+
+        if (garage)
+            UpdateZoneHighlight();
 
         if (chosen < 0)
             return;
@@ -166,10 +169,10 @@ public class StationScreen : MonoBehaviour
 
     private int RowCount => garage ? Zones.All.Length : trading ? TraderStock.Offers.Length : upgrades.Length;
 
-    // Upgrade rows have three lines (next level, current level, cost); the trader's and the
-    // zones have two, or three in two narrower columns when the trader's stock is big (the
+    // Upgrade rows have three lines (next level, current level, cost); the trader's have two, or
+    // three in two narrower columns when the trader's stock is big (the
     // trade goods brought home widen it).
-    private Vector2 RowSize => TwoColumns ? new Vector2((RowWidth - 10f) / 2f, 72f) : new Vector2(RowWidth, trading || garage ? 62f : 80f);
+    private Vector2 RowSize => TwoColumns ? new Vector2((RowWidth - 10f) / 2f, 72f) : new Vector2(RowWidth, trading ? 62f : 80f);
 
     private const int MaxSingleColumnRows = 5;
 
@@ -225,10 +228,7 @@ public class StationScreen : MonoBehaviour
         if (garage)
         {
             materialsText.text = TruckParts();
-
-            for (int i = 0; i < Zones.All.Length; i++)
-                rows[i].Label.text = ZoneText(Zones.All[i]);
-
+            RefreshZoneMap();
             return;
         }
 
@@ -303,13 +303,14 @@ public class StationScreen : MonoBehaviour
             + $"<size=70%><pos=1%><alpha=#88>{TraderStock.Describe(offer)}<pos=55%>{pack}</size>";
     }
 
-    // "MILITARY BASE    RIGGS, MECHANIC    OPEN" over their goal's progress, or what unlocks it.
+    // "MILITARY BASE    RIGGS, MECHANIC    OPEN" over their goal's progress, or what unlocks it
+    // (the zone map's readout).
     private static string ZoneText(Zone zone)
     {
         NpcKind owner = Zones.Owner(zone);
         bool open = Zones.IsUnlocked(zone);
         string state = !open ? $"<color={UiColours.DangerHex}>LOCKED</color>"
-            : zone == MetaProgress.ChosenZone ? $"<color={UiColours.AmberHex}>OPEN // LAST RUN</color>"
+            : zone == MetaProgress.ChosenZone ? $"<color={UiColours.AmberHex}>YOU ARE HERE</color>"
             : $"<color={UiColours.AmberHex}>OPEN</color>";
         string goal = StoryItems.Goal(owner).Length > 0
             ? StoryItems.Complete(owner) ? $"{StoryItems.Progress(owner)} // DONE" : $"NEEDS {StoryItems.Progress(owner)}"
@@ -380,6 +381,13 @@ public class StationScreen : MonoBehaviour
     // One row per upgrade of the station shown, then the close button under them.
     private void BuildRows()
     {
+        if (garage)
+        {
+            BuildZoneMap();
+            return;
+        }
+
+        HideZoneMap();
         int count = RowCount;
 
         while (rows.Count < count)

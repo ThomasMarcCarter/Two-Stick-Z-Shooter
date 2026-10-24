@@ -166,7 +166,7 @@ public class PauseMenu : MonoBehaviour
         AudioListener.pause = true;
 
         subtitle.text = floor != null
-            ? (floor.IsHideout ? "OPERATION STANDBY // HIDEOUT"
+            ? (floor.IsHideout ? $"OPERATION STANDBY // {floor.LocationName}"
                 : floor.IsSupplyRoom ? $"OPERATION SUSPENDED // {floor.LocationName}"
                 : $"OPERATION SUSPENDED // {floor.LocationName} OF {floor.TotalFloors}")
             : "OPERATION SUSPENDED";

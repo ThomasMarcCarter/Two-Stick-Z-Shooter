@@ -7318,6 +7318,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 0df9f07d300b0e6499511002e4c57738, type: 2}
     floorVariant: {fileID: 2100000, guid: 24f5862cb9590bf4c9c279a678787522, type: 2}
     wall: {fileID: 2100000, guid: 3f414e560c6873040af801844313ada5, type: 2}
+    hideoutConcreteFloor: 0
   - zone: 2
     floors: 0
     enemyKinds: []
@@ -7327,6 +7328,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 0bfbafe7715febd4fb9c7e69863d6663, type: 2}
     floorVariant: {fileID: 2100000, guid: 00949a1fd727cbd45ba62b54d291a57d, type: 2}
     wall: {fileID: 2100000, guid: 61fe0bb148ad40045b992b1fb0fdbf1e, type: 2}
+    hideoutConcreteFloor: 0
   - zone: 3
     floors: 0
     enemyKinds: []
@@ -7336,6 +7338,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 1a734546f6cf86e4cbaa17aa5e090a25, type: 2}
     floorVariant: {fileID: 2100000, guid: a7129dad58705624cbc1b70fcb464dfb, type: 2}
     wall: {fileID: 2100000, guid: 83c4c4c96ca286047a6eca3fc037638e, type: 2}
+    hideoutConcreteFloor: 1
   totalFloors: 3
   exitMaterial: {fileID: 2100000, guid: 5bd0d9809f258f04cb50bb85c5c8b373, type: 2}
   exitArmDelay: 1.6

@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The hideout's military truck, as something to use: walking up to it and pressing Interact
-// opens its zone map (the StationScreen's truck mode), which lists the zones of the map, who
+// opens its zone map (the StationScreen's truck mode), which shows the zones of the map, who
 // needs what from each and which are open. Once the truck runs (all five parts fitted), picking
-// an open zone drives there: the player climbs in, the truck pulls away east with its engine
-// roaring, and the run starts on floor 1 of that zone behind a "DRIVING TO..." transition. Until
-// then the deploy hatch is the only way out, to the Military Base. Built by the FloorGenerator
-// with the truck bay (FloorGenerator.Hideout.cs).
+// another open zone drives there: the player climbs in, the truck pulls away east with its engine
+// roaring, and behind a "DRIVING TO..." transition the survivors set up in that zone's hideout,
+// whose deploy hatch leads into the zone. Until then everyone stays at the Military Base's
+// hangar. Built by the FloorGenerator with the truck bay (FloorGenerator.Hideout.cs).
 public class TruckBay : MonoBehaviour, FloorPickups.IPickup
 {
     // The truck is pulling away: controls are locked until the next floor is built.
@@ -72,10 +72,13 @@ public class TruckBay : MonoBehaviour, FloorPickups.IPickup
         if (!Running)
             return $"THE TRUCK ISN'T RUNNING YET // {StoryItems.Progress(NpcKind.Mechanic)}";
 
+        if (zone == MetaProgress.ChosenZone)
+            return $"YOU'RE ALREADY AT THE {Zones.Name(zone)} // THE DEPLOY HATCH LEADS IN";
+
         return null;
     }
 
-    // Climbs in and drives off to the zone; `leave` builds its first floor once the screen is black.
+    // Climbs in and drives off to the zone; `leave` builds its hideout once the screen is black.
     public void DriveTo(Zone zone, FloorTransition transition, System.Action leave)
     {
         if (!Driving && DriveBlocked(zone) == null)
@@ -130,7 +133,7 @@ public class TruckBay : MonoBehaviour, FloorPickups.IPickup
         }
 
         string name = Zones.Name(zone);
-        transition.Play($"> DRIVING TO THE {name}", $"{name} // FLOOR 1 // LINK ESTABLISHED", () =>
+        transition.Play($"> DRIVING TO THE {name}", $"{name} // {Zones.HideoutName(zone)} // SAFE HOUSE SECURED", () =>
         {
             foreach (Renderer part in hidden)
             {

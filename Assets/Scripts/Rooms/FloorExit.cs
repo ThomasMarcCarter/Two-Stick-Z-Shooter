@@ -149,7 +149,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         }
 
         if (floor != null && floor.IsHideout)
-            return $"DEPLOY HATCH  <size=70%><alpha=#99>// {Zones.Name(Zone.MilitaryBase)} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
+            return $"DEPLOY HATCH  <size=70%><alpha=#99>// {floor.ZoneName} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
 
         string where = floor == null ? "" : floor.FloorNumber >= floor.TotalFloors ? "DOWN TO THE SUPPLY ROOM" : $"DOWN TO FLOOR {floor.FloorNumber + 1}";
         string hatch = $"HATCH  <size=70%><alpha=#99>// {where}</size>\n";
