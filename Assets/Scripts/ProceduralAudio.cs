@@ -521,6 +521,101 @@ public static class ProceduralAudio
         return Build("Explosion", data, sampleRate);
     }
 
+    // The hideout's truck starting and pulling away: the starter cranking, the diesel catching
+    // with a cough, a lumpy idle, then revving up as it drives off and fading into the distance.
+    public static AudioClip TruckEngine()
+    {
+        const int sampleRate = 44100;
+        const float length = 3.4f;
+        float[] data = new float[Mathf.CeilToInt(sampleRate * length)];
+        System.Random rng = new System.Random(1300);
+        float low = 0f;
+        float phase = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+            float noise = Noise(rng);
+            low += (noise - low) * 0.06f;
+
+            // Firing rate: the starter's slow chugs, then idle, then the rev as it pulls away.
+            float rate = t < 0.75f ? 7f : t < 1.3f ? 24f : Mathf.Lerp(24f, 58f, Mathf.SmoothStep(0f, 1f, (t - 1.3f) / 1.5f));
+            phase += rate / sampleRate;
+            float pulse = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(2f * Mathf.PI * phase)), 6f);
+
+            float sound;
+
+            if (t < 0.75f)
+            {
+                float whine = Mathf.Sin(2f * Mathf.PI * (180f + 20f * Mathf.Sin(2f * Mathf.PI * 7f * t)) * t) * 0.25f;
+                sound = whine + low * 3f * pulse;
+            }
+            else
+            {
+                float catchUp = Mathf.Clamp01((t - 0.75f) / 0.08f);
+                float cough = t < 0.95f ? noise * 0.6f * Mathf.Exp(-(t - 0.75f) * 25f) : 0f;
+                float body = Mathf.Sin(2f * Mathf.PI * rate * 2f * t) * 0.35f + low * 5f;
+                sound = (body * (0.4f + pulse) + cough) * catchUp;
+            }
+
+            float fade = t > 2.4f ? Mathf.Clamp01(1f - (t - 2.4f) / (length - 2.4f)) : 1f;
+            data[i] = Tanh(sound * 1.4f) * fade * Mathf.Min(1f, t * 400f);
+        }
+
+        return Build("Truck Engine", data, sampleRate);
+    }
+
+    // A helicopter's rotors: a deep thump six times a second over a turbine's whine. One second,
+    // looping cleanly (a whole number of blade passes and whine cycles).
+    public static AudioClip RotorLoop()
+    {
+        const int sampleRate = 44100;
+        float[] data = new float[sampleRate];
+        System.Random rng = new System.Random(1500);
+        float low = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+            float noise = Noise(rng);
+            low += (noise - low) * 0.05f;
+            float beat = Mathf.Repeat(t * 6f, 1f);
+            float thump = Mathf.Exp(-beat * 9f) * (low * 6f + Mathf.Sin(2f * Mathf.PI * 48f * t) * 0.6f);
+            float whine = Mathf.Sin(2f * Mathf.PI * 880f * t) * 0.05f + Mathf.Sin(2f * Mathf.PI * 1320f * t) * 0.03f;
+            data[i] = Tanh((thump + whine + low * 0.6f) * 1.3f) * 0.8f;
+        }
+
+        return Build("Rotor Loop", data, sampleRate);
+    }
+
+    // A security guard's pea whistle: two shrill trilling blasts.
+    public static AudioClip Whistle()
+    {
+        const int sampleRate = 44100;
+        const float length = 0.9f;
+        float[] data = new float[Mathf.CeilToInt(sampleRate * length)];
+        System.Random rng = new System.Random(1400);
+        float phase = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+
+            // Two blasts with a gap, the pea rattling the pitch.
+            bool blowing = t < 0.32f || (t > 0.42f && t < 0.86f);
+
+            if (!blowing)
+                continue;
+
+            float trill = Mathf.Sin(2f * Mathf.PI * 34f * t);
+            phase += (2900f + 160f * trill) / sampleRate;
+            float edge = Mathf.Min(1f, Mathf.Min(t, Mathf.Abs(t - 0.42f)) * 200f);
+            data[i] = (Mathf.Sin(2f * Mathf.PI * phase) * 0.5f + Noise(rng) * 0.08f) * (0.75f + 0.25f * trill) * edge;
+        }
+
+        return Build("Whistle", data, sampleRate);
+    }
+
     // Something thrown: a short airy whoosh.
     public static AudioClip Throw(int seed)
     {

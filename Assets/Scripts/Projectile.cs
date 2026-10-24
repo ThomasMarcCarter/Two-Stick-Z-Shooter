@@ -366,6 +366,19 @@ public class Projectile : MonoBehaviour
         if (spent || enemy == null)
             return;
 
+        // Turned aside by a shield: sparks and a clank, no blood, no damage.
+        Vector3 travel = rb != null && rb.linearVelocity.sqrMagnitude > 0.01f ? rb.linearVelocity.normalized : transform.forward;
+
+        if (enemy.BlocksHitFrom(point - travel * 3f))
+        {
+            spent = true;
+            ImpactEffects.WallHit(point + Vector3.up * tracerLift, normal, enemy.transform, EffectMaterials);
+            PlayImpact("impact.shield", SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank), wallImpactVolume);
+            LeaveTracer();
+            Destroy(gameObject);
+            return;
+        }
+
         ImpactEffects.FleshHit(point + Vector3.up * tracerLift, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
 
         // The enemy's own voice reacts to the hit (EnemyVoice).

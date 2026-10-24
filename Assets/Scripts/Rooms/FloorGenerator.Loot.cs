@@ -141,7 +141,7 @@ public partial class FloorGenerator
     // items spawned.
     public int ForceLoot(Room room)
     {
-        if (room == null || lootTable == null)
+        if (room == null || ZoneLootTable == null)
             return 0;
 
         if (rng == null)
@@ -154,7 +154,7 @@ public partial class FloorGenerator
             if (point.Item != null)
                 continue;
 
-            LootTable.Entry entry = lootTable.Pick(point.Kind, FloorNumber, (float)rng.NextDouble());
+            LootTable.Entry entry = ZoneLootTable.Pick(point.Kind, FloorNumber, (float)rng.NextDouble());
 
             if (entry == null)
                 continue;
@@ -171,10 +171,10 @@ public partial class FloorGenerator
     // Rolls the point's chance, then picks what it gives from the table.
     private void RollLoot(Room room, LootSpawnPoint point)
     {
-        if (lootTable == null || rng.NextDouble() >= lootTable.ChanceFor(point.Kind))
+        if (ZoneLootTable == null || rng.NextDouble() >= ZoneLootTable.ChanceFor(point.Kind))
             return;
 
-        LootTable.Entry entry = lootTable.Pick(point.Kind, FloorNumber, (float)rng.NextDouble());
+        LootTable.Entry entry = ZoneLootTable.Pick(point.Kind, FloorNumber, (float)rng.NextDouble());
 
         if (entry != null)
             point.Item = SpawnLootItem(room, point, entry);

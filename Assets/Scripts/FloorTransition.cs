@@ -39,6 +39,18 @@ public class FloorTransition : MonoBehaviour
         "CHECKING SIX..."
     };
     [SerializeField] private int linesPerDescent = 3;
+    [Tooltip("Lines shown instead while driving to another zone in the hideout's truck.")]
+    [SerializeField] private string[] drivingLines =
+    {
+        "CHECKING THE FUEL GAUGE...",
+        "WEAVING ROUND WRECKS...",
+        "KEEPING THE HEADLIGHTS LOW...",
+        "RADIO SILENCE ON THE ROAD...",
+        "CLEARING A ROADBLOCK...",
+        "WATCHING THE MIRRORS...",
+        "GRINDING THROUGH THE GEARS...",
+        "SCANNING THE SKYLINE..."
+    };
 
     private void Awake()
     {
@@ -46,26 +58,27 @@ public class FloorTransition : MonoBehaviour
         panel.SetActive(false);
     }
 
-    public void Play(int floorNumber, int totalFloors, Action buildFloor)
+    // Down a hatch to a numbered floor of a zone ("MILITARY BASE").
+    public void Play(string zoneName, int floorNumber, int totalFloors, Action buildFloor)
     {
-        Play($"> DESCENDING TO FLOOR {floorNumber}", $"FLOOR {floorNumber} / {totalFloors} // LINK ESTABLISHED", buildFloor);
+        Play($"> DESCENDING TO FLOOR {floorNumber}", $"{zoneName} // FLOOR {floorNumber} / {totalFloors} // LINK ESTABLISHED", buildFloor);
     }
 
     // Any other descent (the supply room under the last floor): the heading, and the line shown
-    // once the bar is full.
-    public void Play(string heading, string arrived, Action buildFloor)
+    // once the bar is full. `driving` (in the truck to another zone) uses the road's lines.
+    public void Play(string heading, string arrived, Action buildFloor, bool driving = false)
     {
         if (!IsActive)
-            StartCoroutine(Run(heading, arrived, buildFloor));
+            StartCoroutine(Run(heading, arrived, buildFloor, driving ? drivingLines : flavourLines));
     }
 
-    private IEnumerator Run(string heading, string arrived, Action buildFloor)
+    private IEnumerator Run(string heading, string arrived, Action buildFloor, string[] pool)
     {
         IsActive = true;
         float previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
 
-        string[] lines = PickLines();
+        string[] lines = PickLines(pool);
 
         title.text = heading;
         status.text = lines[0];
@@ -96,9 +109,9 @@ public class FloorTransition : MonoBehaviour
     }
 
     // A few different lines in a random order.
-    private string[] PickLines()
+    private string[] PickLines(string[] from)
     {
-        string[] pool = (string[])flavourLines.Clone();
+        string[] pool = (string[])from.Clone();
 
         for (int i = pool.Length - 1; i > 0; i--)
         {

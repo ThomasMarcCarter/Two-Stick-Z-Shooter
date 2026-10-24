@@ -246,7 +246,7 @@ public class QuickBar : MonoBehaviour
 
         if (ConsumableInfo.IsMedkit(usingType))
         {
-            health.Heal(ConsumableInfo.Heal(usingType));
+            health.Heal(ConsumableInfo.Heal(usingType) + health.MedkitBonus);
             SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("medkit", 1, i => ProceduralAudio.MedkitPickup())), 0.6f);
         }
         else if (usingType == ConsumableType.Adrenaline && stamina != null)

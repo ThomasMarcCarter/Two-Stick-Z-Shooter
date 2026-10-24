@@ -10,8 +10,9 @@ using UnityEngine.AI;
 // Floors are rebuilt in place, so the player (and their health, gun and ammo) carries over.
 // Split into partials: enemies in FloorGenerator.Spawning.cs, loot in FloorGenerator.Loot.cs,
 // boxes/trash/pillars/lights in FloorGenerator.Dressing.cs, and the hideout (floor 0), run-start
-// upgrades, crafting materials and caged survivors in FloorGenerator.Hideout.cs, and the supply
-// room in FloorGenerator.SupplyRoom.cs.
+// upgrades, crafting materials and caged survivors in FloorGenerator.Hideout.cs, the supply
+// room in FloorGenerator.SupplyRoom.cs, and what each zone of the map changes in
+// FloorGenerator.Zones.cs.
 public partial class FloorGenerator : MonoBehaviour
 {
     private static readonly Vector2Int[] Directions =
@@ -272,11 +273,11 @@ public partial class FloorGenerator : MonoBehaviour
     public IReadOnlyList<Room> Rooms => rooms;
     public Room CurrentRoom { get; private set; }
     public AudioClip HideoutMusic => hideoutMusic;
-    public AudioClip BackgroundMusic => backgroundMusic;
-    public AudioClip BossMusic => bossMusic;
+    public AudioClip BackgroundMusic => ZoneBackgroundMusic;
+    public AudioClip BossMusic => ZoneBossMusic;
     public int CurrentSeed { get; private set; }
     public int FloorNumber { get; private set; } = 1;
-    public int TotalFloors => totalFloors;
+    public int TotalFloors => ZoneFloors;
     public int EnemiesKilled { get; private set; }
 
     // Floors of this run whose boss is dead: the ones before this, and this one once its boss
@@ -298,7 +299,18 @@ public partial class FloorGenerator : MonoBehaviour
 
     // Floor 0 is the hideout: the hub with the stations, the rescued survivors and the hatch to floor 1.
     public bool IsHideout => FloorNumber == 0;
-    public string FloorName => IsHideout ? "HIDEOUT" : IsSupplyRoom ? "SUPPLY ROOM" : $"FLOOR {FloorNumber}";
+    public string FloorName => IsHideout ? "HIDEOUT" : IsEvac ? "ROOF" : IsSupplyRoom ? "SUPPLY ROOM" : $"FLOOR {FloorNumber}";
+
+    // The zone of the map this run is in, read from the save when floor 1 is built. In the
+    // hideout, the zone the next run will deploy to.
+    public Zone Zone => IsHideout ? MetaProgress.ChosenZone : runZone;
+    public string ZoneName => Zones.Name(Zone);
+
+    // Where the player is, zone and floor: "MILITARY BASE // FLOOR 2", "MILITARY BASE // SUPPLY
+    // ROOM", or just "HIDEOUT".
+    public string LocationName => IsHideout ? FloorName : $"{ZoneName} // {FloorName}";
+
+    private Zone runZone;
 
     // When floor 1 of this run began, for the victory screen's mission time.
     public float RunStartTime { get; private set; }
@@ -314,8 +326,8 @@ public partial class FloorGenerator : MonoBehaviour
     {
         get
         {
-            if (lootTable != null)
-                return lootTable;
+            if (ZoneLootTable != null)
+                return ZoneLootTable;
 
             if (fallbackDrops == null)
                 fallbackDrops = ScriptableObject.CreateInstance<LootTable>();
@@ -455,9 +467,21 @@ public partial class FloorGenerator : MonoBehaviour
         // Guns fire for free in the hideout (its shooting range), never on a run.
         Gun.FreeAmmo = IsHideout;
 
+        // A new run starts in the zone chosen in the hideout and stays there.
+        if (FloorNumber == 1)
+            runZone = MetaProgress.ChosenZone;
+
+        UseZoneArt();
+
         if (IsHideout)
         {
             GenerateHideout();
+            return;
+        }
+
+        if (IsEvac)
+        {
+            GenerateEvac();
             return;
         }
 
@@ -628,7 +652,7 @@ public partial class FloorGenerator : MonoBehaviour
         PlayRoomCleared();
         SpawnExit(room, FloorExit.Kind.NextFloor);
 
-        if (FloorNumber < totalFloors)
+        if (FloorNumber < TotalFloors)
             SpawnUplink(room);
     }
 
@@ -773,14 +797,19 @@ public partial class FloorGenerator : MonoBehaviour
             return;
         }
 
+        // The hideout's deploy hatch leads down into the Military Base; other zones are a drive
+        // away (TruckBay).
+        if (IsHideout)
+            MetaProgress.ChooseZone(Zone.MilitaryBase);
+
         // Under the last floor: the supply room.
-        if (FloorNumber >= totalFloors && !IsHideout)
+        if (FloorNumber >= TotalFloors && !IsHideout)
         {
-            transition.Play("> DESCENDING TO THE SUPPLY ROOM", "SUPPLY ROOM // NO HOSTILES DETECTED", EnterSupplyRoom);
+            transition.Play("> DESCENDING TO THE SUPPLY ROOM", $"{ZoneName} // SUPPLY ROOM // NO HOSTILES DETECTED", EnterSupplyRoom);
             return;
         }
 
-        transition.Play(FloorNumber + 1, totalFloors, AdvanceFloor);
+        transition.Play(ZoneName, FloorNumber + 1, TotalFloors, AdvanceFloor);
     }
 
     // Runs while the transition screen is fully black.
@@ -1459,7 +1488,7 @@ public partial class FloorGenerator : MonoBehaviour
         if (player == null)
             return;
 
-        Vector3 spawn = IsHideout ? HideoutSpawn : IsSupplyRoom ? SupplyRoomSpawn : CellToWorld(Vector2Int.zero) + spawnOffset;
+        Vector3 spawn = IsHideout ? HideoutSpawn : IsEvac ? EvacSpawn : IsSupplyRoom ? SupplyRoomSpawn : CellToWorld(Vector2Int.zero) + spawnOffset;
 
         Rigidbody playerBody = player.GetComponent<Rigidbody>();
 

@@ -1,11 +1,22 @@
 using System;
 using UnityEngine;
 
+// Appended only. The Military Base's three, then the Shopping Mall's, the Hospital's and the
+// Airport's (Zones.Boss picks per zone).
 public enum BossKind
 {
-    Butcher,        // floor 1: winds up and charges; dazed if it hits a wall
-    Broodmother,    // floor 2: lobs acid, bursts out runners as it's hurt
-    Howler          // floor 3: fast, dodges, howls a shockwave that calls the horde
+    Butcher,        // base floor 1: winds up and charges; dazed if it hits a wall
+    Broodmother,    // base floor 2: lobs acid, bursts out runners as it's hurt
+    Howler,         // base floor 3: fast, dodges, howls a shockwave that calls the horde
+    Warden,         // mall floor 1: riot shield stops shots from the front; whistles for guards
+    Mannequin,      // mall floor 2: freezes while aimed at, rushes when not; appears behind you
+    Glutton,        // mall floor 3: vomits lines of acid; rolls at you once hurt; bursts
+    Surgeon,        // hospital floor 1: marks a line and dashes along it; chains dashes once hurt
+    Gurney,         // hospital floor 2: a runaway bed that glances off walls; stops to call patients
+    Hazmat,         // hospital floor 3: floods wedges with toxic gas; leaks a trail once hurt
+    Handler,        // airport floor 1: hurls suitcases that burst where they land
+    Captain,        // airport floor 2: calls wreckage down on discs round the player
+    Marshal         // airport floor 3: keeps its distance; riot-gun blasts over a wedge
 }
 
 // What a boss is doing, for its model's animation (CharacterAnimator's boss styles).
@@ -18,7 +29,11 @@ public enum BossMove
     Sweep,      // Butcher winding up a wide cleaver sweep at a player too close to charge
     Spit,       // Broodmother swelling up to lob acid
     Howl,       // Howler rearing up to howl
-    Dodge       // Howler darting sideways
+    Dodge,      // Howler darting sideways
+    Whistle,    // Warden blowing its whistle for guards
+    Vanish,     // Mannequin twitching before it vanishes (and steps out behind the player)
+    Vomit,      // Glutton rearing back to vomit acid
+    Roll        // Glutton curled up and rolling
 }
 
 // Implemented by each boss behaviour so the animator can pose the model to match.
@@ -30,24 +45,26 @@ public interface IBossMoves
     float MoveProgress { get; }
 }
 
-// The floor bosses: which one each floor gets, their numbers (as multiples of the FloorGenerator's
+// The floor bosses (which one each floor of a zone gets is Zones.Boss): their numbers (as multiples of the FloorGenerator's
 // boss health and speed), looks, and the behaviour component that makes each one different. The
-// FloorGenerator spawns the body like any enemy, then calls Equip. Floors past the third cycle
-// round again.
+// FloorGenerator spawns the body like any enemy, then calls Equip.
 public static class Bosses
 {
-    public static BossKind ForFloor(int floor)
-    {
-        int count = Enum.GetValues(typeof(BossKind)).Length;
-        return (BossKind)(((Mathf.Max(1, floor) - 1) % count + count) % count);
-    }
-
     public static string Name(BossKind kind)
     {
         switch (kind)
         {
             case BossKind.Broodmother: return "THE BROODMOTHER";
             case BossKind.Howler: return "THE HOWLER";
+            case BossKind.Warden: return "THE WARDEN";
+            case BossKind.Mannequin: return "THE MANNEQUIN";
+            case BossKind.Glutton: return "THE GLUTTON";
+            case BossKind.Surgeon: return "THE SURGEON";
+            case BossKind.Gurney: return "THE GURNEY";
+            case BossKind.Hazmat: return "THE HAZMAT";
+            case BossKind.Handler: return "THE HANDLER";
+            case BossKind.Captain: return "THE CAPTAIN";
+            case BossKind.Marshal: return "THE MARSHAL";
             default: return "THE BUTCHER";
         }
     }
@@ -58,6 +75,15 @@ public static class Bosses
         {
             case BossKind.Broodmother: return 1.4f;
             case BossKind.Howler: return 1.6f;
+            case BossKind.Warden: return 1.3f;
+            case BossKind.Mannequin: return 1.3f;
+            case BossKind.Glutton: return 1.9f;
+            case BossKind.Surgeon: return 1.4f;
+            case BossKind.Gurney: return 1.7f;
+            case BossKind.Hazmat: return 2.1f;
+            case BossKind.Handler: return 1.7f;
+            case BossKind.Captain: return 1.9f;
+            case BossKind.Marshal: return 2.3f;
             default: return 1.2f;
         }
     }
@@ -68,6 +94,15 @@ public static class Bosses
         {
             case BossKind.Broodmother: return 0.7f;
             case BossKind.Howler: return 1.5f;
+            case BossKind.Warden: return 0.85f;
+            case BossKind.Mannequin: return 1.4f;
+            case BossKind.Glutton: return 0.6f;
+            case BossKind.Surgeon: return 1.3f;
+            case BossKind.Gurney: return 1f;
+            case BossKind.Hazmat: return 0.65f;
+            case BossKind.Handler: return 0.9f;
+            case BossKind.Captain: return 1f;
+            case BossKind.Marshal: return 1f;
             default: return 1f;
         }
     }
@@ -79,6 +114,15 @@ public static class Bosses
         {
             case BossKind.Broodmother: return 2.5f;
             case BossKind.Howler: return 1.6f;
+            case BossKind.Warden: return 2f;
+            case BossKind.Mannequin: return 1.7f;
+            case BossKind.Glutton: return 2.8f;
+            case BossKind.Surgeon: return 1.7f;
+            case BossKind.Gurney: return 2.4f;
+            case BossKind.Hazmat: return 2.2f;
+            case BossKind.Handler: return 2.2f;
+            case BossKind.Captain: return 1.8f;
+            case BossKind.Marshal: return 1.9f;
             default: return 2.1f;
         }
     }
@@ -89,6 +133,15 @@ public static class Bosses
         {
             case BossKind.Broodmother: return new Color(0.38f, 0.52f, 0.16f);
             case BossKind.Howler: return new Color(0.45f, 0.3f, 0.6f);
+            case BossKind.Warden: return new Color(0.2f, 0.28f, 0.5f);
+            case BossKind.Mannequin: return new Color(0.78f, 0.7f, 0.6f);
+            case BossKind.Glutton: return new Color(0.6f, 0.5f, 0.2f);
+            case BossKind.Surgeon: return new Color(0.3f, 0.55f, 0.5f);
+            case BossKind.Gurney: return new Color(0.6f, 0.7f, 0.8f);
+            case BossKind.Hazmat: return new Color(0.75f, 0.65f, 0.2f);
+            case BossKind.Handler: return new Color(0.8f, 0.45f, 0.15f);
+            case BossKind.Captain: return new Color(0.25f, 0.3f, 0.5f);
+            case BossKind.Marshal: return new Color(0.3f, 0.32f, 0.36f);
             default: return new Color(0.45f, 0.14f, 0.11f);
         }
     }
@@ -100,6 +153,15 @@ public static class Bosses
         {
             case BossKind.Broodmother: return new Color(0.5f, 0.9f, 0.1f) * 0.35f;
             case BossKind.Howler: return new Color(0.7f, 0.35f, 1f) * 0.35f;
+            case BossKind.Warden: return new Color(0.3f, 0.5f, 1f) * 0.3f;
+            case BossKind.Mannequin: return new Color(1f, 0.95f, 0.85f) * 0.2f;
+            case BossKind.Glutton: return new Color(0.8f, 0.9f, 0.2f) * 0.3f;
+            case BossKind.Surgeon: return new Color(1f, 0.25f, 0.2f) * 0.25f;
+            case BossKind.Gurney: return new Color(0.6f, 0.8f, 1f) * 0.3f;
+            case BossKind.Hazmat: return new Color(0.7f, 1f, 0.25f) * 0.3f;
+            case BossKind.Handler: return new Color(1f, 0.55f, 0.2f) * 0.3f;
+            case BossKind.Captain: return new Color(1f, 0.35f, 0.25f) * 0.25f;
+            case BossKind.Marshal: return new Color(1f, 0.25f, 0.2f) * 0.25f;
             default: return new Color(1f, 0.2f, 0.1f) * 0.25f;
         }
     }
@@ -124,6 +186,53 @@ public static class Bosses
                 boss.SwingAttacks = true;
                 boss.AttackPeriodOverride = 0.8f;
                 break;
+            case BossKind.Warden:
+                boss.gameObject.AddComponent<BossWarden>().Configure(spawnMinion);
+
+                // Up close it clubs with its baton.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 1f;
+                break;
+            case BossKind.Mannequin:
+                boss.gameObject.AddComponent<BossMannequin>();
+
+                // Up close it grabs with stiff swipes.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 0.9f;
+                break;
+            case BossKind.Glutton:
+                boss.gameObject.AddComponent<BossGlutton>();
+                break;
+            case BossKind.Surgeon:
+                boss.gameObject.AddComponent<BossSurgeon>();
+
+                // Up close, quick scalpel slashes.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 0.7f;
+                break;
+            case BossKind.Gurney:
+                boss.gameObject.AddComponent<BossGurney>().Configure(spawnMinion);
+                break;
+            case BossKind.Hazmat:
+                boss.gameObject.AddComponent<BossHazmat>();
+                break;
+            case BossKind.Handler:
+                boss.gameObject.AddComponent<BossHandler>();
+
+                // Up close it shoves with heavy swings.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 1.1f;
+                break;
+            case BossKind.Captain:
+                boss.gameObject.AddComponent<BossCaptain>().Configure(spawnMinion);
+                break;
+            case BossKind.Marshal:
+                boss.gameObject.AddComponent<BossMarshal>();
+
+                // Up close, a rifle-butt swing.
+                boss.SwingAttacks = true;
+                boss.AttackPeriodOverride = 1f;
+                break;
             default:
                 boss.gameObject.AddComponent<BossButcher>();
 
@@ -143,9 +252,19 @@ public static class Bosses
     {
         switch (kind)
         {
-            case BossKind.Broodmother: return CharacterAnimator.Style.Broodmother;
-            case BossKind.Howler: return CharacterAnimator.Style.Howler;
-            default: return CharacterAnimator.Style.Butcher;
+            case BossKind.Broodmother:
+            case BossKind.Glutton:
+            case BossKind.Gurney:
+            case BossKind.Hazmat:
+                return CharacterAnimator.Style.Broodmother;
+            case BossKind.Captain:
+                return CharacterAnimator.Style.Howler;
+            case BossKind.Howler:
+            case BossKind.Mannequin:
+            case BossKind.Surgeon:
+                return CharacterAnimator.Style.Howler;
+            default:
+                return CharacterAnimator.Style.Butcher;
         }
     }
 

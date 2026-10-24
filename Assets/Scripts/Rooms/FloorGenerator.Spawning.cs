@@ -53,11 +53,11 @@ public partial class FloorGenerator
         return SpawnEnemy(room, position, size, health, speed, damage, kind == EnemyKind.Walker ? "Enemy" : EnemyKinds.Name(kind), kind);
     }
 
-    // The floor's boss (see Bosses: a different one each floor), in the middle of its room,
+    // The floor's boss (a different one each floor, per zone: Zones.Boss), in the middle of its room,
     // scaled from the boss health and speed set here.
     private void SpawnBoss(Room room)
     {
-        BossKind kind = Bosses.ForFloor(FloorNumber);
+        BossKind kind = Zones.Boss(Zone, FloorNumber);
         int health = Mathf.Max(1, Mathf.RoundToInt(bossHealth * Bosses.HealthMultiplier(kind)));
         float speed = bossSpeed * Bosses.SpeedMultiplier(kind);
         Enemy boss = SpawnEnemy(room, room.transform.position, Bosses.Size(kind), health, speed, bossContactDamage, "Boss", EnemyKind.Walker);
@@ -112,7 +112,7 @@ public partial class FloorGenerator
 
         float total = 0f;
 
-        foreach (EnemyKindOdds odds in enemyKinds)
+        foreach (EnemyKindOdds odds in ZoneEnemyKinds)
         {
             if (Allowed(odds))
                 total += odds.weight;
@@ -123,7 +123,7 @@ public partial class FloorGenerator
 
         float target = roll * total;
 
-        foreach (EnemyKindOdds odds in enemyKinds)
+        foreach (EnemyKindOdds odds in ZoneEnemyKinds)
         {
             if (!Allowed(odds))
                 continue;
@@ -283,9 +283,9 @@ public partial class FloorGenerator
         enemy.SetKind(kind);
 
         // Bosses get their own model in SpawnBoss. Kinds with a sprite sheet are drawn as sprites
-        // when the sprite art is on.
+        // when the sprite art is on, dressed for the zone.
         bool boss = name == "Boss";
-        SpriteSheet sprite = !boss && SpriteVisuals.Current != null ? SpriteVisuals.Current.For(kind) : null;
+        SpriteSheet sprite = !boss && SpriteVisuals.Current != null ? SpriteVisuals.Current.For(kind, Zone) : null;
 
         if (sprite != null)
             CharacterVisuals.AttachSpriteToEnemy(enemy, sprite);

@@ -1108,7 +1108,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '> TACTICAL MAP // FLOOR 1'
+  m_text: '> MILITARY BASE // FLOOR 1'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8a9a779f1e669a04c857887fd2ec9324, type: 2}
   m_sharedMaterial: {fileID: 6454179766285137459, guid: 8a9a779f1e669a04c857887fd2ec9324, type: 2}
@@ -1201,7 +1201,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FloorLabel
   floor: {fileID: 1558234085}
-  format: '> TACTICAL MAP // FLOOR {0}'
+  format: '> {3} // FLOOR {0}'
 --- !u!1 &190037974
 GameObject:
   m_ObjectHideFlags: 0
@@ -3927,7 +3927,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FloorLabel
   floor: {fileID: 1558234085}
-  format: '> TACTICAL MAP // FLOOR {0} OF {1}'
+  format: '> TACTICAL MAP // {3} // FLOOR {0} OF {1}'
 --- !u!1 &693904275
 GameObject:
   m_ObjectHideFlags: 0
@@ -5307,6 +5307,15 @@ MonoBehaviour:
   - LISTENING AT THE HATCH...
   - CHECKING SIX...
   linesPerDescent: 3
+  drivingLines:
+  - CHECKING THE FUEL GAUGE...
+  - WEAVING ROUND WRECKS...
+  - KEEPING THE HEADLIGHTS LOW...
+  - RADIO SILENCE ON THE ROAD...
+  - CLEARING A ROADBLOCK...
+  - WATCHING THE MIRRORS...
+  - GRINDING THROUGH THE GEARS...
+  - SCANNING THE SKYLINE...
 --- !u!1 &1122129492
 GameObject:
   m_ObjectHideFlags: 0
@@ -7293,9 +7302,42 @@ MonoBehaviour:
   sealedDoorTint: {r: 0.55, g: 0.12, b: 0.08, a: 1}
   survivorChance: 0.25
   distressCallDelay: 3
+  supplyScrapBase: 12
+  supplyScrapPerKill: 0.25
+  supplyMaterialsBase: 3
+  supplyKillsPerMaterial: 12
+  supplyBonusScrap: 25
+  supplyBonusMaterials: 2
+  zoneSettings:
+  - zone: 1
+    floors: 0
+    enemyKinds: []
+    lootTable: {fileID: 0}
+    backgroundMusic: {fileID: 0}
+    bossMusic: {fileID: 0}
+    floor: {fileID: 2100000, guid: 0df9f07d300b0e6499511002e4c57738, type: 2}
+    floorVariant: {fileID: 2100000, guid: 24f5862cb9590bf4c9c279a678787522, type: 2}
+    wall: {fileID: 2100000, guid: 3f414e560c6873040af801844313ada5, type: 2}
+  - zone: 2
+    floors: 0
+    enemyKinds: []
+    lootTable: {fileID: 0}
+    backgroundMusic: {fileID: 0}
+    bossMusic: {fileID: 0}
+    floor: {fileID: 2100000, guid: 0bfbafe7715febd4fb9c7e69863d6663, type: 2}
+    floorVariant: {fileID: 2100000, guid: 00949a1fd727cbd45ba62b54d291a57d, type: 2}
+    wall: {fileID: 2100000, guid: 61fe0bb148ad40045b992b1fb0fdbf1e, type: 2}
+  - zone: 3
+    floors: 0
+    enemyKinds: []
+    lootTable: {fileID: 0}
+    backgroundMusic: {fileID: 0}
+    bossMusic: {fileID: 0}
+    floor: {fileID: 2100000, guid: 1a734546f6cf86e4cbaa17aa5e090a25, type: 2}
+    floorVariant: {fileID: 2100000, guid: a7129dad58705624cbc1b70fcb464dfb, type: 2}
+    wall: {fileID: 2100000, guid: 83c4c4c96ca286047a6eca3fc037638e, type: 2}
   totalFloors: 3
   exitMaterial: {fileID: 2100000, guid: 5bd0d9809f258f04cb50bb85c5c8b373, type: 2}
-  trophyMaterial: {fileID: 2100000, guid: 5a98307e115964c4a9fe3735f109409b, type: 2}
   exitArmDelay: 1.6
   hatchModel: {fileID: 919132149155446097, guid: 93da406f8c7b674459ad814083157c01, type: 3}
   hatchDoorModel: {fileID: 919132149155446097, guid: 3f0ff5e1132628f44bb7ad421ddc5a5a, type: 3}

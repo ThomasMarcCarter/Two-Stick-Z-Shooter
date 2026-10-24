@@ -155,6 +155,13 @@ public class Enemy : MonoBehaviour
     // to face where it's going as usual (FaceMovement).
     public Vector3? FacingOverride { get; set; }
 
+    // Something that stops bullets and blows coming from a point (the Warden's riot shield):
+    // true if a hit from there is blocked. Blasts and fire get round it. Null for nothing.
+    public Func<Vector3, bool> HitBlocker { get; set; }
+
+    // Whether a bullet or blow coming from `origin` is stopped before it hurts.
+    public bool BlocksHitFrom(Vector3 origin) => health > 0 && HitBlocker != null && HitBlocker(origin);
+
     // Hurts with timed swings (true) or by touching the player (false, for bosses).
     public bool SwingAttacks { get; set; } = true;
 

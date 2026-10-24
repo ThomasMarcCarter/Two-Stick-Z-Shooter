@@ -93,7 +93,8 @@ public class DeathScreen : MonoBehaviour
         if (floor != null)
             MetaProgress.EndRun(false, floor.FloorsCleared, floor.FloorNumber, floor.EnemiesKilled);
 
-        notice.text = $"<color={UiColours.AmberHex}>{sentScrap} SCRAP SENT HOME THIS RUN // {MetaProgress.Scrap} BANKED FOR THE HIDEOUT</color>";
+        notice.text = (floor != null ? $"<size=80%>LAST KNOWN POSITION: {floor.LocationName}</size>\n" : "")
+            + $"<color={UiColours.AmberHex}>{sentScrap} SCRAP SENT HOME THIS RUN // {MetaProgress.Scrap} BANKED FOR THE HIDEOUT</color>";
 
         if (lostScrap > 0)
             notice.text += $"\n<size=80%><color={UiColours.DangerHex}>LOST SCRAP NOT SENT HOME:</color> {lostScrap}</size>";

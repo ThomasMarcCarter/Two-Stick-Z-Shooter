@@ -70,7 +70,7 @@ public class SupplyShelfItem : MonoBehaviour, FloorPickups.IPickup
         SupplyShelfItem item = Create(StoryItems.Name(story), position, height, shelfFront, parent);
         item.kind = Kind.Story;
         item.story = story;
-        item.Dress(new Vector2Int((int)story, 0), StoryItems.Colour(story), height);
+        item.Dress(StoryItems.SheetFrame(story), StoryItems.Colour(story), height);
         return item;
     }
 
@@ -218,9 +218,12 @@ public class SupplyShelfItem : MonoBehaviour, FloorPickups.IPickup
             case Kind.Story:
                 StorySlot.For(player.gameObject).Put(story);
                 SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), 0.6f, 0.9f);
-                // The mechanic calls in from the hideout (the first time they're right here, caged).
-                if (MetaProgress.IsRescued(NpcKind.Mechanic))
-                    RadioMessage.Show("HIDEOUT // " + Npcs.Name(NpcKind.Mechanic), Npcs.PartTaken(story));
+                // Whoever wants it calls in from the hideout (the mechanic's first time, they're
+                // right here, caged).
+                NpcKind owner = StoryItems.Owner(story);
+
+                if (MetaProgress.IsRescued(owner))
+                    RadioMessage.Show("HIDEOUT // " + Npcs.Name(owner), Npcs.ItemTaken(story));
                 break;
 
             default:

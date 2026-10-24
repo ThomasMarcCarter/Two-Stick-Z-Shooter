@@ -132,6 +132,21 @@ public class StationConsole : MonoBehaviour, FloorPickups.IPickup
                 body.size = new Vector3(2.6f, 1.2f, 1f);
                 break;
 
+            case HideoutStation.Kitchen:
+                // A field kitchen: a steel range with an oven door, pots on the hob over a burner's
+                // flame, a prep shelf and an extractor hood on the wall above.
+                Part(t, "Range", new Vector3(0f, 0.45f, 0f), new Vector3(1.6f, 0.9f, 0.8f), material, Metal, Color.black, true);
+                Part(t, "Oven Door", new Vector3(0f, 0.4f, 0.41f), new Vector3(1.1f, 0.5f, 0.02f), material, DarkMetal, Color.black, false);
+                Part(t, "Hob", new Vector3(0f, 0.92f, 0f), new Vector3(1.62f, 0.04f, 0.82f), material, DarkMetal, Color.black, true);
+                Part(t, "Pot", new Vector3(-0.4f, 1.1f, 0.05f), new Vector3(0.45f, 0.32f, 0.45f), material, new Color(0.55f, 0.56f, 0.58f), Color.black, false, PrimitiveType.Cylinder);
+                Part(t, "Pan", new Vector3(0.4f, 0.98f, 0.1f), new Vector3(0.5f, 0.06f, 0.5f), material, new Color(0.15f, 0.15f, 0.16f), Color.black, false, PrimitiveType.Cylinder);
+                Part(t, "Shelf", new Vector3(1.15f, 0.5f, 0f), new Vector3(0.6f, 1f, 0.7f), material, new Color(0.4f, 0.28f, 0.16f), Color.black, true);
+                Part(t, "Hood", new Vector3(0f, 2.05f, -0.2f), new Vector3(1.4f, 0.3f, 0.5f), material, Metal, Color.black, false);
+                console.screen = Part(t, "Flame", new Vector3(0.4f, 0.95f, 0.1f), new Vector3(0.3f, 0.03f, 0.3f), material, accent * 0.4f, accent * 2.2f, false, PrimitiveType.Cylinder);
+                body.center = new Vector3(0.15f, 0.6f, 0f);
+                body.size = new Vector3(2.2f, 1.2f, 0.9f);
+                break;
+
             default:
                 // A reloading press: a frame with a ram that pumps up and down, ammo crates beside it.
                 Part(t, "Base", new Vector3(0f, 0.45f, 0f), new Vector3(1.2f, 0.9f, 0.8f), material, new Color(0.25f, 0.3f, 0.2f), Color.black, true);

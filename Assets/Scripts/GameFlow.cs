@@ -17,13 +17,14 @@ public static class GameFlow
     public static bool InputBlocked =>
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
         || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || InventoryScreen.IsOpen
-        || StationScreen.IsOpen || CrateScreen.IsOpen;
+        || StationScreen.IsOpen || CrateScreen.IsOpen || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing;
 
     // Like InputBlocked, but the inventory doesn't stop the player walking: the game keeps
     // running while it's open, so they can still get out of the way (just not shoot or sprint).
     public static bool MovementBlocked =>
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
-        || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen;
+        || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen
+        || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing;
 
     // A full-screen menu or screen is up over the game (pause and the settings under it, the
     // main menu, map, inventory, a station or crate, the end screens). Everything drawn over the
@@ -32,12 +33,12 @@ public static class GameFlow
     public static bool ScreenOverWorld =>
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
         || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen
-        || InventoryScreen.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen;
+        || InventoryScreen.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen || CreditsScreen.IsShowing;
 
     // A menu or screen is up that doesn't use a cursor on a controller.
     public static bool InMenu =>
         MainMenu.IsOpen || PauseMenu.IsOpen || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen
-        || InventoryScreen.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen;
+        || InventoryScreen.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen || CreditsScreen.IsShowing;
 
     // The crosshair is the cursor everywhere except menus on a controller, where the highlight
     // does that job. The inventory is dragged about with a cursor on a controller too.

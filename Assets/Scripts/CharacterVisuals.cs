@@ -54,8 +54,16 @@ public class CharacterVisuals : ScriptableObject
     {
         switch (kind)
         {
-            case BossKind.Broodmother: return broodmother;
-            case BossKind.Howler: return howler;
+            case BossKind.Broodmother:
+            case BossKind.Glutton:
+            case BossKind.Gurney:
+            case BossKind.Hazmat:
+                return broodmother;
+            case BossKind.Howler:
+            case BossKind.Mannequin:
+            case BossKind.Surgeon:
+            case BossKind.Captain:
+                return howler;
             default: return butcher;
         }
     }

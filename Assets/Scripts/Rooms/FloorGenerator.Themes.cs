@@ -3,13 +3,18 @@ using UnityEngine;
 using UnityEngine.AI;
 
 // Room themes: what a room was before the outbreak, told by the furniture against its walls.
-// Most combat rooms get one (storage, infirmary, barracks or workshop), the treasure room is an
-// armoury and the spawn room a checkpoint; the boss arena stays bare. Each piece stands with its
+// Most combat rooms get one (at the Military Base: storage, infirmary, barracks or workshop; at
+// the Shopping Mall: shop floor, food court or storeroom; at the Hospital: ward, operating
+// theatre or waiting room; at the Airport: gate lounge, baggage hall or security check), the
+// treasure room is an armoury (the mall's security office, the hospital's pharmacy, the airport's
+// duty free) and the spawn room a checkpoint (the mall's entrance, the hospital's reception, the
+// airport's check-in); the boss arena stays bare. Each piece stands with its
 // back to an outer wall, clear of doorways, pillars, wall loot points, the middle of each cell
 // and the routes in from the doors. Furniture goes in after the navmesh is built, so each piece
 // carves its own hole in it; it's solid cover and counts as clutter (boxes, enemies and crates
 // keep off it). The theme shows on the tactical map's room data ("COMBAT // STORAGE"). Needs
-// the FurnitureVisuals models; without them rooms just aren't themed.
+// the FurnitureVisuals models (the mall's pieces are sprites only, with a box for a shadow);
+// without them rooms just aren't themed.
 public partial class FloorGenerator
 {
     private enum RoomTheme
@@ -20,7 +25,22 @@ public partial class FloorGenerator
         Barracks,
         Workshop,
         Armoury,
-        Checkpoint
+        Checkpoint,
+        ShopFloor,
+        FoodCourt,
+        StoreRoom,
+        SecurityOffice,
+        Entrance,
+        Ward,
+        Theatre,
+        WaitingRoom,
+        Pharmacy,
+        Reception,
+        GateLounge,
+        BaggageHall,
+        SecurityCheck,
+        DutyFree,
+        CheckIn
     }
 
     // A piece of furniture a theme can place: the model and the space it takes (width along the
@@ -51,6 +71,37 @@ public partial class FloorGenerator
     private static readonly ThemePiece BenchPiece = new ThemePiece("Bench", 2.4f, 0.5f, 0.5f);
     private static readonly ThemePiece GunRackPiece = new ThemePiece("GunRack", 2.6f, 2f, 0.3f);
     private static readonly ThemePiece SandbagsPiece = new ThemePiece("Sandbags", 3f, 0.7f, 0.8f);
+    private static readonly ThemePiece CounterPiece = new ThemePiece("Counter", 2.4f, 1.15f, 0.7f);
+
+    // The Shopping Mall's (sprite only).
+    private static readonly ThemePiece ClothesRackPiece = new ThemePiece("ClothesRack", 1.6f, 1.5f, 0.6f);
+    private static readonly ThemePiece DisplayTablePiece = new ThemePiece("DisplayTable", 1.6f, 0.8f, 0.9f);
+    private static readonly ThemePiece StoreShelfPiece = new ThemePiece("StoreShelf", 2.4f, 1.8f, 0.6f);
+    private static readonly ThemePiece CheckoutPiece = new ThemePiece("Checkout", 2.2f, 1.1f, 0.8f);
+    private static readonly ThemePiece FoodTablePiece = new ThemePiece("FoodTable", 1.7f, 0.8f, 0.8f);
+    private static readonly ThemePiece FoodCounterPiece = new ThemePiece("FoodCounter", 2.6f, 1.2f, 0.8f);
+    private static readonly ThemePiece TrashBinPiece = new ThemePiece("TrashBin", 0.6f, 1f, 0.6f);
+    private static readonly ThemePiece PlanterPiece = new ThemePiece("Planter", 1.2f, 0.9f, 1.2f);
+    private static readonly ThemePiece PalletPiece = new ThemePiece("Pallet", 1.2f, 1.2f, 1f);
+
+    // The Hospital's (sprite only).
+    private static readonly ThemePiece IVStandPiece = new ThemePiece("IVStand", 0.5f, 1.9f, 0.5f);
+    private static readonly ThemePiece OperatingTablePiece = new ThemePiece("OperatingTable", 0.9f, 1f, 2f);
+    private static readonly ThemePiece SurgicalLampPiece = new ThemePiece("SurgicalLamp", 0.7f, 1.9f, 0.9f);
+    private static readonly ThemePiece TrolleyPiece = new ThemePiece("Trolley", 0.9f, 0.9f, 0.5f);
+    private static readonly ThemePiece PharmacyShelfPiece = new ThemePiece("PharmacyShelf", 2.2f, 1.9f, 0.5f);
+    private static readonly ThemePiece VendingMachinePiece = new ThemePiece("VendingMachine", 0.9f, 1.9f, 0.8f);
+    private static readonly ThemePiece ReceptionDeskPiece = new ThemePiece("ReceptionDesk", 2.4f, 1.1f, 0.8f);
+    private static readonly ThemePiece WheelchairPiece = new ThemePiece("Wheelchair", 0.7f, 1.1f, 0.6f);
+
+    // The Airport's (sprite only).
+    private static readonly ThemePiece GateSeatsPiece = new ThemePiece("GateSeats", 2.3f, 1f, 0.6f);
+    private static readonly ThemePiece DepartureBoardPiece = new ThemePiece("DepartureBoard", 2.4f, 2.2f, 0.3f);
+    private static readonly ThemePiece BaggageCarouselPiece = new ThemePiece("BaggageCarousel", 3f, 0.9f, 1.2f);
+    private static readonly ThemePiece LuggagePiece = new ThemePiece("Luggage", 1f, 0.9f, 0.6f);
+    private static readonly ThemePiece XRayScannerPiece = new ThemePiece("XRayScanner", 2.2f, 1.6f, 0.9f);
+    private static readonly ThemePiece MetalDetectorPiece = new ThemePiece("MetalDetector", 1.2f, 2.3f, 0.6f);
+    private static readonly ThemePiece CheckInDeskPiece = new ThemePiece("CheckInDesk", 2.2f, 1.3f, 0.8f);
 
     // What each theme is furnished with (picked from at random, so repeats are likely).
     private static ThemePiece[] PiecesFor(RoomTheme theme)
@@ -63,13 +114,42 @@ public partial class FloorGenerator
             case RoomTheme.Workshop: return new[] { ShelvingPiece, TyresPiece, DrumRedPiece, BenchPiece, CratePiece };
             case RoomTheme.Armoury: return new[] { GunRackPiece, AmmoCratePiece, AmmoCratePiece, CratePiece };
             case RoomTheme.Checkpoint: return new[] { SandbagsPiece, BenchPiece, DrumBluePiece };
+            case RoomTheme.ShopFloor: return new[] { ClothesRackPiece, ClothesRackPiece, DisplayTablePiece, StoreShelfPiece, CheckoutPiece };
+            case RoomTheme.FoodCourt: return new[] { FoodTablePiece, FoodTablePiece, FoodTablePiece, FoodCounterPiece, TrashBinPiece, PlanterPiece };
+            case RoomTheme.StoreRoom: return new[] { PalletPiece, PalletPiece, StoreShelfPiece, ShelvingPiece, CratePiece };
+            case RoomTheme.SecurityOffice: return new[] { LockerPiece, LockerPiece, CounterPiece, GunRackPiece };
+            case RoomTheme.Entrance: return new[] { PlanterPiece, BenchPiece, TrashBinPiece };
+            case RoomTheme.Ward: return new[] { HospitalBedPiece, HospitalBedPiece, HospitalBedPiece, IVStandPiece, MedCabinetPiece };
+            case RoomTheme.Theatre: return new[] { OperatingTablePiece, SurgicalLampPiece, TrolleyPiece, MedCabinetPiece, IVStandPiece };
+            case RoomTheme.WaitingRoom: return new[] { BenchPiece, BenchPiece, VendingMachinePiece, PlanterPiece, WheelchairPiece, TrashBinPiece };
+            case RoomTheme.Pharmacy: return new[] { PharmacyShelfPiece, PharmacyShelfPiece, ReceptionDeskPiece, MedCabinetPiece };
+            case RoomTheme.Reception: return new[] { ReceptionDeskPiece, BenchPiece, PlanterPiece, WheelchairPiece };
+            case RoomTheme.GateLounge: return new[] { GateSeatsPiece, GateSeatsPiece, GateSeatsPiece, DepartureBoardPiece, PlanterPiece, TrashBinPiece };
+            case RoomTheme.BaggageHall: return new[] { BaggageCarouselPiece, BaggageCarouselPiece, LuggagePiece, LuggagePiece, CratePiece };
+            case RoomTheme.SecurityCheck: return new[] { XRayScannerPiece, MetalDetectorPiece, LuggagePiece, TrashBinPiece };
+            case RoomTheme.DutyFree: return new[] { StoreShelfPiece, StoreShelfPiece, CheckoutPiece, PlanterPiece };
+            case RoomTheme.CheckIn: return new[] { CheckInDeskPiece, CheckInDeskPiece, LuggagePiece, GateSeatsPiece };
             default: return new ThemePiece[0];
         }
     }
 
     private static string ThemeName(RoomTheme theme)
     {
-        return theme.ToString().ToUpperInvariant();
+        switch (theme)
+        {
+            case RoomTheme.ShopFloor: return "SHOP FLOOR";
+            case RoomTheme.FoodCourt: return "FOOD COURT";
+            case RoomTheme.StoreRoom: return "STOREROOM";
+            case RoomTheme.SecurityOffice: return "SECURITY OFFICE";
+            case RoomTheme.Theatre: return "OPERATING THEATRE";
+            case RoomTheme.WaitingRoom: return "WAITING ROOM";
+            case RoomTheme.GateLounge: return "GATE LOUNGE";
+            case RoomTheme.BaggageHall: return "BAGGAGE HALL";
+            case RoomTheme.SecurityCheck: return "SECURITY CHECK";
+            case RoomTheme.DutyFree: return "DUTY FREE";
+            case RoomTheme.CheckIn: return "CHECK-IN";
+            default: return theme.ToString().ToUpperInvariant();
+        }
     }
 
     private static string TypeLabel(RoomType type)
@@ -85,20 +165,39 @@ public partial class FloorGenerator
 
     private RoomTheme PickTheme(Room room)
     {
+        bool mall = Zone == Zone.ShoppingMall;
+        bool hospital = Zone == Zone.Hospital;
+        bool airport = Zone == Zone.Airport;
+
         switch (room.Type)
         {
-            case RoomType.Start: return RoomTheme.Checkpoint;
-            case RoomType.Treasure: return RoomTheme.Armoury;
+            case RoomType.Start: return mall ? RoomTheme.Entrance : hospital ? RoomTheme.Reception : airport ? RoomTheme.CheckIn : RoomTheme.Checkpoint;
+            case RoomType.Treasure: return mall ? RoomTheme.SecurityOffice : hospital ? RoomTheme.Pharmacy : airport ? RoomTheme.DutyFree : RoomTheme.Armoury;
             case RoomType.Boss: return RoomTheme.None;
         }
 
         if (rng.NextDouble() < roomThemeChance)
         {
-            RoomTheme[] themes = { RoomTheme.Storage, RoomTheme.Infirmary, RoomTheme.Barracks, RoomTheme.Workshop };
+            RoomTheme[] themes = CombatThemes(Zone);
             return themes[rng.Next(themes.Length)];
         }
 
         return RoomTheme.None;
+    }
+
+    // The themes a zone's combat rooms can have.
+    private static RoomTheme[] CombatThemes(Zone zone)
+    {
+        if (zone == Zone.Airport)
+            return new[] { RoomTheme.GateLounge, RoomTheme.GateLounge, RoomTheme.BaggageHall, RoomTheme.SecurityCheck };
+
+        if (zone == Zone.ShoppingMall)
+            return new[] { RoomTheme.ShopFloor, RoomTheme.ShopFloor, RoomTheme.FoodCourt, RoomTheme.StoreRoom };
+
+        if (zone == Zone.Hospital)
+            return new[] { RoomTheme.Ward, RoomTheme.Ward, RoomTheme.Theatre, RoomTheme.WaitingRoom };
+
+        return new[] { RoomTheme.Storage, RoomTheme.Infirmary, RoomTheme.Barracks, RoomTheme.Workshop };
     }
 
     // Picks the room's theme, names it and stands its furniture against the walls.

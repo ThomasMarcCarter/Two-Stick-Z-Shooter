@@ -53,7 +53,8 @@ public partial class FloorGenerator
         new HideoutArea { Name = "WORKSHOP", Owner = NpcKind.Mechanic, Back = Vector3.forward, Along = -13.5f, Depth = 3.5f, Width = 4f },
         new HideoutArea { Name = "SUPPLY ROOM", Owner = NpcKind.Quartermaster, Back = Vector3.forward, Along = 13.5f, Depth = 3.5f, Width = 4f },
         new HideoutArea { Name = "MED BAY", Owner = NpcKind.Medic, Back = Vector3.left, Along = 0f, Depth = 3.5f, Width = 4f },
-        new HideoutArea { Name = "TRADE POST", Owner = NpcKind.Trader, Back = Vector3.back, Along = -13.5f, Depth = 3f, Width = 3f }
+        new HideoutArea { Name = "TRADE POST", Owner = NpcKind.Trader, Back = Vector3.back, Along = -13.5f, Depth = 3f, Width = 3f },
+        new HideoutArea { Name = "KITCHEN", Owner = NpcKind.Cook, Back = Vector3.right, Along = -4.5f, Depth = 3f, Width = 3f }
     };
 
     // The middle of the hall's four cells.
@@ -98,12 +99,37 @@ public partial class FloorGenerator
         Room hall = rooms[0];
         hall.DisplayName = "HIDEOUT";
 
-        TraderStock.Restock(rng);
+        TraderStock.Restock(rng, attachments, treasureWeapons);
+
+        // The trader's shelves are full: the cook stumbles in, bitten, and the medic takes them in.
+        // Once the medic's cured them, they set up their kitchen.
+        bool cookArrived = Npcs.CookDue;
+
+        if (cookArrived)
+            MetaProgress.CookArrives();
+
+        bool cookCured = MetaProgress.IsRescued(NpcKind.Cook) && !Npcs.CookSick && !MetaProgress.CookCureSeen;
+
+        if (cookCured)
+            MetaProgress.SeeCookCure();
+
         BuildHall(hall);
         BuildBarracksCorner(hall);
 
         foreach (HideoutArea area in Areas)
             BuildArea(area, hall);
+
+        // Goals finished and new ones begun since the last visit, one after another.
+        List<(NpcKind who, string line)> scenes = Npcs.DueScenes();
+
+        if (scenes.Count > 0)
+            StartCoroutine(HideoutScenes(scenes, cookArrived || cookCured ? 8f : 0f));
+
+        if (cookArrived)
+            StartCoroutine(HideoutRadio(Npcs.Name(NpcKind.Medic),
+                "ROSA, A COOK FROM THE MALL, JUST STUMBLED IN. BITTEN. I CAN KEEP THEM STABLE, BUT A CURE MEANS SUPPLIES FROM THE HOSPITAL."));
+        else if (cookCured)
+            StartCoroutine(HideoutRadio(Npcs.Name(NpcKind.Cook), Npcs.Freed(NpcKind.Cook)));
 
         BuildNavMesh();
         PlacePlayer();
@@ -213,13 +239,13 @@ public partial class FloorGenerator
         Furniture("Bench", "Bench", parent, centre + new Vector3(-3.5f, 0f, -2f), Vector3.right, new Vector3(2.4f, 0.5f, 0.5f), wood);
         Furniture("Bench", "Bench", parent, centre + new Vector3(3.5f, 0f, -2f), Vector3.left, new Vector3(2.4f, 0.5f, 0.5f), wood);
 
-        // Sandbags along the south wall.
+        // Sandbags along the south wall, west of the truck bay (east of it is the truck's way out).
         Color crate = new Color(0.3f, 0.33f, 0.2f);
         Color sand = new Color(0.45f, 0.4f, 0.3f);
         float southWall = centre.z - HallHalf.y + 0.9f;
 
         Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 8.5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
-        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x + 6f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
+        Furniture("Sandbags", "Sandbags", parent, new Vector3(centre.x - 5f, 0f, southWall), Vector3.forward, new Vector3(3f, 0.7f, 0.8f), sand);
 
         // Four pillars framing the middle of the hall round the hatch.
         foreach (Vector2 corner in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
@@ -319,6 +345,22 @@ public partial class FloorGenerator
         label.transform.position = at + Vector3.forward * (size.x / 2f + 0.3f);
         ProximityLabel.Add(label, 2.4f, 4.5f, StoryItems.Colour(StoryItem.Battery), TruckText);
         StationMarker.Add(label, HideoutStation.TruckBay, false);
+        TruckBay.Create(label, truck.transform);
+
+        // Once rescued, the mechanic works on it, at its tail end (clear of the way it drives
+        // out, and not just north of it, where the tall truck would hide them).
+        if (MetaProgress.IsRescued(NpcKind.Mechanic))
+            HideoutNpc.Create(NpcKind.Mechanic, at + new Vector3(-size.z / 2f - 0.9f, 0f, 0.8f), Vector3.right, hall.transform);
+    }
+
+    // Off to a zone in the truck (from its zone map): it drives away, then the zone's floor 1 is
+    // built behind the transition.
+    public void DriveTo(Zone zone)
+    {
+        TruckBay bay = floorRoot != null ? floorRoot.GetComponentInChildren<TruckBay>() : null;
+
+        if (IsHideout && bay != null)
+            bay.DriveTo(zone, transition, AdvanceFloor);
     }
 
     private static string TruckText()
@@ -329,10 +371,12 @@ public partial class FloorGenerator
         foreach (StoryItem part in StoryItems.Goal(mechanic))
             header += MetaProgress.HasStoryItem(part) ? $"<color={StoryItems.Hex(part)}>{StoryItems.Name(part)}</color>  " : $"<alpha=#55>{StoryItems.Name(part)}<alpha=#FF>  ";
 
-        if (StoryItems.Complete(mechanic))
-            return header + $"\n<color={UiColours.AmberHex}>RUNNING // READY TO DRIVE</color></size>";
+        string zoneMap = $"\n<size=80%><color=#FFFFFF>{InputHint.Format("[{Interact}]")} ZONE MAP</color></size>";
 
-        return header + "\n<alpha=#99>ONE PART COMES HOME WITH EACH COMPLETED RUN // FROM THE SUPPLY ROOM UNDER THE LAST FLOOR</size>";
+        if (StoryItems.Complete(mechanic))
+            return header + $"\n<color={UiColours.AmberHex}>RUNNING // READY TO DRIVE</color></size>" + zoneMap;
+
+        return header + "\n<alpha=#99>ONE PART COMES HOME WITH EACH COMPLETED RUN // FROM THE SUPPLY ROOM UNDER THE LAST FLOOR</size>" + zoneMap;
     }
 
     // A survivor's area. Rescued: tidied up, with their station against the wall, them beside
@@ -346,7 +390,8 @@ public partial class FloorGenerator
         Vector3 side = Side(area);
         Vector3 inward = -back;
 
-        if (!MetaProgress.IsRescued(area.Owner))
+        // The cook's kitchen stays shut while they're sick in the med bay.
+        if (!MetaProgress.IsRescued(area.Owner) || (area.Owner == NpcKind.Cook && Npcs.CookSick))
         {
             BuildAbandonedArea(area, room, middle, back, side);
             return;
@@ -368,11 +413,53 @@ public partial class FloorGenerator
         // The medic stands by the far bed, seeing to it, well clear of the med station's front so
         // talking to them and using the station don't get in each other's way, and just clear of
         // the bed's side so its sprite doesn't cut into them.
+        // The mechanic works on the truck (BuildTruckBay), not at their bench.
         if (area.Owner == NpcKind.Medic)
             HideoutNpc.Create(area.Owner, station + inward * 2.9f - side * 1.7f, -side, room.transform);
-        else
+        else if (area.Owner != NpcKind.Mechanic)
             HideoutNpc.Create(area.Owner, station + inward * 2.2f + side * 1.8f, inward, room.transform);
         DressArea(area.Owner, room, middle, back, side, area.Depth, area.Width);
+
+        // The sick cook, up beside the near bed in the med bay, greener the worse they are.
+        if (area.Owner == NpcKind.Medic && Npcs.CookSick)
+        {
+            Vector3 nearBed = middle - side * (area.Width - 1.2f) + back * (area.Depth - 5.1f);
+            HideoutNpc cook = HideoutNpc.Create(NpcKind.Cook, nearBed + inward * 0.95f, back, room.transform);
+            TintSick(cook.gameObject, Npcs.CookSickness);
+        }
+    }
+
+    // A sickly green over a survivor's sprite (or model): stage 1 to 3.
+    private static void TintSick(GameObject survivor, int stage)
+    {
+        Color[] tints = { Color.white, new Color(0.88f, 1f, 0.82f), new Color(0.78f, 0.95f, 0.68f), new Color(0.68f, 0.88f, 0.56f) };
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+
+        foreach (Renderer part in survivor.GetComponentsInChildren<Renderer>())
+        {
+            part.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", tints[Mathf.Clamp(stage, 0, 3)]);
+            part.SetPropertyBlock(block);
+        }
+    }
+
+    // Story scenes on the radio, a few seconds apart, after `wait`.
+    private System.Collections.IEnumerator HideoutScenes(List<(NpcKind who, string line)> scenes, float wait)
+    {
+        yield return new WaitForSeconds(distressCallDelay + wait);
+
+        foreach ((NpcKind who, string line) in scenes)
+        {
+            RadioMessage.Show("HIDEOUT // " + Npcs.Name(who), line);
+            yield return new WaitForSeconds(8f);
+        }
+    }
+
+    // Someone in the hideout on the radio, a moment after it's built.
+    private System.Collections.IEnumerator HideoutRadio(string who, string line)
+    {
+        yield return new WaitForSeconds(distressCallDelay);
+        RadioMessage.Show("HIDEOUT // " + who, line);
     }
 
     // Left as it was found: the station's spot under a dust sheet, a piece or two of the
@@ -500,6 +587,12 @@ public partial class FloorGenerator
 
                 Furniture("Tyres", "Tyres", parent, centre - side * (width - 1.2f) - far * (depth - 1.5f), far, new Vector3(0.9f, 0.55f, 0.9f),
                     new Color(0.06f, 0.06f, 0.06f), true, PrimitiveType.Cylinder);
+                break;
+
+            case NpcKind.Cook:
+                // A bin and a crate of tins either side of the stove.
+                Furniture("TrashBin", "Bin", parent, centre - side * (width - 0.6f) + far * (depth - 0.8f), -far, new Vector3(0.6f, 1f, 0.6f), metal, true, PrimitiveType.Cylinder);
+                Furniture("Crate", "Crate", parent, centre + side * (width - 0.7f) + far * (depth - 0.9f), -far, new Vector3(0.9f, 0.8f, 0.9f), new Color(0.3f, 0.33f, 0.2f));
                 break;
 
             case NpcKind.Medic:
@@ -657,9 +750,11 @@ public partial class FloorGenerator
             colour, Color.black, solid, shape);
     }
 
+    // A model for it, or (with the sprite art) a sprite: sprite-only pieces (the Shopping Mall's)
+    // cast their shadow from a plain box instead.
     private bool HasPropModel(string model)
     {
-        return furnitureVisuals != null && furnitureVisuals.ModelFor(model) != null;
+        return (furnitureVisuals != null && furnitureVisuals.ModelFor(model) != null) || FurnitureSprite.Has(model);
     }
 
     // A furniture model stood on the floor at `position`, facing `front`, stretched to fit `size`
@@ -671,12 +766,26 @@ public partial class FloorGenerator
     {
         GameObject prefab = furnitureVisuals != null ? furnitureVisuals.ModelFor(model) : null;
 
-        if (prefab == null)
+        if (prefab == null && !FurnitureSprite.Has(model))
             return null;
 
-        // Built at the world origin first, so the model's bounds are in the root's own space.
+        // Built at the world origin first, so the model's bounds are in the root's own space. A
+        // sprite-only piece gets a plain box the size of its footprint to cast its shadow.
         GameObject root = new GameObject(name);
-        GameObject body = Instantiate(prefab, root.transform);
+        GameObject body;
+
+        if (prefab != null)
+        {
+            body = Instantiate(prefab, root.transform);
+        }
+        else
+        {
+            body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Destroy(body.GetComponent<Collider>());
+            body.transform.SetParent(root.transform, false);
+            body.transform.localPosition = Vector3.up * 0.5f;
+        }
+
         body.name = "Model";
 
         Renderer[] renderers = body.GetComponentsInChildren<Renderer>();
@@ -783,6 +892,22 @@ public partial class FloorGenerator
         if (conditioning > 0 && player.TryGetComponent(out PlayerStamina stamina))
             stamina.ScaleMax(1f + 0.15f * conditioning);
 
+        // The cook's meals before heading out.
+        int stew = MetaProgress.Level(MetaUpgrade.HeartyStew);
+        int coffee = MetaProgress.Level(MetaUpgrade.StrongCoffee);
+        int broth = MetaProgress.Level(MetaUpgrade.BoneBroth);
+
+        if (player.TryGetComponent(out PlayerHealth fed))
+        {
+            if (stew > 0)
+                fed.AddMaxHealth(stew);
+
+            fed.MedkitBonus = broth;
+        }
+
+        if (coffee > 0 && player.TryGetComponent(out PlayerStamina rested))
+            rested.ScaleRegen(1f + 0.2f * coffee);
+
         AmmoInventory ammo = player.GetComponent<AmmoInventory>();
 
         if (cache > 0 && ammo != null)
@@ -812,8 +937,9 @@ public partial class FloorGenerator
                 backpack.AddAttachment(attachment);
         }
 
-        // Until the mechanic's been found, every run starts with their call from the supply room.
-        if (!MetaProgress.IsRescued(NpcKind.Mechanic))
+        // Until the mechanic's been found, every Military Base run starts with their call from the
+        // supply room.
+        if (Zone == Zone.MilitaryBase && !MetaProgress.IsRescued(NpcKind.Mechanic))
             StartCoroutine(DistressCall(NpcKind.Mechanic));
     }
 

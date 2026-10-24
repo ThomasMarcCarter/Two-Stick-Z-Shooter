@@ -185,6 +185,13 @@ public class PlayerMelee : MonoBehaviour
             Vector3 away = Flat(enemy.transform.position) - origin;
             Vector3 direction = away.sqrMagnitude > 0.01f ? away.normalized : forward;
 
+            // A shield takes the blow: a clank, and it doesn't budge.
+            if (enemy.BlocksHitFrom(origin))
+            {
+                SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), enemy.transform.position, 0.7f, 0.8f);
+                continue;
+            }
+
             if (haveMaterials)
                 ImpactEffects.FleshHit(enemy.transform.position - direction * 0.4f, -direction, direction * 5f, enemy.transform, materials);
 

@@ -12,7 +12,9 @@ using UnityEngine;
 // per station.
 // The trade post uses the same screen as a shop: a row per item in the trader's stock (price,
 // how many are left, how many the player already carries), bought with scrap straight into the
-// pack.
+// pack. The truck bay uses it as the zone map: a row per zone of the map (whose goal it holds,
+// how far along it is, open or locked); once the truck runs, picking an open zone drives there
+// (TruckBay).
 public class StationScreen : MonoBehaviour
 {
     private static readonly Color Phosphor = UiColours.Phosphor;
@@ -30,6 +32,7 @@ public class StationScreen : MonoBehaviour
     private HideoutStation station;
     private MetaUpgrade[] upgrades = new MetaUpgrade[0];
     private bool trading;
+    private bool garage;
     private Backpack backpack;
     private GameObject panel;
     private TMP_Text title;
@@ -78,6 +81,7 @@ public class StationScreen : MonoBehaviour
     {
         station = shown;
         trading = station == HideoutStation.TradePost;
+        garage = station == HideoutStation.TruckBay;
         upgrades = Stations.Upgrades(station);
         PlayerHealth player = FindAnyObjectByType<PlayerHealth>();
         backpack = player != null ? Backpack.For(player.gameObject) : null;
@@ -85,15 +89,20 @@ public class StationScreen : MonoBehaviour
         panel.SetActive(true);
 
         NpcKind? owner = Stations.Owner(station);
-        title.text = $"> HIDEOUT // {Stations.Name(station)}";
-        subtitle.text = owner == null
+        title.text = garage ? "> HIDEOUT // MILITARY TRUCK // ZONE MAP" : $"> HIDEOUT // {Stations.Name(station)}";
+        subtitle.text = garage
+            ? TruckBay.Running
+                ? "RUNNING // PICK AN OPEN ZONE AND THE TRUCK DRIVES YOU THERE // THE DEPLOY HATCH STILL LEADS TO THE MILITARY BASE"
+                : "NOT RUNNING YET // FIT ALL FIVE PARTS AND IT CAN DRIVE YOU TO THE OTHER ZONES"
+            : owner == null
             ? station == HideoutStation.Generator
                 ? "POWERS THE HIDEOUT // HIGHER UPGRADE LEVELS NEED MORE POWER"
                 : "INTEL ON THE FLOORS AHEAD // HIGHER LEVELS NEED MORE POWER"
             : trading
                 ? $"RUN BY {Npcs.Name(owner.Value)}, {Npcs.Role(owner.Value)} // GOODS GO STRAIGHT IN YOUR PACK // NEW STOCK EVERY VISIT"
                 : $"RUN BY {Npcs.Name(owner.Value)}, {Npcs.Role(owner.Value)}";
-        status.text = trading ? "> SELECT AN ITEM TO BUY ONE" : "> SELECT AN UPGRADE TO BUILD ITS NEXT LEVEL";
+        status.text = garage ? "> SELECT A ZONE TO DRIVE THERE"
+            : trading ? "> SELECT AN ITEM TO BUY ONE" : "> SELECT AN UPGRADE TO BUILD ITS NEXT LEVEL";
         Refresh();
         menu.Open();
     }
@@ -124,6 +133,12 @@ public class StationScreen : MonoBehaviour
             return;
         }
 
+        if (garage)
+        {
+            Drive(Zones.All[chosen]);
+            return;
+        }
+
         if (trading)
         {
             Trade(chosen);
@@ -149,10 +164,33 @@ public class StationScreen : MonoBehaviour
         Refresh();
     }
 
-    private int RowCount => trading ? TraderStock.Offers.Length : upgrades.Length;
+    private int RowCount => garage ? Zones.All.Length : trading ? TraderStock.Offers.Length : upgrades.Length;
 
-    // Upgrade rows have three lines (next level, current level, cost); the trader's have two.
-    private Vector2 RowSize => new Vector2(RowWidth, trading ? 62f : 80f);
+    // Upgrade rows have three lines (next level, current level, cost); the trader's and the
+    // zones have two, or three in two narrower columns when the trader's stock is big (the
+    // trade goods brought home widen it).
+    private Vector2 RowSize => TwoColumns ? new Vector2((RowWidth - 10f) / 2f, 72f) : new Vector2(RowWidth, trading || garage ? 62f : 80f);
+
+    private const int MaxSingleColumnRows = 5;
+
+    private bool TwoColumns => trading && RowCount > MaxSingleColumnRows;
+
+    // Off to a zone in the truck, or why not.
+    private void Drive(Zone zone)
+    {
+        string blocked = TruckBay.DriveBlocked(zone);
+        FloorGenerator floor = FindAnyObjectByType<FloorGenerator>();
+
+        if (blocked != null || floor == null)
+        {
+            status.text = $"> {blocked ?? "CAN'T DRIVE NOW"}";
+            Deny();
+            return;
+        }
+
+        Close();
+        floor.DriveTo(zone);
+    }
 
     private void Trade(int index)
     {
@@ -165,8 +203,10 @@ public class StationScreen : MonoBehaviour
             return;
         }
 
-        ConsumableType type = TraderStock.Offers[index].Type;
-        status.text = $"> BOUGHT A {ConsumableInfo.Name(type)} // IT'S IN YOUR PACK";
+        TraderStock.Offer offer = TraderStock.Offers[index];
+        status.text = offer.Kind == TraderStock.Kind.Gun
+            ? $"> BOUGHT A {TraderStock.Name(offer)} // IT'S IN YOUR HANDS"
+            : $"> BOUGHT {TraderStock.Name(offer)} // IT'S IN YOUR PACK";
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.6f, 1.3f);
         Purchased?.Invoke(station);
     }
@@ -181,6 +221,16 @@ public class StationScreen : MonoBehaviour
         scrapText.text = $"SCRAP  {MetaProgress.Scrap}";
         materialsText.text = trading ? "" : BankedMaterials();
         statsText.text = $"RUNS {MetaProgress.Runs}   //   WINS {MetaProgress.Victories}   //   DEEPEST FLOOR {MetaProgress.BestFloor}   //   KILLS {MetaProgress.Kills}";
+
+        if (garage)
+        {
+            materialsText.text = TruckParts();
+
+            for (int i = 0; i < Zones.All.Length; i++)
+                rows[i].Label.text = ZoneText(Zones.All[i]);
+
+            return;
+        }
 
         if (trading)
         {
@@ -233,15 +283,52 @@ public class StationScreen : MonoBehaviour
         return line;
     }
 
-    // "MEDKIT    20 SCRAP    2 LEFT" over what it does and how many are in the pack.
+    // "MEDKIT    20 SCRAP    2 LEFT" over what it does and how many are in the pack. In two
+    // columns (a big stock) the name and price share the top line and the counts move down.
     private string OfferText(TraderStock.Offer offer)
     {
         string price = MetaProgress.Scrap >= offer.Price ? $"{offer.Price} SCRAP" : $"<color={UiColours.DangerHex}>{offer.Price} SCRAP</color>";
         string left = offer.Left > 0 ? $"{offer.Left} LEFT" : "<alpha=#66>SOLD OUT";
-        int carried = backpack != null ? backpack.ConsumableCount(offer.Type) : 0;
-        string colour = "#" + ColorUtility.ToHtmlStringRGB(ConsumableInfo.Colour(offer.Type));
-        return $"<pos=1%><color={colour}>{ConsumableInfo.Name(offer.Type)}</color><pos=30%><color={UiColours.AmberHex}>{price}</color><pos=55%>{left}\n"
-            + $"<size=70%><pos=1%><alpha=#88>{ConsumableInfo.Describe(offer.Type)}<pos=55%>IN PACK: {carried}</size>";
+        int carried = TraderStock.Carried(offer, backpack);
+        string pack = carried >= 0 ? $"IN PACK: {carried}" : "";
+        string colour = "#" + ColorUtility.ToHtmlStringRGB(TraderStock.Colour(offer));
+        string name = $"<color={colour}>{TraderStock.Name(offer)}</color>";
+
+        if (TwoColumns)
+            return $"<pos=1%>{name}<pos=64%><color={UiColours.AmberHex}>{price}</color>\n"
+                + $"<size=70%><pos=1%><alpha=#88>{TraderStock.Describe(offer)}</size>\n"
+                + $"<size=70%><pos=1%>{left}<pos=64%>{pack}</size>";
+
+        return $"<pos=1%>{name}<pos=30%><color={UiColours.AmberHex}>{price}</color><pos=55%>{left}\n"
+            + $"<size=70%><pos=1%><alpha=#88>{TraderStock.Describe(offer)}<pos=55%>{pack}</size>";
+    }
+
+    // "MILITARY BASE    RIGGS, MECHANIC    OPEN" over their goal's progress, or what unlocks it.
+    private static string ZoneText(Zone zone)
+    {
+        NpcKind owner = Zones.Owner(zone);
+        bool open = Zones.IsUnlocked(zone);
+        string state = !open ? $"<color={UiColours.DangerHex}>LOCKED</color>"
+            : zone == MetaProgress.ChosenZone ? $"<color={UiColours.AmberHex}>OPEN // LAST RUN</color>"
+            : $"<color={UiColours.AmberHex}>OPEN</color>";
+        string goal = StoryItems.Goal(owner).Length > 0
+            ? StoryItems.Complete(owner) ? $"{StoryItems.Progress(owner)} // DONE" : $"NEEDS {StoryItems.Progress(owner)}"
+            : "GOAL NOT KNOWN YET";
+        string detail = open ? $"{Npcs.Name(owner)}: {goal}" : Zones.UnlockHint(zone);
+
+        return $"<pos=1%>{Zones.Name(zone)}<pos=30%><alpha=#99>{Npcs.Name(owner)}, {Npcs.Role(owner)}<alpha=#FF><pos=75%>{state}\n"
+            + $"<size=70%><pos=1%><alpha=#88>{detail}</size>";
+    }
+
+    // The truck's parts, fitted ones lit.
+    private static string TruckParts()
+    {
+        string text = "<alpha=#99>PARTS:<alpha=#FF>";
+
+        foreach (StoryItem part in StoryItems.Goal(NpcKind.Mechanic))
+            text += MetaProgress.HasStoryItem(part) ? $"   <color={StoryItems.Hex(part)}>{StoryItems.Name(part)}</color>" : $"   <alpha=#55>{StoryItems.Name(part)}<alpha=#FF>";
+
+        return text;
     }
 
     private static string BankedMaterials()
@@ -299,8 +386,10 @@ public class StationScreen : MonoBehaviour
             rows.Add(MakeButton("Upgrade " + rows.Count, RowSize, TextAlignmentOptions.Left));
 
         // From the panel's top edge to the first row's top edge, under the banked materials.
+        // Two columns fill the left one first.
         const float top = 109f;
         float step = RowSize.y + 10f;
+        int perColumn = TwoColumns ? (count + 1) / 2 : Mathf.Max(1, count);
 
         for (int i = 0; i < rows.Count; i++)
         {
@@ -309,23 +398,27 @@ public class StationScreen : MonoBehaviour
 
             if (used)
             {
+                float x = TwoColumns ? (i < perColumn ? -1f : 1f) * (RowSize.x / 2f + 5f) : 0f;
                 RectTransform rect = rows[i].GetComponent<RectTransform>();
                 rect.sizeDelta = RowSize;
-                rect.anchoredPosition = new Vector2(0f, -top - RowSize.y / 2f - i * step);
+                rect.anchoredPosition = new Vector2(x, -top - RowSize.y / 2f - (i % perColumn) * step);
             }
         }
 
-        float closeY = top + count * step + 35f;
+        float closeY = top + Mathf.Min(count, perColumn) * step + 35f;
         closeButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -closeY);
         panel.GetComponent<RectTransform>().sizeDelta = new Vector2(PanelWidth, closeY + 40f + 90f);
 
-        List<CrtButton> all = new List<CrtButton>();
+        // Buttons are numbered column by column, so the close button goes last (under the right
+        // column when there are two).
+        List<CrtButton> left = new List<CrtButton>();
+        List<CrtButton> right = new List<CrtButton>();
 
         for (int i = 0; i < count; i++)
-            all.Add(rows[i]);
+            (TwoColumns && i >= perColumn ? right : left).Add(rows[i]);
 
-        all.Add(closeButton);
-        menu = new CrtMenu(all.ToArray());
+        (TwoColumns ? right : left).Add(closeButton);
+        menu = TwoColumns ? new CrtMenu(new[] { left.ToArray(), right.ToArray() }, 0, 0) : new CrtMenu(left.ToArray());
     }
 
     private TMP_Text MakeText(string name, string text, float size, Vector2 position, float edge, Vector2 box, Color colour,

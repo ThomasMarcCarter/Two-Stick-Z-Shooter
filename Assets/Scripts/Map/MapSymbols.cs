@@ -260,6 +260,14 @@ public static class MapSymbols
                 FillRect(vh, new Rect(position.x - t / 2f, position.y - g * 0.5f, t, g), glyph);
                 break;
 
+            case HideoutStation.Kitchen:
+                // A pot: a wide body with two handles and a lid knob.
+                FillRect(vh, new Rect(position.x - g * 0.7f, position.y - g * 0.7f, g * 1.4f, g * 1f), glyph);
+                FillRect(vh, new Rect(position.x - g, position.y - g * 0.1f, g * 0.3f, t), glyph);
+                FillRect(vh, new Rect(position.x + g * 0.7f, position.y - g * 0.1f, g * 0.3f, t), glyph);
+                FillRect(vh, new Rect(position.x - g * 0.15f, position.y + g * 0.4f, g * 0.3f, g * 0.3f), glyph);
+                break;
+
             case HideoutStation.TruckBay:
                 // A truck side on: the cargo bed, the cab to the right, two wheels.
                 FillRect(vh, new Rect(position.x - g, position.y - g * 0.35f, g * 1.15f, g * 0.95f), glyph);

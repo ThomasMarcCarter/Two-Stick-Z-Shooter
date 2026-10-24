@@ -167,8 +167,8 @@ public class PauseMenu : MonoBehaviour
 
         subtitle.text = floor != null
             ? (floor.IsHideout ? "OPERATION STANDBY // HIDEOUT"
-                : floor.IsSupplyRoom ? "OPERATION SUSPENDED // SUPPLY ROOM"
-                : $"OPERATION SUSPENDED // FLOOR {floor.FloorNumber} OF {floor.TotalFloors}")
+                : floor.IsSupplyRoom ? $"OPERATION SUSPENDED // {floor.LocationName}"
+                : $"OPERATION SUSPENDED // {floor.LocationName} OF {floor.TotalFloors}")
             : "OPERATION SUSPENDED";
         notice.text = "";
 

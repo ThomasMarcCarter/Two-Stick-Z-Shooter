@@ -19,13 +19,38 @@ MonoBehaviour:
   brute: {fileID: 11400000, guid: 38a6da3ff5d59c44daa69678217fb797, type: 2}
   bloater: {fileID: 11400000, guid: d31bf15cde8768f4eadfed56e9e580f0, type: 2}
   screamer: {fileID: 11400000, guid: 51e7937af8653334e9d3fe54f64dd979, type: 2}
+  mallWalker: {fileID: 11400000, guid: cea863f26041f9c42b36e159ae6f349a, type: 2}
+  mallRunner: {fileID: 11400000, guid: e148e2685d46f014c8909adcfe9c3a7e, type: 2}
+  mallBrute: {fileID: 11400000, guid: f6ab881266030ee41b08063b00e84f5c, type: 2}
+  mallBloater: {fileID: 11400000, guid: e64db590d82a4c24db1b976ef7322639, type: 2}
+  mallScreamer: {fileID: 11400000, guid: 732810ba40a96b742bfae9529ba22cbc, type: 2}
+  hospWalker: {fileID: 11400000, guid: 80fa3f5709532644fa0c4aa3d3835860, type: 2}
+  hospRunner: {fileID: 11400000, guid: ef4e33f3f05511e4a9d013a6901cf639, type: 2}
+  hospBrute: {fileID: 11400000, guid: 866bf47807fd4094cb9ddb0abcb5bd19, type: 2}
+  hospBloater: {fileID: 11400000, guid: c1c49dbcb4e8ebf49b62015e54a2b28b, type: 2}
+  hospScreamer: {fileID: 11400000, guid: 7a28b97f045f0e449a12ad152c0a67dc, type: 2}
+  airWalker: {fileID: 11400000, guid: 1cdaf649eb7bbc64a9db0bc836655310, type: 2}
+  airRunner: {fileID: 11400000, guid: 2408808a1c77dfc40b3b1bd0a45bac74, type: 2}
+  airBrute: {fileID: 11400000, guid: c9dfeb668bef0864dbb5b104270ca543, type: 2}
+  airBloater: {fileID: 11400000, guid: bab919c84b8da3b42a213442265a3232, type: 2}
+  airScreamer: {fileID: 11400000, guid: 36d1680a5360a1e4aae3010b86d5a1f3, type: 2}
   butcher: {fileID: 11400000, guid: f6aa8abe466d9ef489954a8363f60436, type: 2}
   broodmother: {fileID: 11400000, guid: b4bbd692446e0004ba7be19bdd0be441, type: 2}
   howler: {fileID: 11400000, guid: 844a350067dc593409dffc600eb592ad, type: 2}
+  warden: {fileID: 11400000, guid: 5cee6ab652449124ba1ab6b0297b0cbb, type: 2}
+  mannequin: {fileID: 11400000, guid: a6b8c0f205f6e5f45a1fb402331a4ceb, type: 2}
+  glutton: {fileID: 11400000, guid: 35ce6d19446354c458a480385c19f154, type: 2}
+  surgeon: {fileID: 11400000, guid: 71aeb0f4f3a5fc54eae52cd4ecb78328, type: 2}
+  gurney: {fileID: 11400000, guid: b7947ed05fabdbc49b9b3221c0848c32, type: 2}
+  hazmat: {fileID: 11400000, guid: 7aeec1fc24945eb4e8cae382a716c21f, type: 2}
+  handler: {fileID: 11400000, guid: 7efc5c12a5abf364d976b6f7fa6126dd, type: 2}
+  captain: {fileID: 11400000, guid: 0a47491a44a5d624db9e6920d21c7e98, type: 2}
+  marshal: {fileID: 11400000, guid: 2aca22124181196439437ca88b1567eb, type: 2}
   mechanic: {fileID: 11400000, guid: 52068c9cb970017439278286a1cb7c3a, type: 2}
   medic: {fileID: 11400000, guid: 2c4160cc026780a468b88123c2bd0778, type: 2}
   quartermaster: {fileID: 11400000, guid: 804af694f2d8d6044b07ed19a48a6518, type: 2}
   trader: {fileID: 11400000, guid: 9274defdec528544a987ef9f488cd1db, type: 2}
+  cook: {fileID: 11400000, guid: d8dd61c197abdeb4394b6b68f6ab1f38, type: 2}
   items: {fileID: 11400000, guid: 836e2ec9e8a13154a864df5dffe00629, type: 2}
   storyItems: {fileID: 11400000, guid: dfc37a9d1ee2d934e8b640cd3e38c813, type: 2}
   supplyCrate: {fileID: 11400000, guid: 70af3724c8872674dad2a774c3720816, type: 2}
@@ -220,6 +245,136 @@ MonoBehaviour:
     glow: {fileID: 11400000, guid: b78defa24b03a35478dd20231a569b44, type: 2}
     frames: 4
     fps: 0
+  - name: ClothesRack
+    sheet: {fileID: 11400000, guid: d0e8fbde0b07f5f42a08beecca2ad423, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DisplayTable
+    sheet: {fileID: 11400000, guid: aa030a43a2345fd469085dc1d1f44eca, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: StoreShelf
+    sheet: {fileID: 11400000, guid: 838cdc79ee2c0d9459ab4e849eac3319, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Checkout
+    sheet: {fileID: 11400000, guid: 4f10dbe123a09ce42a802bb91ce1e30e, type: 2}
+    glow: {fileID: 11400000, guid: 4611fa38502fb864e9f81f745bae2c08, type: 2}
+    frames: 1
+    fps: 0
+  - name: FoodTable
+    sheet: {fileID: 11400000, guid: 4ad124a4042f712458f8158a035672e8, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: FoodCounter
+    sheet: {fileID: 11400000, guid: 4d42feab6c579934cb6a1a05ad0cc0a8, type: 2}
+    glow: {fileID: 11400000, guid: 032e482f65775574cb4a29604ff640eb, type: 2}
+    frames: 1
+    fps: 0
+  - name: TrashBin
+    sheet: {fileID: 11400000, guid: 6dba0d52ec2d33c4e90047eb0a92faba, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Planter
+    sheet: {fileID: 11400000, guid: 2db9cab65e376bf43865133bef591c1b, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Pallet
+    sheet: {fileID: 11400000, guid: 26858f0d53f30bf4eb3b83700008ba82, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: StationKitchen
+    sheet: {fileID: 11400000, guid: 896dcd29e79fa8743918ecb86edb0eac, type: 2}
+    glow: {fileID: 11400000, guid: 2b0c77e8f2c5fe94abc074cd05d55551, type: 2}
+    frames: 1
+    fps: 0
+  - name: IVStand
+    sheet: {fileID: 11400000, guid: f6605ac7174a1b842ae6d05d02160f34, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: OperatingTable
+    sheet: {fileID: 11400000, guid: 47cdf305bfba558438b051d46a2328b7, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: SurgicalLamp
+    sheet: {fileID: 11400000, guid: 80053c2f7d78c4a40875f6befd0e321b, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Trolley
+    sheet: {fileID: 11400000, guid: 81e9c3f27e02cd14cb4cc1e6c27e196e, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: PharmacyShelf
+    sheet: {fileID: 11400000, guid: 766f76a488368a34fb191e181cea6b06, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: VendingMachine
+    sheet: {fileID: 11400000, guid: 04ea9d838e603ed4e9d16e9c462c9edf, type: 2}
+    glow: {fileID: 11400000, guid: 85d881dc56979d64c9d8aaae4818f682, type: 2}
+    frames: 1
+    fps: 0
+  - name: ReceptionDesk
+    sheet: {fileID: 11400000, guid: 04aa0ecc3183991408c492491e02ac71, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Wheelchair
+    sheet: {fileID: 11400000, guid: 85ac1bff009fa2548b3953e2f1d7ca4b, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: GateSeats
+    sheet: {fileID: 11400000, guid: 4415649b9e3805342acbb8e7946a3dd1, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DepartureBoard
+    sheet: {fileID: 11400000, guid: 32260a63632639743affa89b62465bb7, type: 2}
+    glow: {fileID: 11400000, guid: ef9581f01f46e5643ba9f125b6a8a274, type: 2}
+    frames: 1
+    fps: 0
+  - name: BaggageCarousel
+    sheet: {fileID: 11400000, guid: 3ab206e83887fad47a2ad10e92fb7afc, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: Luggage
+    sheet: {fileID: 11400000, guid: a921e8c4bfc19fd418b3a38b30260770, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: XRayScanner
+    sheet: {fileID: 11400000, guid: 3802201379961c74a9dad4907f500c3a, type: 2}
+    glow: {fileID: 11400000, guid: ad159ea1a5c7a9d4d8e26bea45177c8b, type: 2}
+    frames: 1
+    fps: 0
+  - name: MetalDetector
+    sheet: {fileID: 11400000, guid: 9721a609fb9f9684d9c764c7ba38d8f5, type: 2}
+    glow: {fileID: 11400000, guid: db614f8e3c735324ead07d5e9fe225ef, type: 2}
+    frames: 1
+    fps: 0
+  - name: CheckInDesk
+    sheet: {fileID: 11400000, guid: ea80c01eb79dcfa45941c67828ab0d44, type: 2}
+    glow: {fileID: 11400000, guid: 3841f82a9819f65449ac40fb6df3b3d9, type: 2}
+    frames: 1
+    fps: 0
+  - name: Chopper
+    sheet: {fileID: 11400000, guid: 14337370d2c2f6246ab5a2f98d4c60d9, type: 2}
+    glow: {fileID: 11400000, guid: 9c3ef86b2d5eaf84aa00a91163315ac7, type: 2}
+    frames: 4
+    fps: 16
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}

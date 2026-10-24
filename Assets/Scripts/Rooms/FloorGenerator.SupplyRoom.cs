@@ -38,8 +38,8 @@ public partial class FloorGenerator
         if (IsHideout || IsSupplyRoom)
             return;
 
-        FloorNumber = totalFloors;
-        transition.Play("> DESCENDING TO THE SUPPLY ROOM", "SUPPLY ROOM // NO HOSTILES DETECTED", EnterSupplyRoom);
+        FloorNumber = TotalFloors;
+        transition.Play("> DESCENDING TO THE SUPPLY ROOM", $"{ZoneName} // SUPPLY ROOM // NO HOSTILES DETECTED", EnterSupplyRoom);
     }
 
     // Runs while the transition screen is fully black.
@@ -71,21 +71,25 @@ public partial class FloorGenerator
         Color metal = new Color(0.22f, 0.23f, 0.24f);
 
         // Shelving against the north wall: two to the west of the counter, one to the east, and
-        // the ladder in the north-east corner.
+        // the ladder in the north-east corner. The mall's is shop shelving round a checkout, the
+        // hospital's pharmacy shelves round a reception desk.
+        bool mall = Zone == Zone.ShoppingMall;
+        bool hospital = Zone == Zone.Hospital;
+        string shelving = mall ? "StoreShelf" : hospital ? "PharmacyShelf" : "Shelving";
         float[] shelfX = { -5.6f, -2.8f, 2.8f };
         Vector3 shelfSize = new Vector3(2.4f, 2f, 0.6f);
 
         foreach (float x in shelfX)
         {
             Vector3 at = new Vector3(centre.x + x, 0f, north - shelfSize.z / 2f - 0.05f);
-            Furniture("Shelving", "Shelving", parent, at, Vector3.back, shelfSize, metal);
+            Furniture(shelving, "Shelving", parent, at, Vector3.back, shelfSize, metal);
             clutter[room].Add(at);
         }
 
         // The counter in the middle, under its own light.
         Vector3 counterSize = new Vector3(2f, 1.1f, 0.7f);
         Vector3 counter = new Vector3(centre.x, 0f, north - counterSize.z / 2f - 0.6f);
-        Furniture("Counter", "Counter", parent, counter, Vector3.back, counterSize, new Color(0.3f, 0.24f, 0.16f));
+        Furniture(mall ? "Checkout" : hospital ? "ReceptionDesk" : Zone == Zone.Airport ? "CheckInDesk" : "Counter", "Counter", parent, counter, Vector3.back, counterSize, new Color(0.3f, 0.24f, 0.16f));
         clutter[room].Add(counter);
 
         Light spot = new GameObject("Counter Light").AddComponent<Light>();
@@ -103,9 +107,9 @@ public partial class FloorGenerator
         SpawnLadder(room, ladder);
         clutter[room].Add(ladder + Vector3.back * 0.6f);
 
-        // The mechanic, on the first run that gets this far: caged west of the middle. Solid, so
-        // in before the navmesh, and they walk out to the ladder once freed.
-        if (!MetaProgress.IsRescued(NpcKind.Mechanic))
+        // The mechanic, on the first run that gets this far (at the Military Base): caged west of
+        // the middle. Solid, so in before the navmesh, and they walk out to the ladder once freed.
+        if (Zone == Zone.MilitaryBase && !MetaProgress.IsRescued(NpcKind.Mechanic))
         {
             Vector3 cage = centre + new Vector3(-5f, 0f, -2f);
             CagedSurvivor.Create(NpcKind.Mechanic, room, cage, ladder + Vector3.back * 1.2f,
@@ -169,12 +173,13 @@ public partial class FloorGenerator
         }
     }
 
-    // The truck's next missing part on the counter; once it has them all, bonus scrap and the
-    // scarce materials instead.
+    // The next missing piece of the zone's survivor's goal on the counter (the Military Base: the
+    // truck's parts); once they have them all, or have no goal yet, bonus scrap and the scarce
+    // materials instead.
     private void StockCounter(Room room, Vector3 front, float height)
     {
         Vector3 reach = front + Vector3.back * 1f;
-        StoryItem? part = StoryItems.Next(NpcKind.Mechanic);
+        StoryItem? part = StoryItems.Next(Zones.Owner(Zone));
 
         if (part != null)
         {
@@ -243,8 +248,17 @@ public partial class FloorGenerator
 
         PlayerHealth health = player.GetComponent<PlayerHealth>();
         // The rest of the run's scrap comes home with the bonus; the screen shows the run's total.
-        int scrap = MetaProgress.EndRun(true, totalFloors, FloorNumber, EnemiesKilled) + MetaProgress.ScrapSentHome;
-        victoryScreen.Show(FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap,
+        int scrap = MetaProgress.EndRun(true, TotalFloors, FloorNumber, EnemiesKilled) + MetaProgress.ScrapSentHome;
+
+        // The flight log: the evac frequency. The radio's complete and the chopper's coming: up to
+        // the roof for the ending instead of the victory screen.
+        if (part == StoryItem.FlightLog)
+        {
+            transition.Play("> UP TO THE ROOF", $"{ZoneName} // ROOF // EVAC INBOUND", EnterEvac);
+            return;
+        }
+
+        victoryScreen.Show(ZoneName, FloorNumber, EnemiesKilled, Time.time - RunStartTime, health.Health, health.MaxHealth, scrap,
             Materials.Describe(recovered), story);
     }
 }

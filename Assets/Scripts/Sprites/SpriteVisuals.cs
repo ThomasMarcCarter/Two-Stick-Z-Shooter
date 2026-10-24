@@ -19,16 +19,54 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet bloater;
     public SpriteSheet screamer;
 
+    [Header("Shopping Mall zombies")]
+    [Tooltip("The same kinds dressed as the mall's shoppers and staff. Each falls back to the base sheet without one.")]
+    public SpriteSheet mallWalker;
+    public SpriteSheet mallRunner;
+    public SpriteSheet mallBrute;
+    public SpriteSheet mallBloater;
+    public SpriteSheet mallScreamer;
+
+    [Header("Hospital zombies")]
+    [Tooltip("The same kinds dressed as patients and staff. Each falls back to the base sheet without one.")]
+    public SpriteSheet hospWalker;
+    public SpriteSheet hospRunner;
+    public SpriteSheet hospBrute;
+    public SpriteSheet hospBloater;
+    public SpriteSheet hospScreamer;
+
+    [Header("Airport zombies")]
+    [Tooltip("The same kinds dressed as passengers and crew. Each falls back to the base sheet without one.")]
+    public SpriteSheet airWalker;
+    public SpriteSheet airRunner;
+    public SpriteSheet airBrute;
+    public SpriteSheet airBloater;
+    public SpriteSheet airScreamer;
+
     [Header("Bosses")]
     public SpriteSheet butcher;
     public SpriteSheet broodmother;
     public SpriteSheet howler;
+    [Tooltip("The Shopping Mall's bosses. Each falls back to a Military Base boss's sheet without one.")]
+    public SpriteSheet warden;
+    public SpriteSheet mannequin;
+    public SpriteSheet glutton;
+    [Tooltip("The Hospital's bosses. Each falls back to a Military Base boss's sheet without one.")]
+    public SpriteSheet surgeon;
+    public SpriteSheet gurney;
+    public SpriteSheet hazmat;
+    [Tooltip("The Airport's bosses. Each falls back to a Military Base boss's sheet without one.")]
+    public SpriteSheet handler;
+    public SpriteSheet captain;
+    public SpriteSheet marshal;
 
     [Header("Survivors")]
     public SpriteSheet mechanic;
     public SpriteSheet medic;
     public SpriteSheet quartermaster;
     public SpriteSheet trader;
+    [Tooltip("The fifth survivor (chef's whites). Falls back to the trader's sheet without one.")]
+    public SpriteSheet cook;
 
     [Header("Items")]
     [Tooltip("The items atlas: consumables, ammo, materials, melee upgrades, attachments (see ItemSprites).")]
@@ -160,12 +198,64 @@ public class SpriteVisuals : ScriptableObject
         }
     }
 
+    // A kind's look in a zone of the map (the mall's shoppers and staff, the hospital's patients
+    // and staff), or its base look.
+    public SpriteSheet For(EnemyKind kind, Zone zone)
+    {
+        SpriteSheet dressed = null;
+
+        if (zone == Zone.ShoppingMall)
+        {
+            switch (kind)
+            {
+                case EnemyKind.Runner: dressed = mallRunner; break;
+                case EnemyKind.Brute: dressed = mallBrute; break;
+                case EnemyKind.Bloater: dressed = mallBloater; break;
+                case EnemyKind.Screamer: dressed = mallScreamer; break;
+                default: dressed = mallWalker; break;
+            }
+        }
+        else if (zone == Zone.Hospital)
+        {
+            switch (kind)
+            {
+                case EnemyKind.Runner: dressed = hospRunner; break;
+                case EnemyKind.Brute: dressed = hospBrute; break;
+                case EnemyKind.Bloater: dressed = hospBloater; break;
+                case EnemyKind.Screamer: dressed = hospScreamer; break;
+                default: dressed = hospWalker; break;
+            }
+        }
+        else if (zone == Zone.Airport)
+        {
+            switch (kind)
+            {
+                case EnemyKind.Runner: dressed = airRunner; break;
+                case EnemyKind.Brute: dressed = airBrute; break;
+                case EnemyKind.Bloater: dressed = airBloater; break;
+                case EnemyKind.Screamer: dressed = airScreamer; break;
+                default: dressed = airWalker; break;
+            }
+        }
+
+        return dressed != null ? dressed : For(kind);
+    }
+
     public SpriteSheet For(BossKind kind)
     {
         switch (kind)
         {
             case BossKind.Broodmother: return broodmother;
             case BossKind.Howler: return howler;
+            case BossKind.Warden: return warden != null ? warden : butcher;
+            case BossKind.Mannequin: return mannequin != null ? mannequin : howler;
+            case BossKind.Glutton: return glutton != null ? glutton : broodmother;
+            case BossKind.Surgeon: return surgeon != null ? surgeon : howler;
+            case BossKind.Gurney: return gurney != null ? gurney : broodmother;
+            case BossKind.Hazmat: return hazmat != null ? hazmat : butcher;
+            case BossKind.Handler: return handler != null ? handler : butcher;
+            case BossKind.Captain: return captain != null ? captain : howler;
+            case BossKind.Marshal: return marshal != null ? marshal : butcher;
             default: return butcher;
         }
     }
@@ -177,6 +267,7 @@ public class SpriteVisuals : ScriptableObject
             case NpcKind.Medic: return medic;
             case NpcKind.Quartermaster: return quartermaster;
             case NpcKind.Trader: return trader;
+            case NpcKind.Cook: return cook != null ? cook : trader;
             default: return mechanic;
         }
     }

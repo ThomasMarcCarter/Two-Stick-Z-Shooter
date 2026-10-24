@@ -39,7 +39,7 @@ public class ProximityLabel : MonoBehaviour
 
         Vector3 offset = player.position - transform.position;
         offset.y = 0f;
-        bool show = offset.magnitude <= range && !StationScreen.IsOpen;
+        bool show = offset.magnitude <= range && !StationScreen.IsOpen && !TruckBay.Driving;
 
         if (show && !label.IsShowing)
             label.Show(text, colour);

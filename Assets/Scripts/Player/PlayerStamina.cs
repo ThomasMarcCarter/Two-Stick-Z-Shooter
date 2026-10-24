@@ -87,6 +87,12 @@ public class PlayerStamina : MonoBehaviour
         Current = maxStamina;
     }
 
+    // Stamina comes back faster (the cook's coffee, at the start of a run).
+    public void ScaleRegen(float multiplier)
+    {
+        regenPerSecond *= Mathf.Max(0.1f, multiplier);
+    }
+
     public void Spend(float amount)
     {
         if (amount <= 0f)

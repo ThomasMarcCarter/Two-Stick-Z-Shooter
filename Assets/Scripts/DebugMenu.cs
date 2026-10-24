@@ -108,7 +108,7 @@ public class DebugMenu : MonoBehaviour
         IsOpen = true;
         previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
-        status.text = floor != null ? $"{floor.FloorName} // {(floor.CurrentRoom != null ? floor.CurrentRoom.name : "NO ROOM")}" : "";
+        status.text = floor != null ? $"{floor.LocationName} // {(floor.CurrentRoom != null ? floor.CurrentRoom.name : "NO ROOM")}" : "";
         RefreshLabels();
         panel.SetActive(true);
         menu.Open();
@@ -132,6 +132,7 @@ public class DebugMenu : MonoBehaviour
         Add("REVEAL MAP", RevealMap, false);
         Add("SKIP TO NEXT FLOOR", SkipFloor, true);
         Add("GO TO THE SUPPLY ROOM", () => floor.DebugEnterSupplyRoom(), true);
+        Add("GO TO THE ROOF (EVAC ENDING)", () => floor.DebugEnterEvac(), true);
         Add("REGENERATE FLOOR", RegenerateFloor, true);
 
         Section(0, "ENEMIES");
@@ -144,8 +145,13 @@ public class DebugMenu : MonoBehaviour
         Add(() => $"GIVE 10 OF EACH MATERIAL (PARTS {MetaProgress.MaterialCount(MaterialType.Parts)})", () => MetaProgress.AddEveryMaterial(10), false);
         Add(() => $"RESCUE ALL SURVIVORS ({MetaProgress.RescuedCount()}/{Npcs.All.Length})", MetaProgress.RescueAll, false);
         Add("SPAWN ALL MATERIALS", SpawnMaterials, true);
-        Add(() => $"+1 TRUCK PART ({StoryItems.Progress(NpcKind.Mechanic)})", MetaProgress.GrantNextStoryItem, false);
+        Add(() => $"+1 TRUCK PART ({StoryItems.Progress(NpcKind.Mechanic)})", () => MetaProgress.GrantNextStoryItem(), false);
+        Add(() => $"+1 TRADE GOOD ({StoryItems.Progress(NpcKind.Trader)})", () => MetaProgress.GrantNextStoryItem(NpcKind.Trader), false);
+        Add(() => $"+1 MEDICAL SUPPLY ({StoryItems.Progress(NpcKind.Medic)})", () => MetaProgress.GrantNextStoryItem(NpcKind.Medic), false);
+        Add(() => $"+1 RADIO PART ({StoryItems.Progress(NpcKind.Quartermaster)})", () => MetaProgress.GrantNextStoryItem(NpcKind.Quartermaster), false);
         Add("SURVIVOR ON NEXT FLOOR", FloorGenerator.ForceSurvivorOnNextFloor, false);
+        Add(() => $"NEXT RUN'S ZONE: {Zones.Name(MetaProgress.ChosenZone)}", MetaProgress.ChooseNextZone, false);
+        Add("UNLOCK ALL ZONES", MetaProgress.UnlockAllZones, false);
 
         Section(1, "PLAYER");
         Add(() => "GOD MODE: " + (Health != null && Health.GodMode ? "ON" : "OFF"), ToggleGodMode, false);

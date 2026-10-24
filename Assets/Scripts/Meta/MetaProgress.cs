@@ -13,7 +13,10 @@ public enum MetaUpgrade
     Scavenger,      // enemies drop ammo more often
     Generator,      // powers higher upgrade levels, and more scrap from runs
     Gunsmith,       // start with attachments in the backpack
-    Recon           // the boss room, then the whole floor, on the map from the start
+    Recon,          // the boss room, then the whole floor, on the map from the start
+    HeartyStew,     // the cook's: +1 max vitals a level
+    StrongCoffee,   // the cook's: stamina comes back faster
+    BoneBroth       // the cook's: medkits heal more
 }
 
 // Progress that carries over between runs (the only thing the game saves; there are no
@@ -52,6 +55,12 @@ public static class MetaProgress
         public int[] materials = new int[0];
         public int[] rescued = new int[0];
         public int[] story = new int[0];
+        public int zone;                    // the zone runs start in (Zone)
+        public int cookArrived = -1;        // Runs when the cook turned up (-1: not yet)
+        public int cookCureSeen;            // 1 once the cured cook's moved into their kitchen
+        public int evacs;                   // times the evac chopper has flown everyone out (the ending)
+        public int[] scenes = new int[0];   // one-time story scenes already played, by Npcs.Scene
+        public int[] zones = new int[0];    // zones unlocked from the debug menu, by Zone
     }
 
     // What the main menu shows for a profile without switching to it.
@@ -224,13 +233,123 @@ public static class MetaProgress
         Changed?.Invoke();
     }
 
-    // Debug: the next truck part, as if a run had brought it home.
-    public static void GrantNextStoryItem()
+    // Debug: the next item of a survivor's goal (the truck parts by default), as if a run had
+    // brought it home.
+    public static void GrantNextStoryItem(NpcKind owner = NpcKind.Mechanic)
     {
-        StoryItem? next = StoryItems.Next(NpcKind.Mechanic);
+        StoryItem? next = StoryItems.Next(owner);
 
         if (next != null)
             AddStoryItem(next.Value);
+    }
+
+    // The run count when the infected cook turned up, for how sick they look (Npcs.CookSickness).
+    public static int CookArrivedRun => Data.cookArrived < 0 ? Data.runs : Data.cookArrived;
+
+    // The cook stumbles in: on the books for good, and the clock on their sickness starts.
+    public static void CookArrives()
+    {
+        if (IsRescued(NpcKind.Cook))
+            return;
+
+        Data.cookArrived = Data.runs;
+        Rescue(NpcKind.Cook);
+    }
+
+    // A one-time story scene (a goal starting or finished) has played.
+    public static bool SceneSeen(Npcs.Scene scene)
+    {
+        int index = (int)scene;
+        return index < Data.scenes.Length && Data.scenes[index] != 0;
+    }
+
+    public static void SeeScene(Npcs.Scene scene)
+    {
+        int index = (int)scene;
+
+        if (Data.scenes.Length <= index)
+            Array.Resize(ref Data.scenes, index + 1);
+
+        Data.scenes[index] = 1;
+        Save();
+    }
+
+    // Times the game's been finished: everyone flown out in the evac chopper (EvacSequence).
+    public static int Evacs => Data.evacs;
+
+    public static void RecordEvac()
+    {
+        Data.evacs++;
+        Save();
+        Changed?.Invoke();
+    }
+
+    // Whether the cook's cure has been seen in the hideout (their thank-you plays once).
+    public static bool CookCureSeen => Data.cookCureSeen != 0;
+
+    public static void SeeCookCure()
+    {
+        Data.cookCureSeen = 1;
+        Save();
+    }
+
+    // ---------- Zones ----------
+
+    // The zone the next run starts in: the one last chosen, or the Military Base if that's locked.
+    public static Zone ChosenZone
+    {
+        get
+        {
+            Zone zone = (Zone)Mathf.Clamp(Data.zone, 0, Zones.All.Length - 1);
+            return Zones.IsUnlocked(zone) ? zone : Zone.MilitaryBase;
+        }
+    }
+
+    public static void ChooseZone(Zone zone)
+    {
+        if (!Zones.IsUnlocked(zone) || (int)zone == Data.zone)
+            return;
+
+        Data.zone = (int)zone;
+        Save();
+        Changed?.Invoke();
+    }
+
+    // Unlocked by hand (the debug menu), apart from the story goals that normally open it.
+    public static bool IsZoneFlagged(Zone zone)
+    {
+        int index = (int)zone;
+        return index < Data.zones.Length && Data.zones[index] != 0;
+    }
+
+    // Debug: every zone open.
+    public static void UnlockAllZones()
+    {
+        if (Data.zones.Length < Zones.All.Length)
+            Array.Resize(ref Data.zones, Zones.All.Length);
+
+        for (int i = 0; i < Data.zones.Length; i++)
+            Data.zones[i] = 1;
+
+        Save();
+        Changed?.Invoke();
+    }
+
+    // Debug: the next unlocked zone after the chosen one, round to the first.
+    public static void ChooseNextZone()
+    {
+        Zone chosen = ChosenZone;
+
+        for (int step = 1; step <= Zones.All.Length; step++)
+        {
+            Zone zone = (Zone)(((int)chosen + step) % Zones.All.Length);
+
+            if (Zones.IsUnlocked(zone))
+            {
+                ChooseZone(zone);
+                return;
+            }
+        }
     }
 
     // ---------- Upgrades ----------
@@ -527,7 +646,9 @@ public static class MetaProgress
         saved.materials ??= new int[0];
         saved.rescued ??= new int[0];
         saved.story ??= new int[0];
-        saved.version = 3;
+        saved.zones ??= new int[0];
+        saved.scenes ??= new int[0];
+        saved.version = 4;
         return saved;
     }
 
@@ -568,6 +689,9 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: return "POWER";
             case MetaUpgrade.Gunsmith: return "GUNSMITH";
             case MetaUpgrade.Recon: return "RECON";
+            case MetaUpgrade.HeartyStew: return "HEARTY STEW";
+            case MetaUpgrade.StrongCoffee: return "STRONG COFFEE";
+            case MetaUpgrade.BoneBroth: return "BONE BROTH";
             default: return "SCAVENGER";
         }
     }
@@ -575,7 +699,8 @@ public static class MetaUpgrades
     public static int MaxLevel(MetaUpgrade upgrade)
     {
         return upgrade == MetaUpgrade.FieldKit || upgrade == MetaUpgrade.Generator || upgrade == MetaUpgrade.Gunsmith
-            || upgrade == MetaUpgrade.Recon ? 2 : 3;
+            || upgrade == MetaUpgrade.Recon || upgrade == MetaUpgrade.HeartyStew || upgrade == MetaUpgrade.StrongCoffee
+            || upgrade == MetaUpgrade.BoneBroth ? 2 : 3;
     }
 
     public static HideoutStation Station(MetaUpgrade upgrade)
@@ -613,6 +738,9 @@ public static class MetaUpgrades
             case MetaUpgrade.Recon: costs = new[] { Of((W, 2)), Of((W, 3), (P, 2)) }; break;
             case MetaUpgrade.AmmoCache: costs = new[] { Of((G, 2)), Of((G, 4), (P, 2)), Of((G, 6), (P, 3)) }; break;
             case MetaUpgrade.Generator: costs = new[] { Of((F, 3), (W, 2)), Of((F, 6), (W, 4), (P, 3)) }; break;
+            case MetaUpgrade.HeartyStew: costs = new[] { Of((C, 2), (F, 2)), Of((C, 4), (F, 3)) }; break;
+            case MetaUpgrade.StrongCoffee: costs = new[] { Of((C, 2), (W, 1)), Of((C, 3), (W, 3)) }; break;
+            case MetaUpgrade.BoneBroth: costs = new[] { Of((C, 3)), Of((C, 5), (P, 2)) }; break;
             default: costs = new[] { Of((G, 2), (W, 1)), Of((G, 3), (W, 3)), Of((G, 5), (W, 4)) }; break;
         }
 
@@ -644,6 +772,9 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: costs = new[] { 30, 70 }; break;
             case MetaUpgrade.Gunsmith: costs = new[] { 35, 75 }; break;
             case MetaUpgrade.Recon: costs = new[] { 25, 55 }; break;
+            case MetaUpgrade.HeartyStew: costs = new[] { 30, 65 }; break;
+            case MetaUpgrade.StrongCoffee: costs = new[] { 25, 55 }; break;
+            case MetaUpgrade.BoneBroth: costs = new[] { 30, 60 }; break;
             default: costs = new[] { 25, 50, 80 }; break;
         }
 
@@ -666,6 +797,9 @@ public static class MetaUpgrades
             case MetaUpgrade.Generator: return $"POWERS LV{level + 1} UPGRADES // +{level * 10}% SCRAP";
             case MetaUpgrade.Gunsmith: return level >= 2 ? "START WITH 2 ATTACHMENTS" : "START WITH AN ATTACHMENT";
             case MetaUpgrade.Recon: return level >= 2 ? "EVERY FLOOR FULLY MAPPED" : "BOSS ROOM MAPPED ON EVERY FLOOR";
+            case MetaUpgrade.HeartyStew: return $"+{level} MAX VITALS EACH RUN";
+            case MetaUpgrade.StrongCoffee: return $"+{level * 20}% STAMINA RECOVERY";
+            case MetaUpgrade.BoneBroth: return $"MEDKITS HEAL +{level}";
             default: return $"+{level * 10}% AMMO DROPS";
         }
     }

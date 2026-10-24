@@ -31,6 +31,12 @@ public class PlayerHealth : MonoBehaviour
     // Debug: ignore all damage, and the held gun's magazine never runs dry (Gun).
     public bool GodMode { get; set; }
 
+    // Out of sight (riding in the hideout's truck, TruckBay): the body isn't drawn.
+    public bool Hidden { get; set; }
+
+    // Extra vitals every medkit gives this run (the cook's broth).
+    public int MedkitBonus { get; set; }
+
     public event Action<PlayerHealth> Damaged;
     public event Action<PlayerHealth> Healed;
     public event Action<PlayerHealth> Died;
@@ -52,7 +58,7 @@ public class PlayerHealth : MonoBehaviour
         if (IsDead)
             return;
 
-        bool visible = !IsInvulnerable || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f;
+        bool visible = !Hidden && (!IsInvulnerable || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f);
 
         foreach (Renderer renderer in bodies)
             renderer.enabled = visible;

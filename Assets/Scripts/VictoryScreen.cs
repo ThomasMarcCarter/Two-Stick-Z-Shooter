@@ -23,9 +23,10 @@ public class VictoryScreen : MonoBehaviour
         menu = new CrtMenu(newRunButton, hideoutButton, mainMenuButton);
     }
 
-    // recovered: the materials still in the backpack, sent home with the win ("" for none); story:
-    // the story item brought home and the goal's progress ("" for none).
-    public void Show(int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned, string recovered = "", string story = "")
+    // zone: where the run was ("MILITARY BASE"); recovered: the materials still in the backpack,
+    // sent home with the win ("" for none); story: the story item brought home and the goal's
+    // progress ("" for none).
+    public void Show(string zone, int floorsCleared, int enemiesKilled, float runSeconds, int health, int maxHealth, int scrapEarned, string recovered = "", string story = "")
     {
         IsShowing = true;
         Time.timeScale = 0f;
@@ -34,7 +35,8 @@ public class VictoryScreen : MonoBehaviour
         int seconds = Mathf.FloorToInt(runSeconds % 60f);
 
         stats.text =
-            $"<mspace=0.62em>FLOORS CLEARED     {floorsCleared}\n" +
+            $"<mspace=0.62em>OPERATION AREA     {zone}\n" +
+            $"FLOORS CLEARED     {floorsCleared}\n" +
             $"HOSTILES DOWN      {enemiesKilled}\n" +
             $"VITALS REMAINING   {health}/{maxHealth}\n" +
             $"MISSION TIME       {minutes:00}:{seconds:00}\n" +
