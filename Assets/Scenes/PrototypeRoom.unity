@@ -4339,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000008252951}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80246}
+  m_AnchoredPosition: {x: 29.457092, y: -141.9312}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7295,6 +7295,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fe70768325149a40a3f0c1074470a0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FloorGenerator
+  floorDecalMaterial: {fileID: 2100000, guid: e7dd45fc85008a6408c8f79cc6787ad3, type: 2}
+  themeFloorDecalChance: 0.45
+  grimeFloorDecalChance: 0.45
   armoryWeapons:
   - {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
   - {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
@@ -7308,6 +7311,10 @@ MonoBehaviour:
   supplyKillsPerMaterial: 12
   supplyBonusScrap: 25
   supplyBonusMaterials: 2
+  wallDecalMaterial: {fileID: 2100000, guid: 24a3783e4f9a9754a8d29a6ae891b21a, type: 2}
+  themeDecalChance: 0.8
+  grimeDecalChance: 0.25
+  exitSignChance: 0.6
   zoneSettings:
   - zone: 1
     floors: 0
@@ -8597,7 +8604,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000008252951}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8605,7 +8612,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -627.2, y: -352.80246}
+  m_AnchoredPosition: {x: 29.457092, y: -141.9312}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

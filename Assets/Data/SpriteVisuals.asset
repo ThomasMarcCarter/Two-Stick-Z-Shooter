@@ -415,6 +415,46 @@ MonoBehaviour:
     glow: {fileID: 0}
     frames: 1
     fps: 0
+  - name: Desk
+    sheet: {fileID: 11400000, guid: 0ae94594d9eee3a44a9f13bf93a6fd7b, type: 2}
+    glow: {fileID: 11400000, guid: ab9365917e015244684fbd058c04437f, type: 2}
+    frames: 1
+    fps: 0
+  - name: FilingCabinet
+    sheet: {fileID: 11400000, guid: 9f416779bd5c86141ac44d01a6cb1067, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: WaterCooler
+    sheet: {fileID: 11400000, guid: f9ad4d4a51974b8409f7319efc972e1a, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: BinderShelf
+    sheet: {fileID: 11400000, guid: 0b1af00f33f15b944808fa7bdc52485f, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: LabBench
+    sheet: {fileID: 11400000, guid: 4a3473bbf07a1a546b07553b293f3c6d, type: 2}
+    glow: {fileID: 11400000, guid: 8b69cc1d855d7ee48a44ef62ca037a12, type: 2}
+    frames: 1
+    fps: 0
+  - name: FumeHood
+    sheet: {fileID: 11400000, guid: 12b8a38cb822e5344a8478188f71108f, type: 2}
+    glow: {fileID: 11400000, guid: 4bde3364948f00941aaebd46e38e4aa6, type: 2}
+    frames: 1
+    fps: 0
+  - name: SpecimenTank
+    sheet: {fileID: 11400000, guid: f0b599846a44451439f5a43a0c229ab6, type: 2}
+    glow: {fileID: 11400000, guid: 06f86ea5638a827479c27bc5a3c2ec4d, type: 2}
+    frames: 1
+    fps: 0
+  - name: ServerRack
+    sheet: {fileID: 11400000, guid: 09431e298df3f9c4787c041ebdd29f6b, type: 2}
+    glow: {fileID: 11400000, guid: 44e286b68ffa22e4ca2c6e82becba3b4, type: 2}
+    frames: 2
+    fps: 2
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}

@@ -7,9 +7,11 @@ using UnityEngine.UI;
 
 // F5 debug menu for testing: teleport between key rooms, kill or spawn enemies, reveal the map,
 // skip or rebuild the floor, god mode, refills and item spawns. Pauses the game while open. Only
-// available in the editor and development builds. Options are grouped under headers in two
-// columns; the buttons are built at runtime, so adding an option is one line in BuildOptions,
-// under the Section it belongs to.
+// available in the editor and development builds. Options are grouped into fold-out sections in
+// two columns: each section's header is a button that shows or hides its options, and opening one
+// folds away the others in its column so the panel always fits on screen. The panel grows and
+// shrinks from the top to fit what's showing. The buttons are built at runtime, so adding an
+// option is one line in BuildOptions, under the Section it belongs to.
 public class DebugMenu : MonoBehaviour
 {
     public static bool IsOpen { get; private set; }
@@ -31,7 +33,10 @@ public class DebugMenu : MonoBehaviour
 
     private const int ColumnCount = 2;
     private const float ColumnGap = 30f;
-    private const float HeaderHeight = 30f;
+    private const float ButtonGap = 6f;
+    private const float SectionGap = 8f;
+    private const float TitleSpace = 70f;
+    private const float PanelTop = 30f;
 
     private class Option
     {
@@ -39,16 +44,26 @@ public class DebugMenu : MonoBehaviour
         public Action Run;
         public bool ClosesMenu;
         public CrtButton Button;
-        public int Column;
-        public string Section;
     }
 
-    // In column order (all of the first column, then the second), which is how CrtMenu numbers
-    // its buttons.
+    private class FoldSection
+    {
+        public string Name;
+        public int Column;
+        public bool Open;
+        public CrtButton Header;
+        public readonly List<Option> Options = new List<Option>();
+    }
+
+    // In the order they were added (all of the first column, then the second).
+    private readonly List<FoldSection> sections = new List<FoldSection>();
     private readonly List<Option> options = new List<Option>();
-    private int currentColumn;
-    private string currentSection;
+    // The buttons on show, in CrtMenu's numbering (column by column): a section header (Option
+    // null) or one of its options.
+    private readonly List<(FoldSection Section, Option Option)> visible = new List<(FoldSection, Option)>();
+    private FoldSection currentSection;
     private GameObject panel;
+    private RectTransform panelRect;
     private TMP_Text status;
     private CrtMenu menu;
     private float previousTimeScale = 1f;
@@ -91,7 +106,13 @@ public class DebugMenu : MonoBehaviour
         if (chosen < 0)
             return;
 
-        Option option = options[chosen];
+        Option option = visible[chosen].Option;
+
+        if (option == null)
+        {
+            ToggleSection(visible[chosen].Section);
+            return;
+        }
 
         // Some options need the game running (teleports, floor changes), so close first.
         if (option.ClosesMenu)
@@ -111,7 +132,7 @@ public class DebugMenu : MonoBehaviour
         status.text = floor != null ? $"{floor.LocationName} // {(floor.CurrentRoom != null ? floor.CurrentRoom.name : "NO ROOM")}" : "";
         RefreshLabels();
         panel.SetActive(true);
-        menu.Open();
+        Layout(null);
     }
 
     private void Close()
@@ -170,11 +191,11 @@ public class DebugMenu : MonoBehaviour
         Add("FILL LOOT POINTS IN ROOM", FillLootPoints, false);
     }
 
-    // Starts a group of options under a header. Sections must be added column by column.
+    // Starts a fold-out group of options under a header. Sections must be added column by column.
     private void Section(int column, string header)
     {
-        currentColumn = Mathf.Clamp(column, 0, ColumnCount - 1);
-        currentSection = header;
+        currentSection = new FoldSection { Name = header, Column = Mathf.Clamp(column, 0, ColumnCount - 1) };
+        sections.Add(currentSection);
     }
 
     private void Add(string label, Action run, bool closesMenu)
@@ -184,14 +205,9 @@ public class DebugMenu : MonoBehaviour
 
     private void Add(Func<string> label, Action run, bool closesMenu)
     {
-        options.Add(new Option
-        {
-            Label = label,
-            Run = run,
-            ClosesMenu = closesMenu,
-            Column = currentColumn,
-            Section = currentSection
-        });
+        Option option = new Option { Label = label, Run = run, ClosesMenu = closesMenu };
+        options.Add(option);
+        currentSection.Options.Add(option);
     }
 
     private PlayerHealth Health => player != null ? player.GetComponent<PlayerHealth>() : null;
@@ -400,76 +416,116 @@ public class DebugMenu : MonoBehaviour
 
     private void BuildPanel()
     {
-        // As tall as the taller column: its headers and buttons.
-        float[] columnHeights = new float[ColumnCount];
-        string[] lastSection = new string[ColumnCount];
-
-        foreach (Option option in options)
-        {
-            if (option.Section != lastSection[option.Column])
-            {
-                columnHeights[option.Column] += HeaderHeight;
-                lastSection[option.Column] = option.Section;
-            }
-
-            columnHeights[option.Column] += buttonSize.y + 6f;
-        }
-
-        float height = 90f + Mathf.Max(columnHeights);
         float width = ColumnCount * buttonSize.x + (ColumnCount - 1) * ColumnGap + 60f;
 
+        // Hangs from the top of the screen, so folding sections only moves its bottom edge.
         panel = new GameObject("Panel", typeof(RectTransform));
         panel.layer = gameObject.layer;
         panel.transform.SetParent(transform, false);
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(width, height);
+        panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = new Vector2(0.5f, 1f);
+        panelRect.anchoredPosition = new Vector2(0f, -PanelTop);
+        panelRect.sizeDelta = new Vector2(width, TitleSpace);
 
         Image background = panel.AddComponent<Image>();
         background.color = new Color(0.06f, 0.03f, 0f, 0.95f);
         background.raycastTarget = false;
 
-        float top = height / 2f - 20f;
-        MakeText("Title", "> DEBUG", 22, new Vector2(0f, top), amber, null, width - 40f);
-        status = MakeText("Status", "", 11, new Vector2(0f, top - 26f), new Color(amber.r, amber.g, amber.b, 0.6f), null, width - 40f);
-        top -= 56f;
+        MakeText("Title", "> DEBUG", 22, new Vector2(0f, -20f), amber, null, width - 40f);
+        status = MakeText("Status", "", 11, new Vector2(0f, -46f), new Color(amber.r, amber.g, amber.b, 0.6f), null, width - 40f);
 
-        Color headerColour = new Color(amber.r, amber.g, amber.b, 0.55f);
+        foreach (FoldSection section in sections)
+        {
+            section.Header = MakeButton(section.Name, Vector2.zero, true);
+
+            foreach (Option option in section.Options)
+                option.Button = MakeButton(option.Label(), Vector2.zero, false);
+        }
+    }
+
+    // Opening a section folds away the others in its column.
+    private void ToggleSection(FoldSection section)
+    {
+        bool open = !section.Open;
+
+        foreach (FoldSection other in sections)
+        {
+            if (other.Column == section.Column)
+                other.Open = false;
+        }
+
+        section.Open = open;
+        Layout(section);
+    }
+
+    // Places the headers and the options of open sections, hides the rest, fits the panel to
+    // them and rebuilds the menu over what's showing. focus: the header the controller highlight
+    // starts on (null for the top of the first column).
+    private void Layout(FoldSection focus)
+    {
+        visible.Clear();
         List<CrtButton>[] buttons = new List<CrtButton>[ColumnCount];
         float[] y = new float[ColumnCount];
-        string[] section = new string[ColumnCount];
+        int focusColumn = 0;
+        int focusRow = 0;
 
         for (int c = 0; c < ColumnCount; c++)
         {
             buttons[c] = new List<CrtButton>();
-            y[c] = top;
+            y[c] = -TitleSpace - buttonSize.y / 2f;
         }
 
-        foreach (Option option in options)
+        // Sections are in column order, so this fills visible in CrtMenu's numbering.
+        foreach (FoldSection section in sections)
         {
-            int c = option.Column;
+            int c = section.Column;
             float x = (c - (ColumnCount - 1) / 2f) * (buttonSize.x + ColumnGap);
 
-            // A header over the first option of each group, lined up with the buttons.
-            if (option.Section != section[c])
+            if (section == focus)
             {
-                section[c] = option.Section;
-                TMP_Text header = MakeText("Header " + option.Section, "// " + option.Section, 11, new Vector2(x, y[c] - 4f), headerColour, null, buttonSize.x);
-                header.alignment = TextAlignmentOptions.MidlineLeft;
-                y[c] -= HeaderHeight;
+                focusColumn = c;
+                focusRow = buttons[c].Count;
             }
 
-            option.Button = MakeButton(option.Label(), new Vector2(x, y[c]));
-            buttons[c].Add(option.Button);
-            y[c] -= buttonSize.y + 6f;
+            section.Header.Label.text = (section.Open ? "[-] " : "[+] ") + section.Name + (section.Open ? "" : $" ({section.Options.Count})");
+            Place(section.Header, x, ref y[c], buttons[c]);
+            visible.Add((section, null));
+
+            foreach (Option option in section.Options)
+            {
+                option.Button.gameObject.SetActive(section.Open);
+
+                if (!section.Open)
+                    continue;
+
+                Place(option.Button, x, ref y[c], buttons[c]);
+                visible.Add((section, option));
+            }
+
+            y[c] -= SectionGap;
         }
+
+        float lowest = 0f;
+
+        for (int c = 0; c < ColumnCount; c++)
+            lowest = Mathf.Min(lowest, y[c]);
+
+        panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, -lowest + buttonSize.y / 2f + 10f);
 
         CrtButton[][] columns = new CrtButton[ColumnCount][];
 
         for (int c = 0; c < ColumnCount; c++)
             columns[c] = buttons[c].ToArray();
 
-        menu = new CrtMenu(columns, 0, 0);
+        menu = new CrtMenu(columns, focusColumn, focusRow);
+        menu.Open();
+    }
+
+    private static void Place(CrtButton button, float x, ref float y, List<CrtButton> column)
+    {
+        button.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, y);
+        column.Add(button);
+        y -= button.GetComponent<RectTransform>().sizeDelta.y + ButtonGap;
     }
 
     private void RefreshLabels()
@@ -478,26 +534,34 @@ public class DebugMenu : MonoBehaviour
             option.Button.Label.text = option.Label();
     }
 
-    private CrtButton MakeButton(string text, Vector2 position)
+    // header: a section's fold-out button, with its label on the left and a dimmer fill.
+    private CrtButton MakeButton(string text, Vector2 position, bool header)
     {
         GameObject go = new GameObject(text, typeof(RectTransform));
         go.layer = gameObject.layer;
         go.transform.SetParent(panel.transform, false);
         RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
         rect.anchoredPosition = position;
         rect.sizeDelta = buttonSize;
 
         Image image = go.AddComponent<Image>();
         image.raycastTarget = false;
 
-        TMP_Text label = MakeText("Label", text, 13, Vector2.zero, amber, rect);
+        TMP_Text label = MakeText("Label", text, header ? 12 : 13, Vector2.zero, amber, rect);
         label.rectTransform.sizeDelta = buttonSize;
+
+        if (header)
+        {
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            label.margin = new Vector4(10f, 0f, 10f, 0f);
+        }
 
         CrtButton button = go.AddComponent<CrtButton>();
         button.Setup(image, label,
-            new Color(amber.r, amber.g, amber.b, 0.1f),
+            new Color(amber.r, amber.g, amber.b, header ? 0.04f : 0.1f),
             new Color(amber.r, amber.g, amber.b, 0.4f),
-            new Color(amber.r, amber.g, amber.b, 0.85f),
+            new Color(amber.r, amber.g, amber.b, header ? 0.6f : 0.85f),
             Color.white);
         return button;
     }
@@ -508,6 +572,11 @@ public class DebugMenu : MonoBehaviour
         go.layer = gameObject.layer;
         go.transform.SetParent(parent != null ? parent : panel.transform, false);
         RectTransform rect = go.GetComponent<RectTransform>();
+
+        // Straight on the panel, positions are measured down from its top edge.
+        if (parent == null)
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+
         rect.anchoredPosition = position;
         rect.sizeDelta = new Vector2(width > 0f ? width : buttonSize.x + 40f, 26f);
 

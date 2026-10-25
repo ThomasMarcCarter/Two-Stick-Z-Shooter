@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.AI;
 
 // Room themes: what a room was before the outbreak, told by the furniture against its walls.
-// Most combat rooms get one (at the Military Base: storage, infirmary, barracks or workshop; at
-// the Shopping Mall: shop floor, food court or storeroom; at the Hospital: ward, operating
-// theatre or waiting room; at the Airport: gate lounge, baggage hall or security check), the
+// Most combat rooms get one (at the Military Base: storage, infirmary, barracks, workshop, office
+// or lab; at the Shopping Mall: shop floor, food court or storeroom; at the Hospital: ward,
+// operating theatre, waiting room or lab; at the Airport: gate lounge, baggage hall or security check), the
 // treasure room is an armoury (the mall's security office, the hospital's pharmacy, the airport's
 // duty free) and the spawn room a checkpoint (the mall's entrance, the hospital's reception, the
 // airport's check-in); the boss arena stays bare. Each piece stands with its
@@ -40,7 +40,9 @@ public partial class FloorGenerator
         BaggageHall,
         SecurityCheck,
         DutyFree,
-        CheckIn
+        CheckIn,
+        Office,
+        Lab
     }
 
     // A piece of furniture a theme can place: the model and the space it takes (width along the
@@ -103,6 +105,16 @@ public partial class FloorGenerator
     private static readonly ThemePiece MetalDetectorPiece = new ThemePiece("MetalDetector", 1.2f, 2.3f, 0.6f);
     private static readonly ThemePiece CheckInDeskPiece = new ThemePiece("CheckInDesk", 2.2f, 1.3f, 0.8f);
 
+    // Offices and labs (sprite only).
+    private static readonly ThemePiece DeskPiece = new ThemePiece("Desk", 1.6f, 1.2f, 0.8f);
+    private static readonly ThemePiece FilingCabinetPiece = new ThemePiece("FilingCabinet", 0.5f, 1.32f, 0.6f);
+    private static readonly ThemePiece WaterCoolerPiece = new ThemePiece("WaterCooler", 0.4f, 1.4f, 0.4f);
+    private static readonly ThemePiece BinderShelfPiece = new ThemePiece("BinderShelf", 1.8f, 1.9f, 0.4f);
+    private static readonly ThemePiece LabBenchPiece = new ThemePiece("LabBench", 2.2f, 1.45f, 0.8f);
+    private static readonly ThemePiece FumeHoodPiece = new ThemePiece("FumeHood", 1.4f, 2.1f, 0.8f);
+    private static readonly ThemePiece SpecimenTankPiece = new ThemePiece("SpecimenTank", 0.8f, 2.05f, 0.8f);
+    private static readonly ThemePiece ServerRackPiece = new ThemePiece("ServerRack", 0.7f, 2f, 0.9f);
+
     // What each theme is furnished with (picked from at random, so repeats are likely).
     private static ThemePiece[] PiecesFor(RoomTheme theme)
     {
@@ -129,6 +141,8 @@ public partial class FloorGenerator
             case RoomTheme.SecurityCheck: return new[] { XRayScannerPiece, MetalDetectorPiece, LuggagePiece, TrashBinPiece };
             case RoomTheme.DutyFree: return new[] { StoreShelfPiece, StoreShelfPiece, CheckoutPiece, PlanterPiece };
             case RoomTheme.CheckIn: return new[] { CheckInDeskPiece, CheckInDeskPiece, LuggagePiece, GateSeatsPiece };
+            case RoomTheme.Office: return new[] { DeskPiece, DeskPiece, DeskPiece, FilingCabinetPiece, FilingCabinetPiece, WaterCoolerPiece, BinderShelfPiece };
+            case RoomTheme.Lab: return new[] { LabBenchPiece, LabBenchPiece, FumeHoodPiece, SpecimenTankPiece, SpecimenTankPiece, ServerRackPiece };
             default: return new ThemePiece[0];
         }
     }
@@ -195,22 +209,23 @@ public partial class FloorGenerator
             return new[] { RoomTheme.ShopFloor, RoomTheme.ShopFloor, RoomTheme.FoodCourt, RoomTheme.StoreRoom };
 
         if (zone == Zone.Hospital)
-            return new[] { RoomTheme.Ward, RoomTheme.Ward, RoomTheme.Theatre, RoomTheme.WaitingRoom };
+            return new[] { RoomTheme.Ward, RoomTheme.Ward, RoomTheme.Theatre, RoomTheme.WaitingRoom, RoomTheme.Lab };
 
-        return new[] { RoomTheme.Storage, RoomTheme.Infirmary, RoomTheme.Barracks, RoomTheme.Workshop };
+        return new[] { RoomTheme.Storage, RoomTheme.Infirmary, RoomTheme.Barracks, RoomTheme.Workshop, RoomTheme.Office, RoomTheme.Lab };
     }
 
-    // Picks the room's theme, names it and stands its furniture against the walls.
-    private void FurnishRoom(Room room)
+    // Picks the room's theme, names it and stands its furniture against the walls. Returns the
+    // theme (None when the room isn't themed), for the wall decals.
+    private RoomTheme FurnishRoom(Room room)
     {
         if (furnitureVisuals == null)
-            return;
+            return RoomTheme.None;
 
         RoomTheme theme = PickTheme(room);
         ThemePiece[] pieces = PiecesFor(theme);
 
         if (pieces.Length == 0)
-            return;
+            return RoomTheme.None;
 
         room.DisplayName = $"{TypeLabel(room.Type)} // {ThemeName(theme)}";
 
@@ -253,6 +268,8 @@ public partial class FloorGenerator
                     wanted--;
             }
         }
+
+        return theme;
     }
 
     // One piece, back to the given wall of a cell, somewhere along it that's clear.

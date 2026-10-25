@@ -463,6 +463,7 @@ public partial class FloorGenerator : MonoBehaviour
 
         CurrentSeed = randomSeed ? UnityEngine.Random.Range(int.MinValue, int.MaxValue) : seed;
         rng = new System.Random(CurrentSeed);
+        decalRng = new System.Random(CurrentSeed ^ 0x5eed);
 
         // Guns fire for free in the hideout (its shooting range), never on a run.
         Gun.FreeAmmo = IsHideout;
@@ -530,7 +531,9 @@ public partial class FloorGenerator : MonoBehaviour
         {
             // Loot first, then boxes kept clear of it, then enemies kept clear of both.
             List<Vector3> lootFloorPoints = SpawnLoot(room);
-            FurnishRoom(room);
+            RoomTheme theme = FurnishRoom(room);
+            DecorateWalls(room, theme);
+            PaintFloor(room, theme);
             SpawnClutter(room);
             SpawnTrash(room);
             List<Vector3> placed = SpawnEnemies(room);
