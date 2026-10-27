@@ -168,6 +168,14 @@ public class SpriteVisuals : ScriptableObject
     [Tooltip("The Broodmother's glob: row 0 wobbling in flight (trail to the left), row 1 its shadow.")]
     public SpriteSheet acidGlob;
 
+    [Header("Small effects")]
+    [Tooltip("Spent cases: 4 turns per row, row 0 brass, row 1 shotgun shell (ShellCasing).")]
+    public SpriteSheet casing;
+    [Tooltip("The dithered round shadow under every character, lying flat.")]
+    public SpriteSheet shadow;
+    [Tooltip("Bloody shoe prints, toes right: left/right columns, rows fresh to faded (BloodyFootprints).")]
+    public SpriteSheet footprint;
+
     [System.Serializable]
     public class GunEntry
     {

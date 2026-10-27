@@ -8,6 +8,8 @@ using UnityEngine;
 // boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves), the player's "heal" and
 // "inject" through a medkit or adrenaline (QuickBar), "climb" down a hatch's ladder and "dead"
 // once the player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
+// A soft round shadow lies on the floor under every character (SpriteVisuals.shadow), and a hit
+// squashes the sprite wide and short for a moment (an enemy's or the player's Damaged).
 // The tilted camera shows an upright sprite taller than the body it stands for, so shots test
 // against the sprite as it looks (Footprint, used by Projectile): what's under the sprite on
 // screen, down at the height the shot flies, is where it can be hit.
@@ -16,6 +18,8 @@ public class SpriteCharacter : MonoBehaviour
 {
     private const float StrideLength = 0.3f;   // metres travelled per walk frame
     private const float MovingSpeed = 0.4f;    // slower than this counts as standing still
+    private const float SquashTime = 0.14f;    // a hit's squash, back to normal over this
+    private const float ShadowWidth = 2.6f;    // the shadow across, in body radii
 
     private PixelSprite sprite;
     private Transform facingSource;
@@ -38,6 +42,7 @@ public class SpriteCharacter : MonoBehaviour
     private Vector3 lastPosition;
     private float stride;
     private SpriteFacing.Facing facing;
+    private float hitAt = -1f;
 
     public PixelSprite Sprite => sprite;
     public SpriteFacing.Facing CurrentFacing => facing;
@@ -117,6 +122,16 @@ public class SpriteCharacter : MonoBehaviour
         character.quickBar = body.GetComponent<QuickBar>();
         character.playerMelee = body.GetComponent<PlayerMelee>();
         character.lastPosition = body.position;
+        character.AddShadow(sheet);
+
+        if (character.enemy != null)
+            character.enemy.Damaged += _ => character.hitAt = Time.time;
+
+        if (character.player != null)
+        {
+            character.player.Damaged += _ => character.hitAt = Time.time;
+            body.gameObject.AddComponent<BloodyFootprints>();
+        }
 
         if ((character.enemy != null || character.npc != null) && !enemies.Contains(character))
             enemies.Add(character);
@@ -136,6 +151,7 @@ public class SpriteCharacter : MonoBehaviour
         lastPosition = transform.position;
         float dt = Time.deltaTime;
         float speed = dt > 0f ? moved.magnitude / dt : 0f;
+        Squash();
 
         if (player != null && player.IsDead && dead != null)
         {
@@ -189,6 +205,30 @@ public class SpriteCharacter : MonoBehaviour
 
         if (idle != null)
             sprite.SetFrame(idle, Mathf.FloorToInt(Time.time * idle.fps), facing);
+    }
+
+    // A dark disc on the floor under the feet, sized to the body, under the character but over the
+    // blood and litter. Casts and takes no shadow of its own.
+    private void AddShadow(SpriteSheet body)
+    {
+        SpriteSheet sheet = SpriteVisuals.Current != null ? SpriteVisuals.Current.shadow : null;
+
+        if (sheet == null || sheet.texture == null)
+            return;
+
+        PixelSprite shadow = PixelSprite.Create("Shadow", transform, sheet, PixelSprite.Mode.Flat);
+        shadow.Scale = body.bodyRadius * ShadowWidth / (sheet.frameWidth / Mathf.Max(1f, sheet.pixelsPerUnit));
+        shadow.Lift = 0.012f;
+        shadow.Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        shadow.Renderer.receiveShadows = false;
+    }
+
+    // Wide and short just after a hit, easing back to as drawn.
+    private void Squash()
+    {
+        float t = hitAt < 0f ? 1f : (Time.time - hitAt) / SquashTime;
+        float s = 1f - Mathf.Clamp01(t);
+        sprite.Stretch = new Vector2(1f + 0.22f * s, 1f - 0.16f * s);
     }
 
     // The player busy with something other than fighting: down a hatch's ladder, or a medkit or

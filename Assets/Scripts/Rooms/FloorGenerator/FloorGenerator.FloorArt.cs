@@ -4,8 +4,9 @@ using UnityEngine;
 // Floor decals: markings painted on the room floors and the mess left on them. Now and then a
 // cell gets one of its theme's markings (bay lines and KEEP CLEAR boxes in a storage room, a
 // compass star inlaid on a shop floor, coloured wayfinding lines across a hospital ward, WAIT HERE
-// lines at a security check...) and, separately, some mess (oil, cracks, scorches, puddles,
-// blood dragged across the floor); boss arenas get blood and scorch marks clear of the painted
+// lines at a security check...) and, separately, some of its zone's mess (RoomKits.FloorGrime:
+// rubble and oil on the base, shattered shop glass in the mall, spilt pills in the hospital,
+// trodden paper in the airport, and blood and cracks everywhere); boss arenas get blood and scorch marks clear of the painted
 // arena ring. Each is a flat 3 x 3 m quad just above the floor, turned a random quarter turn
 // (ones with writing on stay the right way up), on
 // the floor texture's pixel grid (16 px per metre; Tools/Sprites/floordecals.py), lit like the
@@ -36,12 +37,8 @@ public partial class FloorGenerator
         "BayLines", "HazardBox", "FloorArrow", "HelipadH",
         "MallStar", "SpiltDrink", "WetFootprints",
         "Wayfinding", "WayfindingTurn", "BiohazardSpill",
-        "QueueLine", "GateNumber"
-    };
-
-    private static readonly string[] FloorGrime =
-    {
-        "OilStain", "FloorCrack", "FloorCrack", "Scorch", "BloodDrag", "BloodyPrints", "Puddle", "Drain"
+        "QueueLine", "GateNumber",
+        "Rubble", "TileDamage", "ShatteredGlass", "ScatteredPills", "PaperScatter"
     };
 
     private static readonly string[] BossFloorDecals = { "BloodDrag", "BloodDrag", "BloodyPrints", "Scorch", "FloorCrack" };
@@ -104,6 +101,7 @@ public partial class FloorGenerator
         string[] markings = boss ? BossFloorDecals : ThemeFloorDecals(theme);
         float markingChance = boss ? 1f : room.Type == RoomType.Normal ? themeFloorDecalChance : 0.8f;
         float grimeChance = boss ? 0.8f : grimeFloorDecalChance;
+        string[] grime = RoomKits.For(Zone).FloorGrime;
 
         foreach (Vector2Int cell in room.Cells)
         {
@@ -113,7 +111,7 @@ public partial class FloorGenerator
                 TryPaintFloor(room, markings[decalRng.Next(markings.Length)], centre, keepClear, hatch, painted, boss);
 
             if (decalRng.NextDouble() < grimeChance)
-                TryPaintFloor(room, FloorGrime[decalRng.Next(FloorGrime.Length)], centre, keepClear, hatch, painted, boss);
+                TryPaintFloor(room, grime[decalRng.Next(grime.Length)], centre, keepClear, hatch, painted, boss);
         }
     }
 

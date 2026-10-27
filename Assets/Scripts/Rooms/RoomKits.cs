@@ -3,7 +3,8 @@
 // 2 m alcove set back into the wall, a broken top or a run of the zone's fixture (pipes, a display
 // shelf, a handrail, a wayfinding band), where the pilasters stand along each cell's wall, the
 // alcove's opening, and which wall decals the zone hangs: its everyday signs for unthemed rooms,
-// the grime, graffiti and fittings that turn up between signs, and how boss arenas are smeared.
+// the grime, graffiti and fittings that turn up between signs, and how boss arenas are smeared,
+// and the mess left on the floor (FloorGenerator.FloorArt.cs).
 // The modules' art is the zone's wall kit atlas (Tools/Sprites/wallkit.py); the opening heights
 // here match it (the face is 32 texture rows over the 2 m wall, so a row is 1/16 m).
 public struct RoomKit
@@ -22,6 +23,7 @@ public struct RoomKit
     public string[] Grime;            // between the signs, now and then
     public string[] BossGrime;        // boss arenas
     public float GrimeScale;          // times FloorGenerator's grimeDecalChance
+    public string[] FloorGrime;       // floor decals: the mess on the floor
 }
 
 public static class RoomKits
@@ -46,7 +48,8 @@ public static class RoomKits
                         "Crack", "Damp", "Handprint", "BloodSmear", "BloodSplat", "BulletHoles", "Extinguisher", "Vent"
                     },
                     BossGrime = new[] { "BloodSplat", "BloodSmear", "BloodSmear", "Handprint", "GraffitiDead", "GraffitiRun", "Crack" },
-                    GrimeScale = 1.2f
+                    GrimeScale = 1.2f,
+                    FloorGrime = new[] { "ShatteredGlass", "ShatteredGlass", "SpiltDrink", "TileDamage", "TileDamage", "PaperScatter", "BloodDrag", "BloodyPrints", "FloorCrack", "Puddle" }
                 };
 
             // Windows into the next ward, wipe-clean panels and tiling, handrails over bumper
@@ -65,7 +68,8 @@ public static class RoomKits
                         "BloodSplat", "GraffitiHelp", "Tally", "Extinguisher", "Extinguisher", "Vent"
                     },
                     BossGrime = new[] { "BloodSmear", "BloodSmear", "BloodSplat", "Handprint", "Handprint", "GraffitiHelp", "Damp" },
-                    GrimeScale = 1f
+                    GrimeScale = 1f,
+                    FloorGrime = new[] { "ScatteredPills", "ScatteredPills", "BiohazardSpill", "Puddle", "Puddle", "TileDamage", "BloodDrag", "BloodDrag", "BloodyPrints", "PaperScatter" }
                 };
 
             // Full-height glazing onto the apron, cladding and louvres, white steel columns,
@@ -84,7 +88,8 @@ public static class RoomKits
                         "GraffitiHelp", "Extinguisher", "Extinguisher", "Vent", "Vent"
                     },
                     BossGrime = new[] { "BloodSplat", "BloodSmear", "BulletHoles", "BulletHoles", "Crack", "Handprint" },
-                    GrimeScale = 0.7f
+                    GrimeScale = 0.7f,
+                    FloorGrime = new[] { "PaperScatter", "PaperScatter", "PaperScatter", "TileDamage", "FloorCrack", "Puddle", "ShatteredGlass", "BloodDrag", "BloodyPrints" }
                 };
 
             // Roller-shutter bays, bolted plates and bare re-poured concrete, hazard-striped columns,
@@ -104,7 +109,8 @@ public static class RoomKits
                         "Extinguisher", "Extinguisher", "Vent", "Vent", "FuseBox"
                     },
                     BossGrime = new[] { "BloodSplat", "BloodSplat", "BloodSmear", "BloodSmear", "Handprint", "BulletHoles", "Crack", "GraffitiRun" },
-                    GrimeScale = 1f
+                    GrimeScale = 1f,
+                    FloorGrime = new[] { "OilStain", "FloorCrack", "FloorCrack", "Rubble", "Rubble", "Scorch", "BloodDrag", "BloodyPrints", "Puddle", "Drain" }
                 };
         }
     }

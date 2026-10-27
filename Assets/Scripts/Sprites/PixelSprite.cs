@@ -69,6 +69,14 @@ public class PixelSprite : MonoBehaviour
     // Upright: metres above the floor it stands at (a floating pickup, a wall mount).
     public float Lift { get; set; }
     public bool Standing { get; set; }
+
+    // Squashed or stretched across and up its own plane about its pivot (a hit's squash), 1 = as drawn.
+    public Vector2 Stretch { get; set; } = Vector2.one;
+
+    // The frame last set: its column and row, and whether it's mirrored.
+    public int Column { get; private set; }
+    public int Row { get; private set; }
+    public bool Mirrored => flipX;
     public Renderer Renderer => meshRenderer;
     public SpriteSheet Sheet => sheet;
 
@@ -145,6 +153,8 @@ public class PixelSprite : MonoBehaviour
     public void SetFrame(int column, int row, bool mirror, bool upsideDown = false)
     {
         Rect uv = sheet != null ? sheet.FrameUV(column, row) : new Rect(0f, 0f, 1f, 1f);
+        Column = column;
+        Row = row;
 
         if (uv == frame && mirror == flipX && upsideDown == flipY)
             return;
@@ -230,8 +240,8 @@ public class PixelSprite : MonoBehaviour
         // World-sized whatever the parent's scale (enemy bodies are scaled blocks).
         Vector3 parentScale = transform.parent != null ? transform.parent.lossyScale : Vector3.one;
         transform.localScale = new Vector3(
-            1f / Mathf.Max(0.0001f, parentScale.x),
-            1f / Mathf.Max(0.0001f, parentScale.y),
+            Stretch.x / Mathf.Max(0.0001f, parentScale.x),
+            Stretch.y / Mathf.Max(0.0001f, parentScale.y),
             1f / Mathf.Max(0.0001f, parentScale.z));
     }
 

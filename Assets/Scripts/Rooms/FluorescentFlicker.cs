@@ -2,7 +2,8 @@ using UnityEngine;
 
 // An overhead fluorescent tube that's mostly steady but now and then stutters: a quick burst of
 // cutting out, catching and dimming before it settles again. A few tubes are worn out and do it
-// far more often. Driven by the light's own intensity, so it works on any Light.
+// far more often, and spits sparks as it does if it has some (LightAtmosphere). Driven by the
+// light's own intensity, so it works on any Light.
 [RequireComponent(typeof(Light))]
 public class FluorescentFlicker : MonoBehaviour
 {
@@ -20,6 +21,9 @@ public class FluorescentFlicker : MonoBehaviour
     private float nextBurst;
     private float burstEnds;
     private float nextChange;
+
+    // Shown when a worn tube's burst starts (LightAtmosphere.Dress sets it).
+    public ParticleSystem Sparks { get; set; }
 
     private void Awake()
     {
@@ -57,6 +61,9 @@ public class FluorescentFlicker : MonoBehaviour
         {
             burstEnds = now + Random.Range(burstLength.x, burstLength.y);
             nextChange = now;
+
+            if (worn && Sparks != null && Random.value < 0.5f)
+                Sparks.Emit(Random.Range(6, 14));
             ScheduleNext();
         }
     }

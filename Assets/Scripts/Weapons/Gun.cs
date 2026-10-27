@@ -379,6 +379,11 @@ public partial class Gun : MonoBehaviour
         if (muzzleFlash != null && !HidesFlash)
             muzzleFlash.Fire();
 
+        // Out of the ejection port, a little behind the muzzle.
+        Vector3 port = muzzle != null ? Vector3.Lerp(transform.root.position, muzzle.position, 0.65f) : transform.position;
+        port.y = muzzle != null ? muzzle.position.y : AimHeight;
+        ShellCasing.Eject(port, direction, ammoType == AmmoType.ShotgunShell);
+
         PlayShot();
         nextFireTime = Time.time + (1f / FireRate);
     }

@@ -19,6 +19,30 @@ public static partial class ImpactEffects
         return true;
     }
 
+    // Whether a point on the floor is in one of the blood pools (BloodyFootprints).
+    public static bool InBlood(Vector3 point)
+    {
+        foreach (GameObject pool in floorSplats)
+        {
+            if (pool == null)
+                continue;
+
+            // Sprite pools: the sprite's drawn width; the old splat quads: their scale.
+            PixelSprite sprite = pool.GetComponentInChildren<PixelSprite>();
+            float across = sprite != null && sprite.Sheet != null
+                ? sprite.Scale * sprite.Sheet.frameWidth / Mathf.Max(1f, sprite.Sheet.pixelsPerUnit)
+                : pool.transform.lossyScale.x;
+            Vector3 offset = point - pool.transform.position;
+            offset.y = 0f;
+
+            // The middle of the art: pools don't fill their frame.
+            if (offset.magnitude < across * 0.3f)
+                return true;
+        }
+
+        return false;
+    }
+
     // A pool of blood on the floor where a zombie fell, size across, randomly turned. Parented to
     // its room so it goes with the floor; the oldest go first past the cap.
     public static void FloorSplat(Vector3 position, float size, Transform room, Material material)

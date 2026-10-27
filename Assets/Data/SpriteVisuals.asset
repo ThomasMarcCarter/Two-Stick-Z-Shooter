@@ -518,3 +518,6 @@ MonoBehaviour:
   acidBurst: {fileID: 11400000, guid: bd04e414132c0914c877f3ce52f7b76e, type: 2}
   acidPool: {fileID: 11400000, guid: 3b49902bcec0ec4439a1a573898631cc, type: 2}
   acidGlob: {fileID: 11400000, guid: 7f9e17711e331904eada058d873c829e, type: 2}
+  casing: {fileID: 11400000, guid: cb7f488b1aa5ef54684f334d475c5316, type: 2}
+  shadow: {fileID: 11400000, guid: 2ac5bf4bc1507c84cadd11e89f9547df, type: 2}
+  footprint: {fileID: 11400000, guid: d4b45c8ba4ff2a14ea83f90612976ca6, type: 2}

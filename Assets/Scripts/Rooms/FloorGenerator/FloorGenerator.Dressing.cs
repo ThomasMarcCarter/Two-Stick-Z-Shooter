@@ -371,7 +371,8 @@ public partial class FloorGenerator
     }
 
     // Overhead fluorescent tubes, spaced along each cell. Just Light components: there's no
-    // fitting to see from the camera, only the pools of light on the floor.
+    // fitting to see from the camera, only the pools of light on the floor (and the dust drifting
+    // through them: LightAtmosphere).
     private void AddCeilingLights(Room room)
     {
         if (lightsPerCell <= 0)
@@ -407,6 +408,7 @@ public partial class FloorGenerator
                 data.renderingLayers = lightRenderingLayers;
 
                 lightObject.AddComponent<FluorescentFlicker>();
+                LightAtmosphere.Dress(tube, lightHeight, Mathf.Min(2.4f, roomSize.y * 0.4f));
             }
         }
     }
