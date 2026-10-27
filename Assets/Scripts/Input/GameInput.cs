@@ -68,6 +68,9 @@ public static partial class GameInput
     public static InputDeviceKind ActiveDevice { get; internal set; } = InputDeviceKind.KeyboardMouse;
     public static bool UsingGamepad => ActiveDevice == InputDeviceKind.Gamepad;
 
+    // Ctrl held: a click in the inventory quick-moves an attachment onto or off a gun.
+    public static bool QuickMoveHeld => Keyboard.current != null && Keyboard.current.ctrlKey.isPressed;
+
     // Where the player is aiming, in the undistorted screen image (after the CRT mapping), so it
     // can go straight into Camera.ScreenPointToRay or the UI. Follows the mouse, or the right
     // stick around the player on a controller.

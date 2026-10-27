@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // What the survivors say: distress calls, lines when shot at, progress on their goals, scenes
@@ -159,6 +160,10 @@ public static partial class Npcs
             "SHE RUNS! ALL FIVE PARTS IN AND THE ENGINE'S TICKING OVER. THE TRUCK CAN TAKE US ANYWHERE NOW.");
         Add(Scene.MallRequest, Zones.IsUnlocked(Zone.ShoppingMall), NpcKind.Trader,
             "A TRUCK, EH? THEN TAKE IT TO THE MALL. MY SHELVES ARE BARE AND THAT PLACE IS STILL STOCKED. BRING ME GOODS.");
+        Add(Scene.ShopStocked, StoryItems.Complete(NpcKind.Trader), NpcKind.Trader,
+            "THAT'S THE SAFE IN. SHELVES ARE FULL, BACK ROOM'S OPEN. GUNS, ATTACHMENTS, THE LOT. COME AND SPEND SOMETHING.");
+        Add(Scene.CureFound, StoryItems.Complete(NpcKind.Medic), NpcKind.Medic,
+            "THE NOTES WORKED. ROSA'S FEVER BROKE THIS MORNING. NO MORE SIGNS. WE BEAT IT, FOR ONE OF US AT LEAST.");
         Add(Scene.AirportRequest, Zones.IsUnlocked(Zone.Airport), NpcKind.Quartermaster,
             "COOK'S BACK ON THEIR FEET. GOOD. NOW LISTEN UP: THERE'S AN EVAC CHOPPER OUT THERE. THE AIRPORT TOWER HAS WHAT WE NEED TO CALL IT.");
         return due;
@@ -230,22 +235,65 @@ public static partial class Npcs
         }
     }
 
-    // Said now and then while they're near but the player isn't talking to them.
+    // Said now and then while they're near but the player isn't talking to them, plus a line
+    // about the places the truck can reach (Places).
     public static string[] Idle(NpcKind kind)
     {
+        string[] lines;
+
         switch (kind)
         {
             case NpcKind.Mechanic:
-                return new[] { "WHERE'D I PUT THAT WRENCH...", "THIS GENERATOR IS HELD TOGETHER WITH TAPE.", "*HUMMING*",
+                lines = new[] { "WHERE'D I PUT THAT WRENCH...", "THIS GENERATOR IS HELD TOGETHER WITH TAPE.", "*HUMMING*",
                     StoryItems.Complete(NpcKind.Mechanic) ? "SHE PURRS. WELL, SHE GROWLS." : "COME ON, OLD GIRL. NOT LONG NOW." };
+                break;
             case NpcKind.Medic:
-                return new[] { "STERILE. MOSTLY.", "I USED TO HAVE A CLINIC, YOU KNOW.", "SOMEONE KEEPS STEALING THE GAUZE." };
+                lines = new[] { "STERILE. MOSTLY.", "I USED TO HAVE A CLINIC, YOU KNOW.", "SOMEONE KEEPS STEALING THE GAUZE." };
+                break;
             case NpcKind.Trader:
-                return new[] { "EVERYTHING HAS A PRICE.", "*COUNTING SCRAP*", "NO REFUNDS. NO EXCEPTIONS." };
+                lines = new[] { "EVERYTHING HAS A PRICE.", "*COUNTING SCRAP*", "NO REFUNDS. NO EXCEPTIONS." };
+                break;
             case NpcKind.Cook:
                 return CookSick ? new[] { "*COUGH*", "*COUGH* *COUGH*", "*SHIVERING*" } : new[] { "*HUMMING*", "NEEDS MORE SALT.", "WHO ATE MY LAST ONION?" };
             default:
-                return new[] { "INVENTORY CHECK. AGAIN.", "BACK IN MY DAY WE HAD RATIONS.", "NOBODY TOUCHES MY CRATES." };
+                lines = new[] { "INVENTORY CHECK. AGAIN.", "BACK IN MY DAY WE HAD RATIONS.", "NOBODY TOUCHES MY CRATES." };
+                break;
+        }
+
+        string place = Places(kind);
+        return place == null ? lines : lines.Concat(new[] { place }).ToArray();
+    }
+
+    // What they think of the places the truck can reach: their own zone before it opens, while
+    // their goal is under way there, and once it's done. Null when they've nothing to say yet.
+    private static string Places(NpcKind kind)
+    {
+        bool running = StoryItems.Complete(NpcKind.Mechanic);
+
+        switch (kind)
+        {
+            case NpcKind.Mechanic:
+                if (!running)
+                    return "ONCE SHE RUNS, THE MALL'S AN HOUR DOWN THE COAST ROAD. THE HOSPITAL AND AIRPORT BEYOND THAT.";
+                return Zones.IsUnlocked(Zone.Airport) ? "THE AIRPORT ROAD'S THE WORST OF IT. CRATERS. I'LL KEEP HER TOGETHER."
+                    : "THE MALL'S A STRAIGHT RUN. AFTER THAT THE ROADS GET UGLY.";
+            case NpcKind.Trader:
+                if (!running)
+                    return "THERE'S A WHOLE MALL OUT THERE. PITY WE CAN'T DRIVE TO IT. YET.";
+                return StoryItems.Complete(NpcKind.Trader) ? "I'LL MISS THAT MALL. NOT THE ZOMBIES. THE MALL."
+                    : "THE MALL'S STOREROOMS ARE UNDER THE FOOD COURT. BRING ME WHAT'S DOWN THERE.";
+            case NpcKind.Medic:
+                if (!Zones.IsUnlocked(Zone.Hospital))
+                    return running ? "I TRAINED AT THE HOSPITAL PAST THE MALL. IF IT'S STILL STANDING, IT HAS WHAT WE NEED." : null;
+                return StoryItems.Complete(NpcKind.Medic) ? "I NEVER WANT TO SEE THAT HOSPITAL AGAIN."
+                    : "THE HOSPITAL'S LAB IS IN THE BASEMENT. THAT'S WHERE THE GOOD STUFF WILL BE.";
+            case NpcKind.Quartermaster:
+                if (!Zones.IsUnlocked(Zone.Airport))
+                    return running ? "THE AIRPORT'S THE END OF THE LINE. IF ANYONE'S STILL FLYING, THEY'RE LISTENING THERE." : null;
+                return StoryItems.Complete(NpcKind.Quartermaster) ? "THE CHOPPER'S COMING. PACK LIGHT."
+                    : "THAT TOWER HAD A FULL RADIO SUITE. STRIP IT FOR PARTS, SOLDIER.";
+            default:
+                return null;
         }
     }
 

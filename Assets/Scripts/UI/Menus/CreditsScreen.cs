@@ -3,7 +3,9 @@ using UnityEngine;
 
 // The credits, after the evac chopper lifts off (EvacSequence): a full-screen CRT panel that fades
 // in over the world, rolls the credits up the screen (the survivors who made it out, then thanks),
-// and ends on THANKS FOR PLAYING with a way back to the hideout or the main menu. The game's paused
+// and ends on THANKS FOR PLAYING with a way back to the hideout or the main menu, or on into New
+// Game+ (MetaProgress.NewGamePlus.cs: the story over, tougher, keeping banked scrap and materials,
+// starting in the Military Base hideout). The game's paused
 // underneath. Built in code the first time it's shown (CrtPanel). Works with mouse or controller
 // (CrtMenu); Cancel skips to the end of the roll.
 public class CreditsScreen : MonoBehaviour
@@ -24,6 +26,7 @@ public class CreditsScreen : MonoBehaviour
     private TMP_Text thanks;
     private CrtButton hideoutButton;
     private CrtButton menuButton;
+    private CrtButton newGamePlusButton;
     private CrtMenu menu;
     private float started;
     private bool rolled;
@@ -89,7 +92,8 @@ public class CreditsScreen : MonoBehaviour
         menuButton = CrtPanel.MakeButton(panel.transform, font, "Menu", new Vector2(320f, 46f), TextAlignmentOptions.Center);
         menuButton.Label.text = "[ MAIN MENU ]";
         menuButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -PanelHeight / 2f - 110f);
-        menu = new CrtMenu(hideoutButton, menuButton);
+        newGamePlusButton = CrtPanel.MakeButton(panel.transform, font, "NewGamePlus", new Vector2(320f, 46f), TextAlignmentOptions.Center);
+        newGamePlusButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -PanelHeight / 2f + 10f);
     }
 
     private void Begin()
@@ -101,6 +105,7 @@ public class CreditsScreen : MonoBehaviour
         thanks.gameObject.SetActive(false);
         hideoutButton.gameObject.SetActive(false);
         menuButton.gameObject.SetActive(false);
+        newGamePlusButton.gameObject.SetActive(false);
         panel.SetActive(true);
         backdrop.SetActive(true);
     }
@@ -122,7 +127,8 @@ public class CreditsScreen : MonoBehaviour
 
         text.AppendLine("AND YOU.\n\n");
         text.AppendLine($"<color={UiColours.AmberHex}>// THE RECORD //</color>\n");
-        text.AppendLine($"RUNS  {MetaProgress.Runs}\nWINS  {MetaProgress.Victories}\nZOMBIES PUT DOWN  {MetaProgress.Kills}\n\n");
+        text.AppendLine($"RUNS  {MetaProgress.Runs}\nWINS  {MetaProgress.Victories}\nZOMBIES PUT DOWN  {MetaProgress.Kills}"
+            + (MetaProgress.Loop > 0 ? $"\nNEW GAME+ LOOP  {MetaProgress.Loop}" : "") + "\n\n");
         text.AppendLine($"<color={UiColours.AmberHex}>// MADE WITH //</color>\n");
         text.AppendLine("UNITY\nVT323 FONT (SIL OPEN FONT LICENSE)\n");
         return text.ToString();
@@ -148,7 +154,23 @@ public class CreditsScreen : MonoBehaviour
             return;
         }
 
-        switch (menu.Update())
+        int chosen = menu.Update();
+
+        // New Game+ comes first when it's offered.
+        if (chosen >= 0 && newGamePlusButton.gameObject.activeSelf)
+        {
+            if (chosen == 0)
+            {
+                Close();
+                MetaProgress.StartNewGamePlus();
+                RunFlow.ExitToHideout();
+                return;
+            }
+
+            chosen--;
+        }
+
+        switch (chosen)
         {
             case 0:
                 Close();
@@ -168,6 +190,12 @@ public class CreditsScreen : MonoBehaviour
         thanks.gameObject.SetActive(true);
         hideoutButton.gameObject.SetActive(true);
         menuButton.gameObject.SetActive(true);
+
+        bool plus = MetaProgress.CanStartNewGamePlus;
+        newGamePlusButton.gameObject.SetActive(plus);
+        newGamePlusButton.Label.text = $"[ START NEW GAME+{(MetaProgress.Loop > 0 ? (MetaProgress.Loop + 1).ToString() : "")} ]";
+        thanks.rectTransform.anchoredPosition = new Vector2(0f, -PanelHeight / 2f + (plus ? 90f : 40f));
+        menu = plus ? new CrtMenu(newGamePlusButton, hideoutButton, menuButton) : new CrtMenu(hideoutButton, menuButton);
         menu.Open();
     }
 

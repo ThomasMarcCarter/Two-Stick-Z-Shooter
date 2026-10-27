@@ -11,6 +11,8 @@ using UnityEngine;
 // In a boss room on a run the way down is the zone's own (ZoneExit: a stairwell, an escalator, a
 // lift, a baggage chute) instead of a hatch: this sits in front of it, locked until the boss is
 // dead and usable once it's open, and Interact walks the player in before the floor changes.
+// Down a hatch the player climbs: onto it, back to the camera, down the ladder through the floor
+// (ZoneExit.ClimbDown).
 public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 {
     public enum Kind
@@ -187,6 +189,8 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 
         if (zoneExit != null && playerWeapon != null)
             zoneExit.Use(playerWeapon.transform, () => floor.UseExit(kind));
+        else if (kind == Kind.NextFloor && playerWeapon != null)
+            StartCoroutine(ZoneExit.ClimbDown(playerWeapon.transform, transform.position, () => floor.UseExit(kind)));
         else
             floor.UseExit(kind);
     }

@@ -44,6 +44,8 @@ public static partial class MetaProgress
         public int evacs;                   // times the evac chopper has flown everyone out (the ending)
         public int[] scenes = new int[0];   // one-time story scenes already played, by Npcs.Scene
         public int[] zones = new int[0];    // zones unlocked from the debug menu, by Zone
+        public int loop;                    // New Game+ loops started (0: the first playthrough)
+        public int loopEvacs;               // evacs when the current loop began
     }
 
     // What the main menu shows for a profile without switching to it.

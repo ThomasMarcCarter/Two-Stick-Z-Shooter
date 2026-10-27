@@ -2,8 +2,8 @@ using System;
 using UnityEngine;
 
 // The grid in the inventory: spare weapon attachments, the player's ammo, consumables
-// (medkits, grenades and so on) and crafting materials, one item per cell, in whatever order the
-// player has dragged them into. Materials are only safe once sent home from an uplink terminal;
+// (medkits, grenades and so on) and crafting materials, one item per cell, kept sorted (ammo, then
+// consumables, then loot; see Backpack.Sorting). Materials are only safe once sent home from an uplink terminal;
 // whatever's still in here when the player dies is lost with the run. Ammo is carried as stacks of up to StackSize rounds, and consumables as stacks of
 // ConsumableInfo.StackSize; there's no limit per type, only the cells, so the player can fill
 // the whole backpack with ammo if they like. AmmoInventory reads and changes the ammo through
@@ -120,7 +120,7 @@ public partial class Backpack : MonoBehaviour
             return false;
 
         cells[free] = new Item { Kind = ItemKind.Attachment, Attachment = attachment };
-        Changed?.Invoke();
+        Touched();
         return true;
     }
 
@@ -131,7 +131,7 @@ public partial class Backpack : MonoBehaviour
             return false;
 
         cells[cell] = new Item { Kind = ItemKind.Attachment, Attachment = attachment };
-        Changed?.Invoke();
+        Touched();
         return true;
     }
 
@@ -143,7 +143,7 @@ public partial class Backpack : MonoBehaviour
             return null;
 
         cells[cell] = null;
-        Changed?.Invoke();
+        Touched();
         return item.Attachment;
     }
 
@@ -158,7 +158,7 @@ public partial class Backpack : MonoBehaviour
             return 0;
 
         cells[cell] = null;
-        Changed?.Invoke();
+        Touched();
         return item.Amount;
     }
 
@@ -197,7 +197,7 @@ public partial class Backpack : MonoBehaviour
             cells[to] = moving;
         }
 
-        Changed?.Invoke();
+        Touched();
     }
 
     private static bool IsStack(Item item, AmmoType type)

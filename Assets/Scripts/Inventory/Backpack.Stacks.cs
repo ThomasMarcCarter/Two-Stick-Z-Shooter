@@ -74,7 +74,7 @@ public partial class Backpack
         int added = Mathf.Max(0, amount) - left;
 
         if (added > 0)
-            Changed?.Invoke();
+            Touched();
 
         return added;
     }
@@ -109,7 +109,7 @@ public partial class Backpack
         int taken = Mathf.Max(0, amount) - left;
 
         if (taken > 0)
-            Changed?.Invoke();
+            Touched();
 
         return taken;
     }
@@ -182,7 +182,7 @@ public partial class Backpack
         int added = Mathf.Max(0, amount) - left;
 
         if (added > 0)
-            Changed?.Invoke();
+            Touched();
 
         return added;
     }
@@ -205,7 +205,7 @@ public partial class Backpack
         if (--cells[emptiest].Amount <= 0)
             cells[emptiest] = null;
 
-        Changed?.Invoke();
+        Touched();
         return true;
     }
 
@@ -270,7 +270,7 @@ public partial class Backpack
         int added = Mathf.Max(0, amount) - left;
 
         if (added > 0)
-            Changed?.Invoke();
+            Touched();
 
         return added;
     }
@@ -292,7 +292,7 @@ public partial class Backpack
         }
 
         if (any)
-            Changed?.Invoke();
+            Touched();
 
         return taken;
     }

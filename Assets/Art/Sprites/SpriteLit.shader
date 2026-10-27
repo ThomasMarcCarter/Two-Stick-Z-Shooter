@@ -25,6 +25,10 @@ Shader "Roguelike/SpriteLit"
         _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.5
         _AmbientBoost ("Ambient Boost", Range(0, 4)) = 1
         _SelfShadowBias ("Self Shadow Bias", Range(0, 1)) = 0.35
+        _Blood ("Blood", Range(0, 1)) = 0
+        _Wounds ("Wounds", Range(0, 1)) = 0
+        _BloodSeed ("Blood Seed", Float) = 0
+        _FrameSize ("Frame Size (px)", Vector) = (32, 32, 0, 0)
     }
 
     SubShader
@@ -45,7 +49,41 @@ Shader "Roguelike/SpriteLit"
             half _Cutoff;
             half _AmbientBoost;
             half _SelfShadowBias;
+            half _Blood;
+            half _Wounds;
+            float _BloodSeed;
+            float4 _FrameSize;
+            float4 _BaseMap_TexelSize;
         CBUFFER_END
+
+        float BloodHash(float2 p)
+        {
+            return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+        }
+
+        // A hurt character's blood, on whole pixels of its frame (so it sits on the art's grid and
+        // keeps its place frame to frame): clotted patches of 3 px with specks round them, more as
+        // _Blood rises; _Wounds (badly hurt bosses) opens dark, wet gashes in 4 px blocks.
+        half3 Bloody(half3 albedo, float2 uv)
+        {
+            if (_Blood <= 0 && _Wounds <= 0)
+                return albedo;
+
+            float2 px = floor(uv * _BaseMap_TexelSize.zw);
+            float2 local = fmod(px, max(_FrameSize.xy, 1));
+            float seed = _BloodSeed * 17.31;
+            float patch = BloodHash(floor(local / 3) + seed);
+            float speck = BloodHash(local + seed * 1.7);
+            float amount = patch * 0.75 + speck * 0.25;
+
+            if (_Wounds > 0 && BloodHash(floor(local / 4) + seed * 3.1) < _Wounds * 0.22)
+                return lerp(half3(0.09, 0.0, 0.01), half3(0.3, 0.02, 0.02), speck * speck);
+
+            if (amount < _Blood * 0.42)
+                return lerp(albedo * half3(0.5, 0.08, 0.06), speck > 0.5 ? half3(0.5, 0.04, 0.03) : half3(0.3, 0.02, 0.02), 0.75);
+
+            return albedo;
+        }
 
         float _SpriteShadowSquash;
         float3 _SpriteUp;
@@ -136,6 +174,7 @@ Shader "Roguelike/SpriteLit"
                 UNITY_SETUP_INSTANCE_ID(input);
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
                 clip(albedo.a - _Cutoff);
+                albedo.rgb = Bloody(albedo.rgb, input.uv);
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;

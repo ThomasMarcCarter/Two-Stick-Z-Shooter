@@ -145,7 +145,9 @@ public static partial class Npcs
     {
         TruckRunning,      // the mechanic's goal done: the truck can drive
         MallRequest,       // the trader asks for goods from the Mall
-        AirportRequest     // the quartermaster asks for radio parts from the Airport
+        AirportRequest,    // the quartermaster asks for radio parts from the Airport
+        ShopStocked,       // the trader's goal done: the trade post is fully stocked
+        CureFound          // the medic's goal done: the cook is cured
     }
 
     // Shouted from the cage while zombies are still in the room.

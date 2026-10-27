@@ -31,12 +31,16 @@ public partial class ZoneExit : MonoBehaviour
     // The player is walking or riding into an exit: input and movement are blocked.
     public static bool Descending { get; private set; }
 
+    // The player is going down a hatch's ladder (the climbing animation, SpriteCharacter).
+    public static bool Climbing { get; private set; }
+
     private static Action restore;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
         Descending = false;
+        Climbing = false;
         restore = null;
         hiddenParts.Clear();
         hiddenLights.Clear();

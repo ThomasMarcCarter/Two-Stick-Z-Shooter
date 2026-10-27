@@ -6,6 +6,12 @@ using UnityEngine;
 // shot or a swap can cut short), taking rounds from the holder's ammo and making noise.
 public partial class Gun
 {
+    // Fed a shell at a time (the reload animation nods once per shell, GunSprite).
+    public bool ReloadsPerShell => reloadStyle == ReloadStyle.PerShell;
+
+    // Shells this reload is feeding in (per-shell guns; 1 for a magazine).
+    public int ReloadShellCount { get; private set; } = 1;
+
     public void TryReload()
     {
         if (isReloading)
@@ -49,6 +55,7 @@ public partial class Gun
         ReloadProgress = 0f;
 
         int needed = Mathf.Min(GetMagazineSize() - currentAmmo, Reserve);
+        ReloadShellCount = Mathf.Max(1, needed);
 
         for (int loaded = 0; loaded < needed; loaded++)
         {

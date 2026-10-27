@@ -8,8 +8,8 @@ using UnityEngine;
 // tracers and the flash come out of the drawn barrel and fly through the crosshair, and the
 // holder's flashlight goes there too, shining the way the gun points (and still landing the same
 // distance ahead). It stands upright just in front of its holder's sprite, or just behind when
-// they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight), tips up
-// while reloading and swings through an arc in a melee bash (PlayerMelee.SwingProgress). Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
+// they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight), moves
+// through a reload (ReloadAngle: mag out, slapped in, racked; or a nod per shell) and swings through an arc in a melee bash (PlayerMelee.SwingProgress). Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
 // A suppressor or laser sight is drawn on it as sprites of their own (SpriteVisuals.gunAttachments)
 // that turn, flip and tip with the drawn barrel: the can on the muzzle (shots then come out of the
 // can's end), the laser under the barrel's front with the beam starting at its lens.
@@ -39,6 +39,7 @@ public class GunSprite : MonoBehaviour
     private float flashlightThrow;   // how far ahead the flashlight's beam meets the floor
     private PixelSprite suppressor;
     private PixelSprite laserModule;
+    private bool putAway;
     private Vector2 screenGrip;      // this frame's grip on screen and screen pixels per metre
     private float screenScale;
 
@@ -95,6 +96,28 @@ public class GunSprite : MonoBehaviour
         // Worked out on screen: from the hands' height on the body, toward the cursor.
         Transform holder = transform.root;
         SpriteCharacter character = holder.GetComponent<SpriteCharacter>();
+
+        // Put away while the hands are busy (a medkit, adrenaline, a ladder).
+        // Only switched when that changes, so the player being hidden (ZoneExit) still hides it.
+        bool away = character != null && character.HandsBusy;
+
+        if (away != putAway)
+        {
+            putAway = away;
+            sprite.Renderer.enabled = !away;
+        }
+
+        if (away)
+        {
+            if (suppressor != null)
+                suppressor.Renderer.enabled = false;
+
+            if (laserModule != null)
+                laserModule.Renderer.enabled = false;
+
+            return;
+        }
+
         SpriteSheet body = character != null ? character.Sprite.Sheet : null;
         float holdUp = body != null ? body.holdHeight / Mathf.Max(1f, body.pixelsPerUnit) : 0.6f;
         float reach = body != null ? body.holdReach : 0.3f;
@@ -155,7 +178,7 @@ public class GunSprite : MonoBehaviour
         float target = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
 
         if (gun.IsReloading)
-            target += Mathf.Sin(gun.ReloadProgress * Mathf.PI) * ReloadTip * (left ? -1f : 1f);
+            target += ReloadAngle(gun.ReloadProgress) * (left ? -1f : 1f);
 
         if (bash >= 0f)
         {
@@ -165,6 +188,35 @@ public class GunSprite : MonoBehaviour
 
         return target;
     }
+
+    // How far the gun's turned (up, in degrees) through a reload. A magazine: the nose dips as the
+    // old mag drops out, holds while the new one's found, snaps up as it's slapped in, then a
+    // jolt back as the action's racked. Shells: tipped up and nodding once per shell pushed in.
+    private float ReloadAngle(float t)
+    {
+        if (gun.ReloadsPerShell)
+        {
+            float shell = Mathf.Repeat(t * gun.ReloadShellCount, 1f);
+            float raise = Mathf.Clamp01(t * gun.ReloadShellCount * 4f) * Mathf.Clamp01((1f - t) * gun.ReloadShellCount * 4f);
+            return raise * (ReloadTip * 0.75f - Mathf.Sin(shell * Mathf.PI) * 10f);
+        }
+
+        if (t < 0.25f)
+            return Mathf.Lerp(0f, -22f, Smooth(t / 0.25f));
+
+        if (t < 0.6f)
+            return -22f + Mathf.Sin((t - 0.25f) / 0.35f * Mathf.PI * 3f) * 2.5f;
+
+        if (t < 0.7f)
+            return Mathf.Lerp(-22f, ReloadTip, Smooth((t - 0.6f) / 0.1f));
+
+        if (t < 0.85f)
+            return Mathf.Lerp(ReloadTip, -6f, Smooth((t - 0.7f) / 0.15f));
+
+        return Mathf.Lerp(-6f, 0f, Smooth((t - 0.85f) / 0.15f));
+    }
+
+    private static float Smooth(float t) => t * t * (3f - 2f * t);
 
     // The muzzle point (where shots and the flash come from) at the drawn barrel's tip, facing
     // along it, with the flashlight on the end aimed to land as far ahead as before.

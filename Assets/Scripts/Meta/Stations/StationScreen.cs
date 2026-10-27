@@ -101,6 +101,10 @@ public partial class StationScreen : MonoBehaviour
             : trading
                 ? $"RUN BY {Npcs.Name(owner.Value)}, {Npcs.Role(owner.Value)} // GOODS GO STRAIGHT IN YOUR PACK // NEW STOCK EVERY VISIT"
                 : $"RUN BY {Npcs.Name(owner.Value)}, {Npcs.Role(owner.Value)}";
+
+        if (owner != null && !garage)
+            subtitle.text += GoalLine(owner.Value);
+
         status.text = garage ? "> SELECT A ZONE TO DRIVE THERE"
             : trading ? "> SELECT AN ITEM TO BUY ONE" : "> SELECT AN UPGRADE TO BUILD ITS NEXT LEVEL";
         Refresh();
@@ -319,6 +323,20 @@ public partial class StationScreen : MonoBehaviour
 
         return $"<pos=1%>{Zones.Name(zone)}<pos=30%><alpha=#99>{Npcs.Name(owner)}, {Npcs.Role(owner)}<alpha=#FF><pos=75%>{state}\n"
             + $"<size=70%><pos=1%><alpha=#88>{detail}</size>";
+    }
+
+    // " // TRADE GOODS 2/5" once the owner's zone is open, in their goal's colour ("... DONE" when
+    // finished); empty before that, or for an owner with no goal.
+    private static string GoalLine(NpcKind owner)
+    {
+        Zone? zone = Zones.Of(owner);
+        StoryItem[] goal = StoryItems.Goal(owner);
+
+        if (zone == null || goal.Length == 0 || !Zones.IsUnlocked(zone.Value))
+            return "";
+
+        string done = StoryItems.Complete(owner) ? " DONE" : "";
+        return $" // <color={StoryItems.Hex(goal[0])}>{StoryItems.Progress(owner)}{done}</color>";
     }
 
     // The truck's parts, fitted ones lit.

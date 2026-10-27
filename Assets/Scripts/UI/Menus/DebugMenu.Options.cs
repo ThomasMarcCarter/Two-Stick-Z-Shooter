@@ -38,6 +38,7 @@ public partial class DebugMenu
         Add("SURVIVOR ON NEXT FLOOR", FloorGenerator.ForceSurvivorOnNextFloor, false);
         Add(() => $"NEXT RUN'S ZONE: {Zones.Name(MetaProgress.ChosenZone)}", MetaProgress.ChooseNextZone, false);
         Add("UNLOCK ALL ZONES", MetaProgress.UnlockAllZones, false);
+        Add(() => $"START NEW GAME+ (LOOP {MetaProgress.Loop}, ENEMIES x{MetaProgress.Toughness:0.##})", MetaProgress.DebugStartNewGamePlus, true);
 
         Section(1, "PLAYER");
         Add(() => "GOD MODE: " + (Health != null && Health.GodMode ? "ON" : "OFF"), ToggleGodMode, false);

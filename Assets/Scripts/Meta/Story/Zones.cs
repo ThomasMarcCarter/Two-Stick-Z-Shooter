@@ -59,6 +59,16 @@ public static class Zones
         }
     }
 
+    // The zone holding this survivor's goal (null for the cook, who has none).
+    public static Zone? Of(NpcKind npc)
+    {
+        foreach (Zone zone in All)
+            if (Owner(zone) == npc)
+                return zone;
+
+        return null;
+    }
+
     // The zone before this one, whose survivor's goal opens it (null for the first zone).
     public static Zone? Previous(Zone zone)
     {

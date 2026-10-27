@@ -82,6 +82,7 @@ public partial class Enemy : MonoBehaviour
     private Rigidbody rb;
     private Renderer[] bodyRenderers = new Renderer[0];
     private MaterialPropertyBlock flashBlock;
+    private float bloodSeed = -1f;   // where its blood lands on the sprite, picked on the first hit
     private float flashTimer;
     private float bodyRadius = 0.5f;
 
@@ -294,6 +295,7 @@ public partial class Enemy : MonoBehaviour
             flashBlock ??= new MaterialPropertyBlock();
             flashBlock.SetColor("_BaseColor", Color.white);
             flashBlock.SetColor("_EmissionColor", emission * SpriteGlow);
+            SetBlood(flashBlock);
 
             foreach (Renderer renderer in bodyRenderers)
                 renderer.SetPropertyBlock(flashBlock);
@@ -510,9 +512,31 @@ public partial class Enemy : MonoBehaviour
         flashBlock.SetColor("_BaseColor", Color.white);
         flashBlock.SetColor("_EmissionColor", SpriteBody ? SpriteFlash : emission);
 
+        if (SpriteBody)
+            SetBlood(flashBlock);
+
         foreach (Renderer renderer in bodyRenderers)
             renderer.SetPropertyBlock(flashBlock);
 
         flashTimer = hitFlashTime;
+    }
+
+    // A sprite body shows the damage it's taken (SpriteLit's blood): bloodier as its health
+    // drops, and a boss below half health starts to come apart in open wounds.
+    private void SetBlood(MaterialPropertyBlock block)
+    {
+        float hurt = maxHealth > 0 ? 1f - Mathf.Clamp01((float)health / maxHealth) : 0f;
+        block.SetFloat("_Blood", hurt);
+        block.SetFloat("_Wounds", Heavy ? Mathf.Clamp01((hurt - 0.5f) * 2f) : 0f);
+        if (bloodSeed < 0f)
+            bloodSeed = UnityEngine.Random.Range(0f, 400f);
+
+        block.SetFloat("_BloodSeed", bloodSeed);
+
+        SpriteCharacter character = GetComponent<SpriteCharacter>();
+        SpriteSheet sheet = character != null && character.Sprite != null ? character.Sprite.Sheet : null;
+
+        if (sheet != null)
+            block.SetVector("_FrameSize", new Vector4(sheet.frameWidth, sheet.frameHeight, 0f, 0f));
     }
 }

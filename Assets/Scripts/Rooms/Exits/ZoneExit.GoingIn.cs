@@ -84,6 +84,48 @@ public partial class ZoneExit
         done?.Invoke();
     }
 
+    // Down a hatch (the hideout's deploy hatch, or a boss room's without the zone exit art): the
+    // player steps onto its middle, turns their back to the camera and climbs down the ladder,
+    // sinking through the floor, then `done` (the floor transition). Run on the hatch's FloorExit.
+    public static IEnumerator ClimbDown(Transform player, Vector3 hatch, Action done)
+    {
+        Descending = true;
+        Rigidbody body = player.GetComponent<Rigidbody>();
+        bool gravity = body != null && body.useGravity;
+
+        if (body != null)
+        {
+            body.useGravity = false;
+            body.detectCollisions = false;
+            body.linearVelocity = Vector3.zero;
+        }
+
+        restore = () =>
+        {
+            Climbing = false;
+
+            if (player == null)
+                return;
+
+            if (body != null)
+            {
+                body.useGravity = gravity;
+                body.detectCollisions = true;
+            }
+
+            Show(player, true);
+        };
+
+        float rest = player.position.y;
+        yield return Move(player, body, new Vector3(hatch.x, rest, hatch.z - 0.2f), WalkSpeed);
+        Climbing = true;
+        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), hatch, 0.35f, 1.3f);
+        yield return Move(player, body, new Vector3(hatch.x, rest - 1.8f, hatch.z - 0.2f), 1.5f);
+        Show(player, false);
+        yield return new WaitForSeconds(0.2f);
+        done?.Invoke();
+    }
+
     // The player's body moved by hand to a point at a speed (metres a second).
     private static IEnumerator Move(Transform player, Rigidbody body, Vector3 target, float speed)
     {

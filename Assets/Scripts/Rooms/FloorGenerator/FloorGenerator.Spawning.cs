@@ -25,7 +25,8 @@ public partial class FloorGenerator
 
         room.Cleared += OnCombatRoomCleared;
 
-        int count = rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1);
+        // New Game+ adds one more per loop (MetaProgress.Loop).
+        int count = rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1) + MetaProgress.Loop;
         List<Vector3> doorways = DoorwayPositions(room);
         Dictionary<EnemyKind, int> kindsPlaced = new Dictionary<EnemyKind, int>();
 
@@ -278,8 +279,10 @@ public partial class FloorGenerator
         body.constraints = RigidbodyConstraints.FreezeRotation | RigidbodyConstraints.FreezePositionY;
         body.interpolation = RigidbodyInterpolation.Interpolate;
 
+        // New Game+ loops make everything tougher and hit harder (MetaProgress.Toughness).
+        float tough = IsHideout ? 1f : MetaProgress.Toughness;
         Enemy enemy = enemyObject.AddComponent<Enemy>();
-        enemy.Initialise(room, player, health, speed, contactDamage);
+        enemy.Initialise(room, player, Mathf.Max(1, Mathf.FloorToInt(health * tough + 0.5f)), speed, Mathf.FloorToInt(contactDamage * tough + 0.5f));
         enemy.SetKind(kind);
 
         // Bosses get their own model in SpawnBoss. Kinds with a sprite sheet are drawn as sprites

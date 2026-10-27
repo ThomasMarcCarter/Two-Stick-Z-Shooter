@@ -38,6 +38,21 @@ MonoBehaviour:
     frames: 4
     fps: 12
     directional: 1
+  - name: heal
+    row: 16
+    frames: 4
+    fps: 4
+    directional: 1
+  - name: inject
+    row: 21
+    frames: 4
+    fps: 4
+    directional: 1
+  - name: climb
+    row: 26
+    frames: 2
+    fps: 5
+    directional: 0
   bodyRadius: 0.28
   hitRadius: 0
   bodyHeight: 1.4

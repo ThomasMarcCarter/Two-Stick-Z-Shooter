@@ -6,7 +6,8 @@ using UnityEngine;
 // into modules on the world's 1 m grid. The rooms' north walls on a run (the only faces the tilted
 // camera sees) get the zone's pieces (RoomKits): pilasters where the wall runs on into the next
 // cell and at the zone's rhythm along each cell, flat panel variants, 2 m alcoves set back into
-// the wall (roller-shutter bays, shop windows, ward windows, glazing) and broken, jagged tops.
+// the wall (roller-shutter bays, shop windows, ward windows, glazing), broken, jagged tops and
+// runs of the zone's fixture (pipes and a cable tray, a display shelf, a handrail, a wayfinding band).
 // Everything else is plain wall. Every module samples the zone's wall kit atlas (12 one-metre
 // columns of the usual 36-row wall layout, Tools/Sprites/wallkit.py) on the walls' own pixel grid,
 // so plain wall reads exactly as the old block walls did. A room's floor is one mesh of its blocks'
@@ -28,14 +29,14 @@ public partial class FloorGenerator
     private const int KitColumnPixels = 16;            // one column = 1 m of wall
     private const float KitRows = 36f;
     private const float KitFaceRows = 32f;
-    private const int KitPanelA = 4, KitPanelB = 5, KitAlcove = 6, KitReveal = 8, KitPilaster = 9, KitBroken = 10;
+    private const int KitPanelA = 4, KitPanelB = 5, KitAlcove = 6, KitReveal = 8, KitPilaster = 9, KitBroken = 10, KitFixture = 11;
     private const float PilasterWidth = 0.5f;
     private const float PilasterDepth = 0.1f;          // how far it stands out into the room
     private const float PilasterRise = 0.125f;         // above the top of the wall
     private const float KitDoorGuard = 2.75f;          // features keep this far from a doorway (an EXIT sign fits)
     private const float KitCornerGuard = 0.5f;
 
-    private enum WallModule { Plain, PanelA, PanelB, Alcove, Broken }
+    private enum WallModule { Plain, PanelA, PanelB, Alcove, Broken, Fixture }
 
     // One wall span to build. Room is set for walls that get the kit's features.
     private struct KitSpan
@@ -100,6 +101,7 @@ public partial class FloorGenerator
                 case WallModule.Broken: builder.Broken(from, to, kitRng); break;
                 case WallModule.PanelA: builder.Slab(from, to, KitPanelA); break;
                 case WallModule.PanelB: builder.Slab(from, to, KitPanelB); break;
+                case WallModule.Fixture: builder.Slab(from, to, KitFixture); break;
                 default: builder.Plain(from, to); break;
             }
 
@@ -193,6 +195,19 @@ public partial class FloorGenerator
 
                 while (width > 1 && (k + width > last || UnderPilaster(k, k + width, pilasters)))
                     width--;
+            }
+            else if (roll < kit.AlcoveChance + kit.BrokenChance * bossDamage + kit.PanelChance + kit.FixtureChance)
+            {
+                // The zone's fixture runs at least 2 m (pipes, shelving, a handrail), or not at all.
+                width = 2 + kitRng.Next(Mathf.Max(1, kit.FixtureRun - 1));
+
+                while (width > 2 && (k + width > last || UnderPilaster(k, k + width, pilasters)))
+                    width--;
+
+                if (k + width <= last && !UnderPilaster(k, k + width, pilasters))
+                    piece = WallModule.Fixture;
+                else
+                    width = 1;
             }
 
             if (piece != WallModule.Plain)

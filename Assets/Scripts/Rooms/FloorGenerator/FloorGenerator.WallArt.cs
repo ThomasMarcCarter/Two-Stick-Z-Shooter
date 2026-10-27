@@ -5,10 +5,11 @@ using UnityEngine;
 // (the only wall faces the tilted camera sees). Each cell's north wall is split into 3 m slots;
 // most cells get one of their theme's signs (a stores stencil in a storage room, a red cross in
 // the infirmary, a biohazard sign in a lab, a gate sign in a gate lounge, a neon FASHION sign on a shop floor...), the other
-// slots now and then get grime, blood or graffiti, and boss arenas are smeared with blood. A
+// slots now and then get the zone's grime (RoomKits: graffiti in the Mall, damp and bloody
+// handprints in the Hospital, tally marks and fuse boxes at the base), and boss arenas are smeared. A
 // doorway in a north wall sometimes gets a lit EXIT sign beside it, arrow pointing at the door.
 // Slots behind doorways, pillars, wall-mounted loot, tall furniture and the room kit's alcoves,
-// pilasters and broken tops (FloorGenerator.RoomKit.cs) are left bare.
+// pilasters, broken tops and fixtures (FloorGenerator.RoomKit.cs) are left bare.
 // Each decal is a quad flat on the wall face with the walls' own pixel grid (16 px per metre
 // along, 32 rows up the 2 m face; Tools/Sprites/walldecals.py), lit like the wall, with lit
 // pixels (exit signs, neon, screens) in the material's emission map. Uses its own random
@@ -50,22 +51,10 @@ public partial class FloorGenerator
         "Operations", "Biohazard", "LabSign"
     };
 
-    private static readonly string[] GrimeDecals =
-    {
-        "Crack", "Crack", "Crack2", "Crack2", "Damp", "Damp", "Damp", "Handprint", "BloodSmear", "BloodSplat",
-        "BulletHoles", "BulletHoles", "Tally", "GraffitiRun", "GraffitiHelp", "GraffitiDead", "GraffitiSafe",
-        "Extinguisher", "Extinguisher", "Vent", "Vent", "FuseBox"
-    };
-
-    private static readonly string[] BossDecals =
-    {
-        "BloodSplat", "BloodSplat", "BloodSmear", "BloodSmear", "Handprint", "BulletHoles", "Crack", "GraffitiRun"
-    };
-
     private System.Random decalRng;
     private MaterialPropertyBlock decalBlock;
 
-    // What a theme hangs on its walls. Unthemed rooms get the zone's everyday signs.
+    // What a theme hangs on its walls. Unthemed rooms get the zone's everyday signs (RoomKits).
     private string[] ThemeDecals(RoomTheme theme)
     {
         switch (theme)
@@ -95,13 +84,7 @@ public partial class FloorGenerator
             case RoomTheme.Lab: return new[] { "Biohazard", "Biohazard", "LabSign", "Whiteboard", "NoEntry" };
         }
 
-        switch (Zone)
-        {
-            case Zone.ShoppingMall: return new[] { "PosterDrink", "Sale", "PosterModel", "Clock" };
-            case Zone.Hospital: return new[] { "HandWash", "Directions", "Quiet", "Clock" };
-            case Zone.Airport: return new[] { "AdPoster", "Departures", "FlightClock" };
-            default: return new[] { "NoSmoking", "NoticeBoard", "Clock", "FuseBox" };
-        }
+        return RoomKits.For(Zone).EverydaySigns;
     }
 
     // Decorates the north walls of every cell in the room. Run after FurnishRoom, so the slots
@@ -119,9 +102,10 @@ public partial class FloorGenerator
             lootPoints.Add(point.transform.position);
 
         List<Vector3> furniture = ClutterOf(room);
-        string[] signs = room.Type == RoomType.Boss ? BossDecals : ThemeDecals(theme);
+        RoomKit kit = RoomKits.For(Zone);
+        string[] signs = room.Type == RoomType.Boss ? kit.BossGrime : ThemeDecals(theme);
         float signChance = room.Type == RoomType.Boss ? 0.9f : room.Type == RoomType.Normal ? themeDecalChance : 1f;
-        float grimeChance = room.Type == RoomType.Boss ? 0.6f : grimeDecalChance;
+        float grimeChance = room.Type == RoomType.Boss ? 0.6f : Mathf.Clamp01(grimeDecalChance * kit.GrimeScale);
         HashSet<string> used = new HashSet<string>();
 
         foreach (Vector2Int cell in room.Cells)
@@ -176,7 +160,7 @@ public partial class FloorGenerator
                 if (i == 0 && decalRng.NextDouble() < signChance)
                     PlaceDecal(room.transform, Pick(signs, used), slots[i], face);
                 else if (decalRng.NextDouble() < grimeChance)
-                    PlaceDecal(room.transform, Pick(GrimeDecals, used), slots[i], face);
+                    PlaceDecal(room.transform, Pick(kit.Grime, used), slots[i], face);
             }
         }
     }

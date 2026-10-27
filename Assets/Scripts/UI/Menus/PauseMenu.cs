@@ -170,6 +170,10 @@ public class PauseMenu : MonoBehaviour
                 : floor.IsSupplyRoom ? $"OPERATION SUSPENDED // {floor.LocationName}"
                 : $"OPERATION SUSPENDED // {floor.LocationName} OF {floor.TotalFloors}")
             : "OPERATION SUSPENDED";
+
+        if (MetaProgress.Loop > 0)
+            subtitle.text += $" // NEW GAME+{MetaProgress.Loop}";
+
         notice.text = "";
 
         bool inHideout = floor != null && floor.IsHideout;

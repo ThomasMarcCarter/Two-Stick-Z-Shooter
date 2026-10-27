@@ -3,7 +3,8 @@ using UnityEngine;
 // Sprint stamina. Holding Sprint (Shift / LT) while actually moving (not pushing into a wall)
 // drains it and lets PlayerMovement go faster. It refills after a short pause once sprinting
 // stops. Running it dry means a longer pause, and the player is winded (slowed, no sprinting)
-// until it has refilled to the recover fraction.
+// until it has refilled to the recover fraction. Out of combat (the hideout, corridors, cleared
+// rooms: anywhere but a locked room) sprinting is free and never runs out (user, 2026-10-27).
 public class PlayerStamina : MonoBehaviour
 {
     [SerializeField] private float maxStamina = 100f;
@@ -35,8 +36,22 @@ public class PlayerStamina : MonoBehaviour
     // Seconds until refilling starts (0 while refilling or full).
     public float RegenWait => Mathf.Max(0f, regenStartTime - Time.time);
 
+    // Sprinting costs nothing outside a fight (no room locked with the player in it).
+    public bool InCombat
+    {
+        get
+        {
+            if (floor == null)
+                floor = FindAnyObjectByType<FloorGenerator>();
+
+            Room room = floor != null ? floor.CurrentRoom : null;
+            return room != null && room.IsLocked;
+        }
+    }
+
     private float regenStartTime;
     private float boostUntil;
+    private FloorGenerator floor;
 
     private void Awake()
     {
@@ -53,7 +68,7 @@ public class PlayerStamina : MonoBehaviour
 
         // The boost applies straight away, but stamina is only spent while actually moving
         // quickly, so pushing into a wall or an enemy costs nothing (and doesn't hold up regen).
-        bool draining = IsSprinting && speed >= minSprintSpeed && !Boosted;
+        bool draining = IsSprinting && speed >= minSprintSpeed && !Boosted && InCombat;
 
         if (draining)
         {

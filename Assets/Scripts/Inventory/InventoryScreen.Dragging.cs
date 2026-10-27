@@ -32,6 +32,12 @@ public partial class InventoryScreen
             if (!HasItem(hover))
                 return;
 
+            if (GameInput.QuickMoveHeld && AttachmentAt(hover) != null)
+            {
+                QuickMove(hover);
+                return;
+            }
+
             holding = true;
             heldFrom = hover;
             pressPoint = pointer;
@@ -135,6 +141,42 @@ public partial class InventoryScreen
 
             PlayMove();
         }
+    }
+
+    // Ctrl-click on an attachment: off a gun into the backpack, or out of the backpack into an
+    // empty slot it fits, on the main gun first, then the sidearm. Never swaps one off.
+    private void QuickMove(Spot spot)
+    {
+        WeaponAttachment attachment = AttachmentAt(spot);
+
+        if (spot.Kind == SpotKind.ModSlot)
+        {
+            if (!Bag.HasRoomForAttachment)
+            {
+                PlayDeny();
+                return;
+            }
+
+            GunAt(spot.Index).Detach(attachment);
+            Bag.AddAttachment(attachment);
+            PlayMove();
+            return;
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            Gun gun = GunAt(i);
+
+            if (gun == null || !attachment.Fits(gun) || gun.AttachmentIn(attachment.slot) != null)
+                continue;
+
+            Bag.TakeAttachment(spot.Index);
+            gun.Attach(attachment);
+            PlayFit();
+            return;
+        }
+
+        PlayDeny();
     }
 
     private void PlaceAttachment(WeaponAttachment attachment, Spot from, Spot target)

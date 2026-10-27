@@ -5,8 +5,9 @@ using UnityEngine;
 // eight directions, and plays "walk" while moving, stepping a frame per strideLength travelled so
 // the feet keep pace with the ground, "idle" when still, "attack" on the enemy's swing clock (so
 // the blow frame shows as the hit lands, like CharacterAnimator's swings), "special" through a
-// boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves) and "dead" once the
-// player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
+// boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves), the player's "heal" and
+// "inject" through a medkit or adrenaline (QuickBar), "climb" down a hatch's ladder and "dead"
+// once the player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
 // The tilted camera shows an upright sprite taller than the body it stands for, so shots test
 // against the sprite as it looks (Footprint, used by Projectile): what's under the sprite on
 // screen, down at the height the shot flies, is where it can be hit.
@@ -27,6 +28,10 @@ public class SpriteCharacter : MonoBehaviour
     private SpriteSheet.Clip dead;
     private SpriteSheet.Clip special;
     private SpriteSheet.Clip melee;
+    private SpriteSheet.Clip heal;
+    private SpriteSheet.Clip inject;
+    private SpriteSheet.Clip climb;
+    private QuickBar quickBar;
     private PlayerMelee playerMelee;
     private IBossMoves boss;
     private bool lookedForBoss;
@@ -106,6 +111,10 @@ public class SpriteCharacter : MonoBehaviour
         character.dead = sheet.Find("dead");
         character.special = sheet.Find("special");
         character.melee = sheet.Find("melee");
+        character.heal = sheet.Find("heal");
+        character.inject = sheet.Find("inject");
+        character.climb = sheet.Find("climb");
+        character.quickBar = body.GetComponent<QuickBar>();
         character.playerMelee = body.GetComponent<PlayerMelee>();
         character.lastPosition = body.position;
 
@@ -149,6 +158,9 @@ public class SpriteCharacter : MonoBehaviour
             return;
         }
 
+        if (player != null && UpdatePlayerActions(facing))
+            return;
+
         // The player's melee swing.
         float bash = playerMelee != null ? playerMelee.SwingProgress : -1f;
 
@@ -178,4 +190,35 @@ public class SpriteCharacter : MonoBehaviour
         if (idle != null)
             sprite.SetFrame(idle, Mathf.FloorToInt(Time.time * idle.fps), facing);
     }
+
+    // The player busy with something other than fighting: down a hatch's ladder, or a medkit or
+    // adrenaline through its use time. False when they're not (or the sheet has no clip for it).
+    private bool UpdatePlayerActions(SpriteFacing.Facing facing)
+    {
+        if (ZoneExit.Climbing && climb != null)
+        {
+            sprite.SetFrame(climb, Mathf.FloorToInt(Time.time * climb.fps), facing);
+            return true;
+        }
+
+        // The QuickBar is added lazily (QuickBar.For), after the sprite.
+        if (quickBar == null)
+            quickBar = GetComponent<QuickBar>();
+
+        if (quickBar == null || !quickBar.IsUsing)
+            return false;
+
+        SpriteSheet.Clip use = ConsumableInfo.IsMedkit(quickBar.UsingType) ? heal
+            : quickBar.UsingType == ConsumableType.Adrenaline ? inject : null;
+
+        if (use == null)
+            return false;
+
+        sprite.SetFrame(use, Mathf.Min(use.frames - 1, Mathf.FloorToInt(quickBar.UseProgress * use.frames)), facing);
+        return true;
+    }
+
+    // Busy with both hands (a medkit, adrenaline, a ladder): GunSprite puts the gun away.
+    public bool HandsBusy => player != null && (ZoneExit.Climbing || (quickBar != null && quickBar.IsUsing
+        && (ConsumableInfo.IsMedkit(quickBar.UsingType) || quickBar.UsingType == ConsumableType.Adrenaline)));
 }
