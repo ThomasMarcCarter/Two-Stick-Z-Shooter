@@ -55,6 +55,7 @@ MonoBehaviour:
   storyItems: {fileID: 11400000, guid: dfc37a9d1ee2d934e8b640cd3e38c813, type: 2}
   supplyCrate: {fileID: 11400000, guid: 70af3724c8872674dad2a774c3720816, type: 2}
   hatch: {fileID: 11400000, guid: 93fcc0b51182bc744a663d6f4d03965a, type: 2}
+  exitFloors: {fileID: 11400000, guid: f198d1b13cab19f408a51d9dd4c987a8, type: 2}
   trainingDummy: {fileID: 11400000, guid: 5ed0ac8e31d638b4cb9323f6c6e4a3ba, type: 2}
   clutterBoxes: {fileID: 11400000, guid: 38a4b204c1e21674ab8ea68975846bbe, type: 2}
   clutterSmall: {fileID: 11400000, guid: 1a7fdc08647ebaa41b28fc7c07943960, type: 2}
@@ -455,6 +456,31 @@ MonoBehaviour:
     glow: {fileID: 11400000, guid: 44e286b68ffa22e4ca2c6e82becba3b4, type: 2}
     frames: 2
     fps: 2
+  - name: ExitStairwell
+    sheet: {fileID: 11400000, guid: 9df6e0458c683e144a97e75719d2243c, type: 2}
+    glow: {fileID: 11400000, guid: 69af42067906a4b449bbb8117eb43f86, type: 2}
+    frames: 6
+    fps: 0
+  - name: ExitElevator
+    sheet: {fileID: 11400000, guid: 3a5259cde26b1eb4fa83f503ba6a982f, type: 2}
+    glow: {fileID: 11400000, guid: 2f44adc60a5f6f3439f74ea8a87998fe, type: 2}
+    frames: 8
+    fps: 0
+  - name: EscalatorRail
+    sheet: {fileID: 11400000, guid: b1ecca13bcdb2754290463b18ba9ebfd, type: 2}
+    glow: {fileID: 11400000, guid: cb8bf28d9570ba54ba6d2c356f52de3b, type: 2}
+    frames: 2
+    fps: 0
+  - name: EscalatorBarrier
+    sheet: {fileID: 11400000, guid: a6111589ec8cd4c4da4d269852638c57, type: 2}
+    glow: {fileID: 0}
+    frames: 2
+    fps: 0
+  - name: ChutePortal
+    sheet: {fileID: 11400000, guid: 25918ec5e967799498dc64fceb7baed0, type: 2}
+    glow: {fileID: 11400000, guid: f8cd136a63fcdae4795b79e8a3d22d51, type: 2}
+    frames: 3
+    fps: 0
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}

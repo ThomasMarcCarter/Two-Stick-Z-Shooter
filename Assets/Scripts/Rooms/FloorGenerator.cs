@@ -464,6 +464,7 @@ public partial class FloorGenerator : MonoBehaviour
         CurrentSeed = randomSeed ? UnityEngine.Random.Range(int.MinValue, int.MaxValue) : seed;
         rng = new System.Random(CurrentSeed);
         decalRng = new System.Random(CurrentSeed ^ 0x5eed);
+        kitRng = new System.Random(CurrentSeed ^ 0x4b17);
 
         // Guns fire for free in the hideout (its shooting range), never on a run.
         Gun.FreeAmmo = IsHideout;
@@ -520,6 +521,13 @@ public partial class FloorGenerator : MonoBehaviour
                 BuildCorridor(planned.ParentCell, planned.DoorDirection);
         }
 
+        // The boss room's way down (shut until the boss is dead) is solid too.
+        foreach (Room room in rooms)
+        {
+            if (room.Type == RoomType.Boss)
+                PlaceZoneExit(room);
+        }
+
         // The cage is solid, so it goes in before the navmesh.
         PlaceCagedSurvivor(plan);
 
@@ -563,6 +571,8 @@ public partial class FloorGenerator : MonoBehaviour
         lastDeaths.Clear();
         pillars.Clear();
         clutter.Clear();
+        wallFeatures.Clear();
+        exitSpots.Clear();
 
         foreach (Mesh mesh in floorMeshes)
             Destroy(mesh);
@@ -629,6 +639,11 @@ public partial class FloorGenerator : MonoBehaviour
         }
 
         area = room.Bounds;
+
+        // Far enough north to see the way down set into the boss room's north wall (ZoneExit).
+        if (exitSpots.TryGetValue(room, out Vector3 exit))
+            area.yMax = Mathf.Max(area.yMax, exit.z + ExitCameraReach);
+
         return true;
     }
 
@@ -653,7 +668,12 @@ public partial class FloorGenerator : MonoBehaviour
     private void OnBossRoomCleared(Room room)
     {
         PlayRoomCleared();
-        SpawnExit(room, FloorExit.Kind.NextFloor);
+        ZoneExit zoneExit = room.GetComponentInChildren<ZoneExit>();
+
+        if (zoneExit != null)
+            zoneExit.Unlock();
+        else
+            SpawnExit(room, FloorExit.Kind.NextFloor);
 
         if (FloorNumber < TotalFloors)
             SpawnUplink(room);
@@ -685,10 +705,11 @@ public partial class FloorGenerator : MonoBehaviour
         return cell;
     }
 
-    // Which wall of that cell the uplink stands against: the first outside wall with no door.
+    // Which wall of that cell the uplink stands against: the first outside wall with no door (east
+    // or west first: the zone's way down has the north wall, PlaceZoneExit).
     private static Vector2Int UplinkWall(Room room, Vector2Int cell)
     {
-        foreach (Vector2Int side in new[] { Vector2Int.up, Vector2Int.right, Vector2Int.left, Vector2Int.down })
+        foreach (Vector2Int side in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.down, Vector2Int.up })
         {
             bool door = false;
 
@@ -886,6 +907,92 @@ public partial class FloorGenerator : MonoBehaviour
 
         // The hideout's deploy hatch is waiting open.
         exit.AddComponent<FloorExit>().Initialise(this, kind, IsHideout ? 0f : exitArmDelay, doors);
+    }
+
+    // How far north of the boss room's north wall the camera may look once the player's near it,
+    // so the way down set into the wall shows whole (its sprites stand tall up the screen).
+    private const float ExitCameraReach = 5f;
+
+    // Where each boss room's way down is: the middle of its opening on the north wall's room face.
+    private readonly Dictionary<Room, Vector3> exitSpots = new Dictionary<Room, Vector3>();
+
+    // The span along the boss room's north wall left open for its way down: the middle, or towards
+    // the west corner when the room's door is in that wall (the uplink then takes the east wall).
+    // Null when there's no zone exit to build (no room kit or art: the old hatch instead).
+    private Vector2? PlanExitOpening(PlannedRoom planned, HashSet<(Vector2Int, Vector2Int)> doorways)
+    {
+        if (planned.Type != RoomType.Boss || !UseWallKit || !KitFeatures || !ZoneExit.HasArt(Zone))
+            return null;
+
+        Vector2Int cell = planned.Cells[0];
+        float width = ZoneExits.For(Zone).Opening;
+        Rect block = BlockRect(cell, 0, 0);
+        float x = doorways.Contains((cell, Vector2Int.up)) ? block.center.x - (roomSize.x / 2f - width / 2f - 1.2f) : block.center.x;
+        return new Vector2(x - width / 2f, x + width / 2f);
+    }
+
+    // The north edge on the maps, less the opening when the way down stands in a bay (which the
+    // bay's own edges then go round).
+    private void AddExitOutline(Rect block, Vector2 opening, List<RoomEdge> outline)
+    {
+        if (!ZoneExits.For(Zone).Bay)
+        {
+            outline.Add(EdgeOf(block, Vector2Int.up));
+            return;
+        }
+
+        outline.Add(new RoomEdge { From = new Vector2(block.xMin, block.yMax), To = new Vector2(opening.x, block.yMax), Outward = Vector2.up });
+        outline.Add(new RoomEdge { From = new Vector2(opening.y, block.yMax), To = new Vector2(block.xMax, block.yMax), Outward = Vector2.up });
+    }
+
+    // Behind the opening: the escalator's and the chute's bay (floor, side walls, back wall); the
+    // stairwell and lift fill it themselves. Remembers the spot for PlaceZoneExit.
+    private void BuildExitBay(Room room, Rect block, Vector2 opening, List<Rect> blocks, List<RoomEdge> outline, KitMesh floor)
+    {
+        ZoneExitInfo info = ZoneExits.For(Zone);
+        float face = block.yMax;
+        exitSpots[room] = new Vector3((opening.x + opening.y) / 2f, 0f, face);
+
+        if (!info.Bay)
+            return;
+
+        float back = face + info.Depth;
+        float t = wallThickness;
+        Rect bay = Rect.MinMaxRect(opening.x, face, opening.y, back);
+        blocks.Add(bay);
+
+        if (floor != null)
+            AddFloorBlock(room.transform, bay, floor);
+
+        // Side walls from behind the room's wall to the back wall, then the back wall across.
+        CreateKitWall(room.transform, false, opening.x - t / 2f, face + t, back, Vector3.right, KitSpan.Plain);
+        CreateKitWall(room.transform, false, opening.y + t / 2f, face + t, back, Vector3.left, KitSpan.Plain);
+        CreateKitWall(room.transform, true, back + t / 2f, opening.x - t, opening.y + t, Vector3.back, KitSpan.Plain);
+
+        outline.Add(new RoomEdge { From = new Vector2(opening.x, face), To = new Vector2(opening.x, back), Outward = Vector2.left });
+        outline.Add(new RoomEdge { From = new Vector2(opening.y, face), To = new Vector2(opening.y, back), Outward = Vector2.right });
+        outline.Add(new RoomEdge { From = new Vector2(opening.x, back), To = new Vector2(opening.y, back), Outward = Vector2.up });
+    }
+
+    // The zone's way down (ZoneExit) in the opening left for it. A strip of floor in front of it is
+    // counted as a pillar, so nothing is placed in the way.
+    private void PlaceZoneExit(Room room)
+    {
+        if (!exitSpots.TryGetValue(room, out Vector3 wall))
+            return;
+
+        ZoneExit exit = ZoneExit.Create(Zone, room.transform, wall, slidePhysics);
+
+        if (exit == null)
+            return;
+
+        GameObject entry = new GameObject("Exit Entry");
+        entry.transform.SetParent(exit.transform, false);
+        entry.transform.position = exit.Entry;
+        entry.AddComponent<FloorExit>().Initialise(this, exit);
+
+        float width = exit.Info.Opening;
+        AddSolidPoints(room, new Rect(wall.x - width / 2f, wall.z - 1.4f, width, 1.4f));
     }
 
     // The hatch model's opening (square) and the height of its rim, where the doors hinge.
@@ -1134,6 +1241,14 @@ public partial class FloorGenerator : MonoBehaviour
         List<Rect> blocks = new List<Rect>();
         List<RoomEdge> outline = new List<RoomEdge>();
         Material roomFloor = PickFloorMaterial(planned.Type);
+        KitMesh floorMesh = modularRooms ? new KitMesh() : null;
+
+        // Pillars and cut-outs (FloorGenerator.Cutouts.cs) don't share a room.
+        bool hasPillars = planned.Type == RoomType.Normal && planned.Cells.Count >= minCellsForPillars && rng.NextDouble() < pillarChance;
+        Dictionary<Vector2Int, List<Cutout>> cutouts = PlanCutouts(planned, doorways, hasPillars);
+
+        // The boss room's way down goes in an opening in its north wall (PlaceZoneExit).
+        Vector2? exitOpening = PlanExitOpening(planned, doorways);
 
         foreach (Vector2Int cell in planned.Cells)
         {
@@ -1144,19 +1259,30 @@ public partial class FloorGenerator : MonoBehaviour
                     if (!InRoom(room, cell, i, j))
                         continue;
 
+                    if (i == 0 && j == 0 && cutouts.TryGetValue(cell, out List<Cutout> cuts))
+                    {
+                        BuildCutCell(room, cell, BlockRect(cell, 0, 0), cuts, doorways, blocks, outline, floorMesh);
+                        continue;
+                    }
+
                     Rect block = BlockRect(cell, i, j);
                     blocks.Add(block);
 
-                    GameObject floor = CreateBlock(
-                        "Floor",
-                        roomObject.transform,
-                        ToLocal(roomObject.transform, new Vector3(block.center.x, -0.1f, block.center.y)),
-                        new Vector3(block.width, 0.2f, block.height),
-                        roomFloor
-                    );
+                    if (floorMesh != null)
+                        AddFloorBlock(roomObject.transform, block, floorMesh);
+                    else
+                    {
+                        GameObject floor = CreateBlock(
+                            "Floor",
+                            roomObject.transform,
+                            ToLocal(roomObject.transform, new Vector3(block.center.x, -0.1f, block.center.y)),
+                            new Vector3(block.width, 0.2f, block.height),
+                            roomFloor
+                        );
 
-                    ApplyWorldUVs(floor);
-                    ApplyTint(floor, planned.Type);
+                        ApplyWorldUVs(floor);
+                        ApplyTint(floor, planned.Type);
+                    }
 
                     foreach (Vector2Int direction in Directions)
                     {
@@ -1166,16 +1292,28 @@ public partial class FloorGenerator : MonoBehaviour
                             continue;
 
                         bool doorway = i == 0 && j == 0 && doorways.Contains((cell, direction));
-                        BuildWall(room, cell, i, j, block, direction, doorway);
-                        outline.Add(EdgeOf(block, direction));
+                        Vector2? opening = exitOpening.HasValue && i == 0 && j == 0 && direction == Vector2Int.up && cell == planned.Cells[0]
+                            ? exitOpening : null;
+                        BuildWall(room, cell, i, j, block, direction, doorway, opening);
+
+                        if (opening.HasValue)
+                            AddExitOutline(block, opening.Value, outline);
+                        else
+                            outline.Add(EdgeOf(block, direction));
                     }
                 }
             }
         }
 
+        if (exitOpening.HasValue)
+            BuildExitBay(room, BlockRect(planned.Cells[0], 0, 0), exitOpening.Value, blocks, outline, floorMesh);
+
+        if (floorMesh != null)
+            CreateFloorMesh(roomObject.transform, floorMesh, roomFloor, planned.Type);
+
         room.SetGeometry(blocks, outline);
 
-        if (planned.Type == RoomType.Normal && planned.Cells.Count >= minCellsForPillars && rng.NextDouble() < pillarChance)
+        if (hasPillars)
             BuildPillars(room);
 
         AddCeilingLights(room);
@@ -1256,7 +1394,7 @@ public partial class FloorGenerator : MonoBehaviour
     // A wall just outside one side of a room block. At each end it runs on by a wall's thickness
     // when that end is an outside corner, so corners close; at inside corners and where the wall
     // carries on along the next block it stops at the block edge.
-    private void BuildWall(Room room, Vector2Int cell, int i, int j, Rect block, Vector2Int direction, bool doorway)
+    private void BuildWall(Room room, Vector2Int cell, int i, int j, Rect block, Vector2Int direction, bool doorway, Vector2? opening = null)
     {
         bool alongX = direction.y != 0;
         Vector2Int along = alongX ? Vector2Int.right : Vector2Int.up;
@@ -1277,16 +1415,69 @@ public partial class FloorGenerator : MonoBehaviour
             : block.yMin - wallThickness / 2f;
 
         bool south = direction.y < 0;
+        Vector3 inward = new Vector3(-direction.x, 0f, -direction.y);
+
+        // North walls on a run get the zone kit's pilasters, alcoves, panels and broken tops
+        // (FloorGenerator.RoomKit.cs); a pilaster marks where the wall runs on into the next block.
+        KitSpan span = KitSpan.Plain;
+
+        if (UseWallKit && KitFeatures && direction.y > 0)
+        {
+            NeighbourBlock(c1, i1, j1, direction, out Vector2Int c2, out int i2, out int j2);
+            span.Room = room;
+            // (Not between the two halves of the strip joining two cells.)
+            span.PilasterAtEnd = InRoom(room, c1, i1, j1) && !InRoom(room, c2, i2, j2) && (i == 0 || i1 == 0);
+
+            if (i == 0)
+                span.CellMiddle = block.center.x;
+        }
+
+        // A gap for the way down (ZoneExit), and the doorway's if there is one, with wall between.
+        if (opening.HasValue)
+        {
+            List<(float, float, bool)> gaps = new List<(float, float, bool)> { (opening.Value.x, opening.Value.y, false) };
+            float doorMiddle = alongX ? block.center.x : block.center.y;
+
+            if (doorway)
+            {
+                gaps.Add((doorMiddle - doorWidth / 2f, doorMiddle + doorWidth / 2f, true));
+                CreateDoorFrame(room.transform, alongX, across, doorMiddle, inward);
+                CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), doorMiddle);
+            }
+
+            gaps.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            float from = start;
+
+            for (int g = 0; g <= gaps.Count; g++)
+            {
+                float to = g < gaps.Count ? gaps[g].Item1 : end;
+                KitSpan piece = span;
+                piece.DoorAtStart = g > 0;
+                piece.DoorAtEnd = g < gaps.Count;
+                piece.PilasterAtEnd = span.PilasterAtEnd && g == gaps.Count;
+                HideIfSouth(CreateWallSpan(room.transform, alongX, across, from, to, inward, piece), south);
+
+                if (g < gaps.Count)
+                    from = gaps[g].Item2;
+            }
+
+            return;
+        }
 
         if (!doorway)
         {
-            HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, end), south);
+            HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, end, inward, span), south);
             return;
         }
 
         float middle = alongX ? block.center.x : block.center.y;
-        HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f), south);
-        HideIfSouth(CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end), south);
+        KitSpan before = span;
+        before.DoorAtEnd = true;
+        before.PilasterAtEnd = false;
+        KitSpan after = span;
+        after.DoorAtStart = true;
+        HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f, inward, before), south);
+        HideIfSouth(CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end, inward, after), south);
         CreateDoorFrame(room.transform, alongX, across, middle, new Vector3(-direction.x, 0f, -direction.y));
         CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
     }
@@ -1349,8 +1540,11 @@ public partial class FloorGenerator : MonoBehaviour
             part.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
     }
 
-    private GameObject CreateWallSpan(Transform parent, bool alongX, float across, float start, float end)
+    private GameObject CreateWallSpan(Transform parent, bool alongX, float across, float start, float end, Vector3 inward, KitSpan span)
     {
+        if (UseWallKit)
+            return CreateKitWall(parent, alongX, across, start, end, inward, span);
+
         float length = end - start;
 
         if (length <= 0.001f)
@@ -1479,12 +1673,25 @@ public partial class FloorGenerator : MonoBehaviour
         Vector3 wallSize = WallSize(alongX, corridorLength, wallThickness);
 
         // The corridor's south wall (when it runs east-west) is hidden like the rooms' (hideSouthWalls).
+        if (UseWallKit)
+        {
+            float along = alongX ? centre.x : centre.z;
+            float across = alongX ? centre.z : centre.x;
+            float offset = (alongX ? side.z : side.x) * sideOffset;
+            HideIfSouth(CreateKitWall(corridor.transform, alongX, across + offset, along - corridorLength / 2f, along + corridorLength / 2f, -side, KitSpan.Plain), side.z < -0.5f);
+            HideIfSouth(CreateKitWall(corridor.transform, alongX, across - offset, along - corridorLength / 2f, along + corridorLength / 2f, side, KitSpan.Plain), side.z > 0.5f);
+            return;
+        }
+
         HideIfSouth(CreateWall("Wall", corridor.transform, side * sideOffset + Vector3.up * wallHeight / 2f, wallSize), side.z < -0.5f);
         HideIfSouth(CreateWall("Wall", corridor.transform, -side * sideOffset + Vector3.up * wallHeight / 2f, wallSize), side.z > 0.5f);
     }
 
     private void PlacePlayer()
     {
+        // Back from walking into the last floor's way down (ZoneExit).
+        ZoneExit.FinishDescent();
+
         if (player == null)
             return;
 

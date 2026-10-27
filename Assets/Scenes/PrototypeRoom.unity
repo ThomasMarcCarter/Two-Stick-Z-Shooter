@@ -4339,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000008252951}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 29.457092, y: -141.9312}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7305,6 +7305,8 @@ MonoBehaviour:
   sealedDoorTint: {r: 0.55, g: 0.12, b: 0.08, a: 1}
   survivorChance: 0.25
   distressCallDelay: 3
+  modularRooms: 1
+  wallKitMaterial: {fileID: 2100000, guid: ba52d9a246d36f24896d93d02ae0c23d, type: 2}
   supplyScrapBase: 12
   supplyScrapPerKill: 0.25
   supplyMaterialsBase: 3
@@ -7325,6 +7327,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 0df9f07d300b0e6499511002e4c57738, type: 2}
     floorVariant: {fileID: 2100000, guid: 24f5862cb9590bf4c9c279a678787522, type: 2}
     wall: {fileID: 2100000, guid: 3f414e560c6873040af801844313ada5, type: 2}
+    wallKit: {fileID: 2100000, guid: d034be2a8ab13ac418b15ec0009f10e5, type: 2}
     hideoutConcreteFloor: 0
   - zone: 2
     floors: 0
@@ -7335,6 +7338,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 0bfbafe7715febd4fb9c7e69863d6663, type: 2}
     floorVariant: {fileID: 2100000, guid: 00949a1fd727cbd45ba62b54d291a57d, type: 2}
     wall: {fileID: 2100000, guid: 61fe0bb148ad40045b992b1fb0fdbf1e, type: 2}
+    wallKit: {fileID: 2100000, guid: 014b49172d59b2c4c91e19e62c27737a, type: 2}
     hideoutConcreteFloor: 0
   - zone: 3
     floors: 0
@@ -7345,6 +7349,7 @@ MonoBehaviour:
     floor: {fileID: 2100000, guid: 1a734546f6cf86e4cbaa17aa5e090a25, type: 2}
     floorVariant: {fileID: 2100000, guid: a7129dad58705624cbc1b70fcb464dfb, type: 2}
     wall: {fileID: 2100000, guid: 83c4c4c96ca286047a6eca3fc037638e, type: 2}
+    wallKit: {fileID: 2100000, guid: f6bcb2fe2f94a2c418c5a1e16ea73072, type: 2}
     hideoutConcreteFloor: 1
   totalFloors: 3
   exitMaterial: {fileID: 2100000, guid: 5bd0d9809f258f04cb50bb85c5c8b373, type: 2}
@@ -8604,7 +8609,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.000008252951}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8612,7 +8617,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 29.457092, y: -141.9312}
+  m_AnchoredPosition: {x: -640, y: -360.00015}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

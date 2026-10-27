@@ -77,6 +77,8 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet supplyCrate;
     [Tooltip("The floor hatch from above: closed, then open.")]
     public SpriteSheet hatch;
+    [Tooltip("The zone exits' flat floor pieces from above (Items/ExitFloors.png): row 0 the escalator's steps, row 1 the baggage belt; column 0 stopped, 1-4 running.")]
+    public SpriteSheet exitFloors;
     [Tooltip("The hideout range's training dummy, standing, facing right (TrainingDummy).")]
     public SpriteSheet trainingDummy;
 

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// A room footprint on the floor grid, as a set of cells. Rooms can be 1x1, long, L, T or 2x2.
+// A room footprint on the floor grid, as a set of cells: 1x1, 2x1, 3-cell halls, L, long L (J),
+// T, S/Z, U, a plus, 2x2 and 3x2. Cells inside a room vary too (FloorGenerator.Cutouts.cs).
 public class RoomShape
 {
     public string Name { get; }
@@ -33,6 +34,18 @@ public class RoomShape
 
         AddRotations(shapes, "L", Offsets((0, 0), (1, 0), (0, 1)), 2f);
         AddRotations(shapes, "T", Offsets((0, 0), (1, 0), (2, 0), (1, 1)), 1.2f);
+
+        // Bigger and odder ones, rarer.
+        shapes.Add(new RoomShape("3x1", Offsets((0, 0), (1, 0), (2, 0)), 0.6f));
+        shapes.Add(new RoomShape("1x3", Offsets((0, 0), (0, 1), (0, 2)), 0.4f));
+        AddRotations(shapes, "J", Offsets((0, 0), (1, 0), (2, 0), (0, 1)), 0.6f);
+        AddRotations(shapes, "J", Offsets((0, 0), (1, 0), (2, 0), (2, 1)), 0.6f);
+        AddRotations(shapes, "S", Offsets((0, 0), (1, 0), (1, 1), (2, 1)), 0.5f);
+        AddRotations(shapes, "Z", Offsets((0, 1), (1, 1), (1, 0), (2, 0)), 0.5f);
+        AddRotations(shapes, "U", Offsets((0, 0), (1, 0), (2, 0), (0, 1), (2, 1)), 0.4f);
+        shapes.Add(new RoomShape("Plus", Offsets((1, 0), (0, 1), (1, 1), (2, 1), (1, 2)), 0.25f));
+        shapes.Add(new RoomShape("3x2", Offsets((0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)), 0.2f));
+        shapes.Add(new RoomShape("2x3", Offsets((0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)), 0.15f));
 
         return shapes;
     }

@@ -120,6 +120,10 @@ public partial class FloorGenerator
             float offset = Mathf.Lerp(-halfLength / 2f, halfLength / 2f, (float)rng.NextDouble());
             Vector3 position = CellToWorld(cell) + outward * halfExtent + along * offset;
 
+            // Not where a cut-out has taken that bit of wall away.
+            if (!IsClear(position, PillarsOf(room), 1.2f))
+                continue;
+
             RollLoot(room, LootSpawnPoint.Create(room.transform, position, LootSpawnPoint.Placement.Wall, outward));
         }
 
@@ -336,7 +340,7 @@ public partial class FloorGenerator
 
             Vector3 spot = centre + direction * reach;
 
-            if (IsClearForCrate(spot))
+            if (IsClearForCrate(spot) && IsClear(spot, PillarsOf(room), 1.4f))
                 return spot;
         }
 

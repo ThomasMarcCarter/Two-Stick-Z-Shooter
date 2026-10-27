@@ -588,6 +588,58 @@ public static class ProceduralAudio
         return Build("Rotor Loop", data, sampleRate);
     }
 
+    // A lift arriving: the two-note chime, a soft bell on each.
+    public static AudioClip LiftChime()
+    {
+        const int sampleRate = 44100;
+        const float length = 1.4f;
+        float[] data = new float[Mathf.CeilToInt(sampleRate * length)];
+        float[] notes = { 1046.5f, 830.6f };
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+            float sound = 0f;
+
+            for (int n = 0; n < notes.Length; n++)
+            {
+                float start = n * 0.42f;
+
+                if (t < start)
+                    continue;
+
+                float u = t - start;
+                float bell = Mathf.Sin(2f * Mathf.PI * notes[n] * u) + 0.3f * Mathf.Sin(2f * Mathf.PI * notes[n] * 2.76f * u) * Mathf.Exp(-u * 6f);
+                sound += bell * Mathf.Exp(-u * 3.2f) * Mathf.Min(1f, u * 300f);
+            }
+
+            data[i] = sound * 0.35f;
+        }
+
+        return Build("Lift Chime", data, sampleRate);
+    }
+
+    // An electric motor running (an escalator, a baggage belt): a low hum with its harmonics and
+    // a rattle of rollers. One second, looping cleanly (whole cycles of everything).
+    public static AudioClip MotorHum()
+    {
+        const int sampleRate = 44100;
+        float[] data = new float[sampleRate];
+        System.Random rng = new System.Random(1600);
+        float low = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+            low += (Noise(rng) - low) * 0.08f;
+            float hum = Mathf.Sin(2f * Mathf.PI * 100f * t) * 0.3f + Mathf.Sin(2f * Mathf.PI * 200f * t) * 0.12f + Mathf.Sin(2f * Mathf.PI * 50f * t) * 0.25f;
+            float rattle = low * (0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 12f * t));
+            data[i] = Tanh((hum + rattle * 1.5f) * 1.2f) * 0.5f;
+        }
+
+        return Build("Motor Hum", data, sampleRate);
+    }
+
     // A security guard's pea whistle: two shrill trilling blasts.
     public static AudioClip Whistle()
     {

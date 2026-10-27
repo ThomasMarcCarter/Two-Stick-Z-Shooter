@@ -95,6 +95,9 @@ public partial class FloorGenerator
             return;
 
         List<Vector3> keepClear = DoorwayPositions(room);
+
+        // Off pillars and cut-outs too (a decal would float over the void where one's taken out).
+        keepClear.AddRange(PillarsOf(room));
         List<Vector3> hatch = HatchSpot(room);
         List<Vector3> painted = new List<Vector3>();
         bool boss = room.Type == RoomType.Boss;

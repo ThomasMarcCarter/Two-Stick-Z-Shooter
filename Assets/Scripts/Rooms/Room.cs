@@ -28,7 +28,7 @@ public struct RoomEdge
     public Vector2 Outward;
 }
 
-// One room on the floor, covering one or more grid cells (1x1, long, L, T or 2x2). Built at
+// One room on the floor, covering one or more grid cells (RoomShape). Built at
 // runtime by FloorGenerator. When the player steps clear of the doors into an uncleared room,
 // the doors lock until every enemy in it is dead.
 public class Room : MonoBehaviour

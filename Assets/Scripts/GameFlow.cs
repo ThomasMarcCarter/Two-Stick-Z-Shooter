@@ -17,14 +17,15 @@ public static class GameFlow
     public static bool InputBlocked =>
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
         || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || InventoryScreen.IsOpen
-        || StationScreen.IsOpen || CrateScreen.IsOpen || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing;
+        || StationScreen.IsOpen || CrateScreen.IsOpen || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing
+        || ZoneExit.Descending;
 
     // Like InputBlocked, but the inventory doesn't stop the player walking: the game keeps
     // running while it's open, so they can still get out of the way (just not shoot or sprint).
     public static bool MovementBlocked =>
         MainMenu.IsOpen || PauseMenu.IsOpen || FullscreenMap.IsOpen || FloorTransition.IsActive
         || VictoryScreen.IsShowing || DeathScreen.IsShowing || DeathScreen.IsDying || DebugMenu.IsOpen || StationScreen.IsOpen || CrateScreen.IsOpen
-        || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing;
+        || TruckBay.Driving || EvacSequence.Cutscene || CreditsScreen.IsShowing || ZoneExit.Descending;
 
     // A full-screen menu or screen is up over the game (pause and the settings under it, the
     // main menu, map, inventory, a station or crate, the end screens). Everything drawn over the

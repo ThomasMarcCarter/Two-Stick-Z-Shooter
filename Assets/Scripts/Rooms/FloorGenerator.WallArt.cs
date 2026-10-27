@@ -7,7 +7,8 @@ using UnityEngine;
 // the infirmary, a biohazard sign in a lab, a gate sign in a gate lounge, a neon FASHION sign on a shop floor...), the other
 // slots now and then get grime, blood or graffiti, and boss arenas are smeared with blood. A
 // doorway in a north wall sometimes gets a lit EXIT sign beside it, arrow pointing at the door.
-// Slots behind doorways, pillars, wall-mounted loot and tall furniture are left bare.
+// Slots behind doorways, pillars, wall-mounted loot, tall furniture and the room kit's alcoves,
+// pilasters and broken tops (FloorGenerator.RoomKit.cs) are left bare.
 // Each decal is a quad flat on the wall face with the walls' own pixel grid (16 px per metre
 // along, 32 rows up the 2 m face; Tools/Sprites/walldecals.py), lit like the wall, with lit
 // pixels (exit signs, neon, screens) in the material's emission map. Uses its own random
@@ -148,7 +149,8 @@ public partial class FloorGenerator
                 if (door.HasValue && Mathf.Abs(x - door.Value) < DecalWidth * 0.9f)
                     continue;
 
-                if (SlotBlocked(x, face, pillarSpots, 2f) || SlotBlocked(x, face, lootPoints, 1.6f) || SlotBlocked(x, face, furniture, 1.5f))
+                if (SlotBlocked(x, face, pillarSpots, 2f) || SlotBlocked(x, face, lootPoints, 1.6f) || SlotBlocked(x, face, furniture, 1.5f)
+                    || WallFeatureAt(room, x, face, DecalWidth / 2f))
                     continue;
 
                 slots.Add(x);
@@ -162,7 +164,7 @@ public partial class FloorGenerator
                 bool right = decalRng.NextDouble() < 0.5;
                 float x = door.Value + (right ? 2.2f : -2.2f);
 
-                if (!SlotBlocked(x, face, pillarSpots, 1.6f) && !SlotBlocked(x, face, furniture, 1.2f))
+                if (!SlotBlocked(x, face, pillarSpots, 1.6f) && !SlotBlocked(x, face, furniture, 1.2f) && !WallFeatureAt(room, x, face, DecalWidth / 2f))
                 {
                     PlaceDecal(room.transform, right ? "ExitLeft" : "ExitRight", x, face);
                     slots.RemoveAll(s => Mathf.Abs(s - x) < DecalWidth * 0.9f);

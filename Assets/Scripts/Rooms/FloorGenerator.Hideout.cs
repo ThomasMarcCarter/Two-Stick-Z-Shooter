@@ -1050,6 +1050,15 @@ public partial class FloorGenerator
         away.y = 0f;
         Vector3 spot = centre + (away.sqrMagnitude > 0.01f ? away.normalized : Vector3.forward) * 2.2f;
 
+        // Somewhere else near the middle if that's in a cut-out or by a pillar.
+        foreach (Vector3 offset in new[] { Vector3.forward, Vector3.back, Vector3.left, Vector3.right, Vector3.zero })
+        {
+            if (IsClear(spot, PillarsOf(room), 1.6f))
+                break;
+
+            spot = centre + offset * 2.2f;
+        }
+
         CagedSurvivor.Create(kind.Value, room, spot, exit, ConsumablePickup.DefaultMaterial != null ? ConsumablePickup.DefaultMaterial : ammoMaterial);
         survivorThisRun = true;
         forceSurvivor = false;

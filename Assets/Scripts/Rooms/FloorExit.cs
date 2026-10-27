@@ -8,6 +8,9 @@ using UnityEngine;
 // does. The hatch's two doors swing open over the arming delay (with a clank), and it can't be
 // used until they're open; in the hideout it starts open. The ladder can be held shut by a
 // reason (`Blocked`, e.g. the truck part still on its shelf), which its label shows.
+// In a boss room on a run the way down is the zone's own (ZoneExit: a stairwell, an escalator, a
+// lift, a baggage chute) instead of a hatch: this sits in front of it, locked until the boss is
+// dead and usable once it's open, and Interact walks the player in before the floor changes.
 public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 {
     public enum Kind
@@ -36,7 +39,9 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     public float Reach => kind == Kind.Extraction ? 1.8f : 2.1f;
     public bool CanTake => !used && Armed && !StationScreen.IsOpen && BlockedReason == null;
 
-    private bool Armed => Time.time >= openedAt + armDelay;
+    private ZoneExit zoneExit;
+
+    private bool Armed => zoneExit != null ? zoneExit.IsOpen : Time.time >= openedAt + armDelay;
     private string BlockedReason => Blocked?.Invoke();
 
     // doorHinges: the hatch's door pivots (on the hinge line, door lying flat along their local
@@ -61,6 +66,13 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         // Already open (the hideout's): no clank.
         clanked = armDelay <= 0f;
         UpdateDoors();
+    }
+
+    // In front of a zone's exit (ZoneExit), which does the opening.
+    public void Initialise(FloorGenerator owner, ZoneExit exit)
+    {
+        zoneExit = exit;
+        Initialise(owner, Kind.NextFloor, 0f, null);
     }
 
     private void OnEnable()
@@ -152,6 +164,18 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
             return $"DEPLOY HATCH  <size=70%><alpha=#99>// {floor.ZoneName} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
 
         string where = floor == null ? "" : floor.FloorNumber >= floor.TotalFloors ? "DOWN TO THE SUPPLY ROOM" : $"DOWN TO FLOOR {floor.FloorNumber + 1}";
+
+        if (zoneExit != null)
+        {
+            ZoneExitInfo info = zoneExit.Info;
+            string header = $"{info.Name}  <size=70%><alpha=#99>// {where}</size>\n";
+
+            if (!zoneExit.Unlocked)
+                return header + $"<size=70%><color={UiColours.DangerHex}>LOCKED</color></size>";
+
+            return Armed ? header + action + info.Action + "</color></size>" : header + "<size=70%><alpha=#88>OPENING...</size>";
+        }
+
         string hatch = $"HATCH  <size=70%><alpha=#99>// {where}</size>\n";
         return Armed ? hatch + action + "CLIMB DOWN</color></size>" : hatch + "<size=70%><alpha=#88>OPENING...</size>";
     }
@@ -160,6 +184,10 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     {
         used = true;
         label.Hide();
-        floor.UseExit(kind);
+
+        if (zoneExit != null && playerWeapon != null)
+            zoneExit.Use(playerWeapon.transform, () => floor.UseExit(kind));
+        else
+            floor.UseExit(kind);
     }
 }

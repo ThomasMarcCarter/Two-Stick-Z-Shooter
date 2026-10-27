@@ -30,6 +30,8 @@ public partial class FloorGenerator
         public Material floorVariant;
         [Tooltip("Walls, laid out like the base's (pixel walls: 32 rows of face under 4 of cap). Empty uses the wall material.")]
         public Material wall;
+        [Tooltip("The modular wall kit matching Wall (FloorGenerator.RoomKit.cs). Empty with Wall set = block walls; with neither set, the base kit.")]
+        public Material wallKit;
         [Tooltip("This zone's hideout keeps the base's bare concrete floor instead of the zone's floor (the airport's baggage room).")]
         public bool hideoutConcreteFloor;
     }
@@ -62,6 +64,7 @@ public partial class FloorGenerator
         floorMaterial = settings != null && settings.floor != null && !concrete ? settings.floor : baseFloor;
         floorVariants = settings != null && settings.floorVariant != null ? new[] { settings.floorVariant } : baseFloorVariants;
         wallMaterial = settings != null && settings.wall != null ? settings.wall : baseWall;
+        wallKit = settings != null && settings.wall != null ? settings.wallKit : wallKitMaterial;
     }
 
     // The current zone's entry, or null if it has none.
