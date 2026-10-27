@@ -90,12 +90,7 @@ public class GunSprite : MonoBehaviour
         if (camera == null || sprite == null)
             return;
 
-        // The 3D model stays hidden (attachments and reloads can turn bits of it back on).
-        foreach (Renderer part in modelRenderers)
-        {
-            if (part != null && part.enabled)
-                part.enabled = false;
-        }
+        HideModel();
 
         // Worked out on screen: from the hands' height on the body, toward the cursor.
         Transform holder = transform.root;
@@ -122,21 +117,10 @@ public class GunSprite : MonoBehaviour
 
         Vector2 tip = grip + aim * barrel * pixelsPerMetre;
 
-        float target = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
         bool left = aim.x < 0f;
-
-        if (gun.IsReloading)
-            target += Mathf.Sin(gun.ReloadProgress * Mathf.PI) * ReloadTip * (left ? -1f : 1f);
-
-        // A melee swing bashes with the gun: drawn back, then swept through an arc and back.
         PlayerMelee melee = holder.GetComponent<PlayerMelee>();
         float bash = melee != null ? melee.SwingProgress : -1f;
-
-        if (bash >= 0f)
-        {
-            float sweep = bash < 0.25f ? Mathf.Lerp(0f, 1f, bash / 0.25f) : bash < 0.6f ? Mathf.Lerp(1f, -1f, (bash - 0.25f) / 0.35f) : Mathf.Lerp(-1f, 0f, (bash - 0.6f) / 0.4f);
-            target += sweep * MeleeArc * 0.5f * (left ? -1f : 1f);
-        }
+        float target = DrawnAngle(left, bash);
 
         Vector3 gripWorld = OnAimPlane(camera, grip);
         sprite.MirrorY = left;
@@ -144,28 +128,68 @@ public class GunSprite : MonoBehaviour
         sprite.Position = gripWorld;
 
         if (muzzle != null)
+            PlaceMuzzle(OnAimPlane(camera, tip), gripWorld);
+
+        Vector3 view = CameraFollow.ViewRay(gripWorld);
+        SetDepth(view, gripWorld, feet, character != null && character.CurrentFacing.Away);
+        screenGrip = grip;
+        screenScale = pixelsPerMetre;
+        PlaceAttachments(camera, target, left, gun.IsReloading || bash >= 0f, view);
+    }
+
+    // The 3D model stays hidden (attachments and reloads can turn bits of it back on).
+    private void HideModel()
+    {
+        foreach (Renderer part in modelRenderers)
         {
-            Vector3 tipWorld = OnAimPlane(camera, tip);
-            Vector3 barrelLine = tipWorld - gripWorld;
-            barrelLine.y = 0f;
-            muzzle.position = tipWorld;
+            if (part != null && part.enabled)
+                part.enabled = false;
+        }
+    }
 
-            if (barrelLine.sqrMagnitude > 0.0001f)
-            {
-                muzzle.rotation = Quaternion.LookRotation(barrelLine.normalized, Vector3.up);
+    // The gun's angle on screen: along the aim, tipped over while reloading, and swung by a melee
+    // bash (`bash` is the swing's progress, or below 0 when not swinging): drawn back, then swept
+    // through an arc and back.
+    private float DrawnAngle(bool left, float bash)
+    {
+        float target = Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg;
 
-                // The flashlight on the end of the barrel, aimed to land as far ahead as before.
-                if (flashlight != null)
-                {
-                    float pitch = Mathf.Atan2(tipWorld.y, flashlightThrow) * Mathf.Rad2Deg;
-                    flashlight.transform.SetPositionAndRotation(tipWorld, muzzle.rotation * Quaternion.Euler(pitch, 0f, 0f));
-                }
-            }
+        if (gun.IsReloading)
+            target += Mathf.Sin(gun.ReloadProgress * Mathf.PI) * ReloadTip * (left ? -1f : 1f);
+
+        if (bash >= 0f)
+        {
+            float sweep = bash < 0.25f ? Mathf.Lerp(0f, 1f, bash / 0.25f) : bash < 0.6f ? Mathf.Lerp(1f, -1f, (bash - 0.25f) / 0.35f) : Mathf.Lerp(-1f, 0f, (bash - 0.6f) / 0.4f);
+            target += sweep * MeleeArc * 0.5f * (left ? -1f : 1f);
         }
 
-        // On the holder's body plane (the vertical plane through their feet facing the camera),
-        // then a touch in front of it, or behind when they face away.
-        Vector3 view = CameraFollow.ViewRay(gripWorld);
+        return target;
+    }
+
+    // The muzzle point (where shots and the flash come from) at the drawn barrel's tip, facing
+    // along it, with the flashlight on the end aimed to land as far ahead as before.
+    private void PlaceMuzzle(Vector3 tipWorld, Vector3 gripWorld)
+    {
+        Vector3 barrelLine = tipWorld - gripWorld;
+        barrelLine.y = 0f;
+        muzzle.position = tipWorld;
+
+        if (barrelLine.sqrMagnitude <= 0.0001f)
+            return;
+
+        muzzle.rotation = Quaternion.LookRotation(barrelLine.normalized, Vector3.up);
+
+        if (flashlight != null)
+        {
+            float pitch = Mathf.Atan2(tipWorld.y, flashlightThrow) * Mathf.Rad2Deg;
+            flashlight.transform.SetPositionAndRotation(tipWorld, muzzle.rotation * Quaternion.Euler(pitch, 0f, 0f));
+        }
+    }
+
+    // On the holder's body plane (the vertical plane through their feet facing the camera), then
+    // a touch in front of it, or behind when they face away.
+    private void SetDepth(Vector3 view, Vector3 gripWorld, Vector3 feet, bool behind)
+    {
         Vector3 flatForward = Vector3.ProjectOnPlane(view, Vector3.up);
         float toPlane = 0f;
 
@@ -176,7 +200,6 @@ public class GunSprite : MonoBehaviour
             toPlane = along > 0.01f ? Vector3.Dot(feet - gripWorld, flatForward) / along : 0f;
         }
 
-        bool behind = character != null && character.CurrentFacing.Away;
         sprite.DepthOffset = toPlane + (behind ? DepthGap : -DepthGap);
 
         // Pointing down the screen, a long gun's quad reaches below the floor, which hides the
@@ -187,10 +210,6 @@ public class GunSprite : MonoBehaviour
 
         if (lowest < FloorClearance && view.y < -0.01f)
             sprite.DepthOffset -= (FloorClearance - lowest) / -view.y;
-
-        screenGrip = grip;
-        screenScale = pixelsPerMetre;
-        PlaceAttachments(camera, target, left, gun.IsReloading || bash >= 0f, view);
     }
 
     private static SpriteSheet AttachmentArt => SpriteVisuals.Current != null ? SpriteVisuals.Current.gunAttachments : null;

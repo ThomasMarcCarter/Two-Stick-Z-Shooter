@@ -228,7 +228,7 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
 
         if (playerWeapon == null)
         {
-            playerWeapon = FindAnyObjectByType<PlayerWeapon>();
+            playerWeapon = PlayerWeapon.Current;
 
             if (playerWeapon == null)
                 return;

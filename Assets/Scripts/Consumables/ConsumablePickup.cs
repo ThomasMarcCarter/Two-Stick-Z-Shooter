@@ -167,7 +167,7 @@ public class ConsumablePickup : MonoBehaviour, FloorPickups.IPickup
 
         if (player == null)
         {
-            playerWeapon = FindAnyObjectByType<PlayerWeapon>();
+            playerWeapon = PlayerWeapon.Current;
             playerBackpack = playerWeapon != null ? playerWeapon.Backpack : null;
             player = playerWeapon != null ? playerWeapon.transform : null;
         }

@@ -150,7 +150,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
 
         if (player == null)
         {
-            playerWeapon = FindAnyObjectByType<PlayerWeapon>();
+            playerWeapon = PlayerWeapon.Current;
             playerMelee = playerWeapon != null ? playerWeapon.Melee : null;
             player = playerWeapon != null ? playerWeapon.transform : null;
         }

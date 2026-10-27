@@ -145,7 +145,7 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         }
 
         if (player == null)
-            player = FindAnyObjectByType<PlayerWeapon>();
+            player = PlayerWeapon.Current;
 
         if (player == null)
             return;
