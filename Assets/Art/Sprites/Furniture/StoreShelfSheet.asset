@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: StoreShelfSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 91a198adae4b086428f07658b0ead94d, type: 3}
-  frameWidth: 52
-  frameHeight: 71
-  pivot: {x: 26, y: 1}
+  frameWidth: 54
+  frameHeight: 74
+  pivot: {x: 27, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

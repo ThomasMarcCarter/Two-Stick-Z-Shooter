@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ShelvingSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 585bc2fe0bfce8444a6f8ecbb33a1b97, type: 3}
-  frameWidth: 52
+  frameWidth: 68
   frameHeight: 74
-  pivot: {x: 26, y: 1}
+  pivot: {x: 34, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

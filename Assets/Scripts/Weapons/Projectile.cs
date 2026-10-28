@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // A bullet. Drawn as a glowing tracer streak rather than a solid round: a short trail, hot and
@@ -44,6 +45,9 @@ public class Projectile : MonoBehaviour
     private float tracerLift;
 
     private static readonly RaycastHit[] sweepHits = new RaycastHit[8];
+
+    // Furniture this round has already passed through (each piece reacts once).
+    private readonly HashSet<FurnitureDamage> furnitureHit = new HashSet<FurnitureDamage>();
 
     private void Awake()
     {
@@ -140,6 +144,9 @@ public class Projectile : MonoBehaviour
         {
             Collider hit = sweepHits[i].collider;
 
+            if (hit.GetComponentInParent<FurnitureDamage>() != null)
+                continue;
+
             if (hit.transform.root == shooterRoot || sweepHits[i].distance >= nearestDistance)
                 continue;
 
@@ -153,6 +160,13 @@ public class Projectile : MonoBehaviour
 
         // Enemies drawn as sprites are hit where they look to be (SpriteCharacter.Footprint).
         SpriteCharacter sprite = NearestSprite(transform.position, step, distance, ref nearestDistance);
+
+        // Furniture it passes on the way there takes the hit and the round flies on.
+        for (int i = 0; i < count; i++)
+        {
+            if (sweepHits[i].distance <= nearestDistance)
+                TouchFurniture(sweepHits[i].collider.GetComponentInParent<FurnitureDamage>(), sweepHits[i].point);
+        }
 
         if (sprite != null)
         {
@@ -343,6 +357,14 @@ public class Projectile : MonoBehaviour
             return;
         }
 
+        FurnitureDamage furniture = other.GetComponentInParent<FurnitureDamage>();
+
+        if (furniture != null)
+        {
+            TouchFurniture(furniture, other.ClosestPoint(transform.position));
+            return;
+        }
+
         if (other.CompareTag("Wall"))
         {
             spent = true;
@@ -358,6 +380,15 @@ public class Projectile : MonoBehaviour
             LeaveTracer();
             Destroy(gameObject);
         }
+    }
+
+    // A piece of furniture the round passes through (FurnitureDamage), once each.
+    private void TouchFurniture(FurnitureDamage piece, Vector3 point)
+    {
+        if (piece == null || !furnitureHit.Add(piece))
+            return;
+
+        piece.Hit(point, rb != null ? rb.linearVelocity : transform.forward);
     }
 
     // Blood where it went in (drawn up at the tracer's height), and the damage.

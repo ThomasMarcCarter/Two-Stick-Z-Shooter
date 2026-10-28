@@ -222,6 +222,15 @@ public partial class Gun : MonoBehaviour
     // Shots don't use ammo (the hideout's shooting range). Set by the FloorGenerator per floor.
     public static bool FreeAmmo { get; set; }
 
+    // A gun went off (FloorGenerator: a shot from a doorway pulls the player into the room).
+    public static event System.Action<Gun> Fired;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetSession()
+    {
+        Fired = null;
+    }
+
     // The shot every suppressed gun plays instead of its own (the FloorGenerator's Suppressed
     // Shot Sound). Without one, a suppressed gun plays its own shot quieter and higher.
     public static AudioClip SuppressedShot { get; set; }
@@ -386,6 +395,7 @@ public partial class Gun : MonoBehaviour
 
         PlayShot();
         nextFireTime = Time.time + (1f / FireRate);
+        Fired?.Invoke(this);
     }
 
     // From where the round starts, so it flies through the point under the crosshair (the gun is

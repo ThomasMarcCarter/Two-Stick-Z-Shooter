@@ -203,6 +203,49 @@ public static partial class ProceduralAudio
         return Build("Metal Clank", data, sampleRate);
     }
 
+    // Bare wires shorting (SparkingCable): a fizz of noise broken up by sharp pops, a third of a second.
+    public static AudioClip ElectricCrackle(int seed)
+    {
+        const int sampleRate = 44100;
+        float[] data = new float[Mathf.CeilToInt(sampleRate * 0.35f)];
+        System.Random rng = new System.Random(seed + 1700);
+        float pop = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+
+            if (rng.NextDouble() < 0.0025)
+                pop = 1f;
+
+            pop *= 0.996f;
+            float fizz = Noise(rng) * 0.25f * Mathf.Exp(-t * 6f);
+            data[i] = (fizz + Noise(rng) * pop) * Mathf.Clamp01(1f - t / 0.35f);
+        }
+
+        return Build("Electric Crackle", data, sampleRate);
+    }
+
+    // A drop of water landing in a puddle (CeilingDrip): a short falling plink.
+    public static AudioClip Drip(int seed)
+    {
+        const int sampleRate = 44100;
+        float[] data = new float[Mathf.CeilToInt(sampleRate * 0.14f)];
+        System.Random rng = new System.Random(seed + 1800);
+        float start = 1500f + (float)rng.NextDouble() * 700f;
+        float phase = 0f;
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)sampleRate;
+            float pitch = Mathf.Lerp(start, start * 0.55f, t / 0.14f);
+            phase += 2f * Mathf.PI * pitch / sampleRate;
+            data[i] = Mathf.Sin(phase) * Mathf.Exp(-t * 38f) * 0.7f + (t < 0.002f ? Noise(rng) * 0.3f : 0f);
+        }
+
+        return Build("Drip", data, sampleRate);
+    }
+
     // The hideout's truck starting and pulling away: the starter cranking, the diesel catching
     // with a cough, a lumpy idle, then revving up as it drives off and fading into the distance.
     public static AudioClip TruckEngine()

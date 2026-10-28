@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: BinderShelfSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: e27d8d1ff712ad140803db8b03ae961e, type: 3}
-  frameWidth: 42
-  frameHeight: 62
-  pivot: {x: 21, y: 1}
+  frameWidth: 44
+  frameHeight: 65
+  pivot: {x: 22, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

@@ -293,6 +293,7 @@ public partial class FloorGenerator
         {
             CreateDoorFrame(room.transform, alongX, across, middle, inward);
             CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
+            CreateThreshold(room.transform, alongX, across, middle, direction);
         }
     }
 

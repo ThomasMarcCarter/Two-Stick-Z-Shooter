@@ -79,7 +79,7 @@ MonoBehaviour:
   - name: Shelving
     sheet: {fileID: 11400000, guid: ecdc8de4009dd8d43ae60dd161e54857, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: AmmoCrate
     sheet: {fileID: 11400000, guid: e8f41bf62621b974a92ea74977a44aaa, type: 2}
@@ -124,7 +124,7 @@ MonoBehaviour:
   - name: Bench
     sheet: {fileID: 11400000, guid: f54465f1109a8cc4ea8027ac14ea7814, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: GunRack
     sheet: {fileID: 11400000, guid: 44a80a78e412f9d45b64d7b6eb571f72, type: 2}
@@ -249,17 +249,17 @@ MonoBehaviour:
   - name: ClothesRack
     sheet: {fileID: 11400000, guid: d0e8fbde0b07f5f42a08beecca2ad423, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: DisplayTable
     sheet: {fileID: 11400000, guid: aa030a43a2345fd469085dc1d1f44eca, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: StoreShelf
     sheet: {fileID: 11400000, guid: 838cdc79ee2c0d9459ab4e849eac3319, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: Checkout
     sheet: {fileID: 11400000, guid: 4f10dbe123a09ce42a802bb91ce1e30e, type: 2}
@@ -269,7 +269,7 @@ MonoBehaviour:
   - name: FoodTable
     sheet: {fileID: 11400000, guid: 4ad124a4042f712458f8158a035672e8, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: FoodCounter
     sheet: {fileID: 11400000, guid: 4d42feab6c579934cb6a1a05ad0cc0a8, type: 2}
@@ -289,7 +289,7 @@ MonoBehaviour:
   - name: Pallet
     sheet: {fileID: 11400000, guid: 26858f0d53f30bf4eb3b83700008ba82, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: StationKitchen
     sheet: {fileID: 11400000, guid: 896dcd29e79fa8743918ecb86edb0eac, type: 2}
@@ -319,7 +319,7 @@ MonoBehaviour:
   - name: PharmacyShelf
     sheet: {fileID: 11400000, guid: 766f76a488368a34fb191e181cea6b06, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: VendingMachine
     sheet: {fileID: 11400000, guid: 04ea9d838e603ed4e9d16e9c462c9edf, type: 2}
@@ -339,7 +339,7 @@ MonoBehaviour:
   - name: GateSeats
     sheet: {fileID: 11400000, guid: 4415649b9e3805342acbb8e7946a3dd1, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: DepartureBoard
     sheet: {fileID: 11400000, guid: 32260a63632639743affa89b62465bb7, type: 2}
@@ -419,7 +419,7 @@ MonoBehaviour:
   - name: Desk
     sheet: {fileID: 11400000, guid: 0ae94594d9eee3a44a9f13bf93a6fd7b, type: 2}
     glow: {fileID: 11400000, guid: ab9365917e015244684fbd058c04437f, type: 2}
-    frames: 1
+    frames: 3
     fps: 0
   - name: FilingCabinet
     sheet: {fileID: 11400000, guid: 9f416779bd5c86141ac44d01a6cb1067, type: 2}
@@ -434,7 +434,7 @@ MonoBehaviour:
   - name: BinderShelf
     sheet: {fileID: 11400000, guid: 0b1af00f33f15b944808fa7bdc52485f, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: LabBench
     sheet: {fileID: 11400000, guid: 4a3473bbf07a1a546b07553b293f3c6d, type: 2}
@@ -494,12 +494,12 @@ MonoBehaviour:
   - name: CubiclePod
     sheet: {fileID: 11400000, guid: 4a065636a21d9ca429576ac0ff858caa, type: 2}
     glow: {fileID: 11400000, guid: bd2d6ad5222831643af6f5626c14f306, type: 2}
-    frames: 1
+    frames: 2
     fps: 0
   - name: MeetingTable
     sheet: {fileID: 11400000, guid: 2bcdd3c783de999428c91181328a2027, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: LabTable
     sheet: {fileID: 11400000, guid: 98ec3f4d6e681704b8e3ce2bd7ce8da9, type: 2}
@@ -509,12 +509,12 @@ MonoBehaviour:
   - name: WorkshopTable
     sheet: {fileID: 11400000, guid: 8365b22d2e24629428f09cf1b6d00520, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: PartsShelf
     sheet: {fileID: 11400000, guid: 39346bda93eaadf4e8f85a1188d80f79, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 2
     fps: 0
   - name: LowBaseStorage3
     sheet: {fileID: 11400000, guid: 6772167d71ed18c4fa546792853373e8, type: 2}
@@ -825,6 +825,56 @@ MonoBehaviour:
     sheet: {fileID: 11400000, guid: a15d1798d9b501a4489f17607633042f, type: 2}
     glow: {fileID: 11400000, guid: 5f5e87edff56a214db2319c1d092a9cd, type: 2}
     frames: 5
+    fps: 0
+  - name: PerfumeCounter
+    sheet: {fileID: 11400000, guid: e020b3fb999d1ff45bb4a80d22ee0175, type: 2}
+    glow: {fileID: 11400000, guid: d9c03ba442e9e6d44b9418f876eec26f, type: 2}
+    frames: 1
+    fps: 0
+  - name: TrolleyCorral
+    sheet: {fileID: 11400000, guid: bb3fe4fe86ace2445bf1fa1819a78deb, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: MallKiosk
+    sheet: {fileID: 11400000, guid: 6349a38a0065f7f4eab9ce96951af230, type: 2}
+    glow: {fileID: 11400000, guid: d4e6f8aa3b5da9742b0da2c1c9a5aaaf, type: 2}
+    frames: 1
+    fps: 0
+  - name: BenchPlanter
+    sheet: {fileID: 11400000, guid: c004790c13741e747ab20a5d37b80de7, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: NurseStation
+    sheet: {fileID: 11400000, guid: 0e63b8ea4bea9c3428b4cbb93f431494, type: 2}
+    glow: {fileID: 11400000, guid: 1c5938a038885fa40b296784a672d4f5, type: 2}
+    frames: 1
+    fps: 0
+  - name: Gurney
+    sheet: {fileID: 11400000, guid: d98813d548e32e847a0d6f358e8497e8, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: SeatBank
+    sheet: {fileID: 11400000, guid: 6a0ffe4a2baddff4dad6be58bc46033a, type: 2}
+    glow: {fileID: 0}
+    frames: 2
+    fps: 0
+  - name: InfoKiosk
+    sheet: {fileID: 11400000, guid: db88e403013caef4d8401e2adaefbf64, type: 2}
+    glow: {fileID: 11400000, guid: e35c86f57fc27c449ba73bf1592ea6ed, type: 2}
+    frames: 2
+    fps: 0.5
+  - name: LuggageTrolleys
+    sheet: {fileID: 11400000, guid: 05334586c7df0d246b340c70e02e66aa, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: LooseCable
+    sheet: {fileID: 11400000, guid: ec8fbf7678c80814ca35570b08e8e9f6, type: 2}
+    glow: {fileID: 11400000, guid: 312076a0f18b59347bfc6eb7ffcba484, type: 2}
+    frames: 1
     fps: 0
   guns:
   - gun: Pistol

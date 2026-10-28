@@ -105,6 +105,17 @@ public partial class FloorGenerator
     private static readonly ThemePiece XRayScannerPiece = new ThemePiece("XRayScanner", 2.2f, 1.6f, 0.9f);
     private static readonly ThemePiece MetalDetectorPiece = new ThemePiece("MetalDetector", 1.2f, 2.3f, 0.6f);
     private static readonly ThemePiece CheckInDeskPiece = new ThemePiece("CheckInDesk", 2.2f, 1.3f, 0.8f);
+    // Islands for the other zones' rooms (sprite only).
+    private static readonly ThemePiece PerfumeCounterPiece = new ThemePiece("PerfumeCounter", 2f, 1.4f, 0.9f);
+    private static readonly ThemePiece TrolleyCorralPiece = new ThemePiece("TrolleyCorral", 2.4f, 1f, 1.2f);
+    private static readonly ThemePiece MallKioskPiece = new ThemePiece("MallKiosk", 1.6f, 2.35f, 1f);
+    private static readonly ThemePiece BenchPlanterPiece = new ThemePiece("BenchPlanter", 2f, 2.1f, 2f);
+    private static readonly ThemePiece NurseStationPiece = new ThemePiece("NurseStation", 2.8f, 1.2f, 1.6f);
+    private static readonly ThemePiece GurneyPiece = new ThemePiece("Gurney", 0.7f, 0.9f, 1.9f);
+    private static readonly ThemePiece SeatBankPiece = new ThemePiece("SeatBank", 2.3f, 1f, 1.1f);
+    private static readonly ThemePiece InfoKioskPiece = new ThemePiece("InfoKiosk", 0.8f, 2f, 0.6f);
+    private static readonly ThemePiece LuggageTrolleysPiece = new ThemePiece("LuggageTrolleys", 2.4f, 1.1f, 0.8f);
+
     // A messy pile of crates, ammo boxes, cardboard and drums (4 columns; lowwalls.py).
     private static readonly ThemePiece CratePilePiece = new ThemePiece("CratePile", 2.4f, 1.3f, 1.2f);
     private static readonly ThemePiece BaggageCartPiece = new ThemePiece("BaggageCart", 2.3f, 1f, 1.1f);
@@ -162,7 +173,21 @@ public partial class FloorGenerator
         }
     }
 
-    // What stands out in the room's quarters, away from the walls (most themes have nothing).
+    // What an unthemed room of the zone has out in the middle: left-behind stores at the base,
+    // kiosks and planters in the mall, gurneys and wheelchairs in the hospital, seats and trolleys
+    // in the airport.
+    private static ThemePiece[] UnthemedIslands(Zone zone)
+    {
+        switch (zone)
+        {
+            case Zone.ShoppingMall: return new[] { MallKioskPiece, BenchPlanterPiece, TrolleyCorralPiece, PlanterPiece };
+            case Zone.Hospital: return new[] { GurneyPiece, GurneyPiece, NurseStationPiece, WheelchairPiece, TrolleyPiece };
+            case Zone.Airport: return new[] { SeatBankPiece, InfoKioskPiece, LuggageTrolleysPiece, PlanterPiece };
+            default: return new[] { CratePilePiece, CratePilePiece, CratePiece, DrumRedPiece, DrumBluePiece, ShelvingPiece };
+        }
+    }
+
+    // What stands out in the room's middle, away from the walls.
     private static ThemePiece[] IslandsFor(RoomTheme theme)
     {
         switch (theme)
@@ -175,21 +200,22 @@ public partial class FloorGenerator
             case RoomTheme.Barracks: return new[] { BunkBedPiece, BunkBedPiece, BenchPiece };
             case RoomTheme.Armoury: return new[] { AmmoCratePiece, CratePiece, CratePilePiece };
             case RoomTheme.Checkpoint: return new[] { CratePilePiece, CratePilePiece, BenchPiece, DrumBluePiece, CratePiece };
-            // Unthemed Military Base rooms (FurnishRoom only asks there): left-behind stores.
-            case RoomTheme.None: return new[] { CratePilePiece, CratePilePiece, CratePiece, DrumRedPiece, DrumBluePiece, ShelvingPiece };
-            case RoomTheme.ShopFloor: return new[] { ClothesRackPiece, ClothesRackPiece, DisplayTablePiece, StoreShelfPiece };
-            case RoomTheme.FoodCourt: return new[] { FoodTablePiece, FoodTablePiece, FoodTablePiece, PlanterPiece };
-            case RoomTheme.StoreRoom: return new[] { PalletPiece, PalletPiece, ShelvingPiece, StoreShelfPiece };
+            case RoomTheme.ShopFloor: return new[] { ClothesRackPiece, ClothesRackPiece, DisplayTablePiece, StoreShelfPiece, PerfumeCounterPiece, MallKioskPiece };
+            case RoomTheme.FoodCourt: return new[] { FoodTablePiece, FoodTablePiece, FoodTablePiece, BenchPlanterPiece };
+            case RoomTheme.StoreRoom: return new[] { PalletPiece, PalletPiece, ShelvingPiece, StoreShelfPiece, TrolleyCorralPiece };
+            case RoomTheme.Entrance: return new[] { BenchPlanterPiece, MallKioskPiece, TrolleyCorralPiece };
             case RoomTheme.SecurityOffice: return new[] { CounterPiece, LockerPiece };
-            case RoomTheme.Ward: return new[] { HospitalBedPiece, HospitalBedPiece, TrolleyPiece, IVStandPiece };
-            case RoomTheme.Theatre: return new[] { OperatingTablePiece, TrolleyPiece, SurgicalLampPiece };
-            case RoomTheme.WaitingRoom: return new[] { BenchPiece, BenchPiece, PlanterPiece, WheelchairPiece };
+            case RoomTheme.Ward: return new[] { HospitalBedPiece, HospitalBedPiece, GurneyPiece, TrolleyPiece, IVStandPiece };
+            case RoomTheme.Theatre: return new[] { OperatingTablePiece, TrolleyPiece, SurgicalLampPiece, GurneyPiece };
+            case RoomTheme.Reception: return new[] { NurseStationPiece, BenchPiece, WheelchairPiece };
+            case RoomTheme.WaitingRoom: return new[] { SeatBankPiece, BenchPiece, PlanterPiece, WheelchairPiece };
             case RoomTheme.Pharmacy: return new[] { PharmacyShelfPiece };
-            case RoomTheme.PatientWing: return new[] { TrolleyPiece, WheelchairPiece, IVStandPiece };
-            case RoomTheme.GateLounge: return new[] { GateSeatsPiece, GateSeatsPiece, PlanterPiece };
-            case RoomTheme.BaggageHall: return new[] { BaggageCarouselPiece, LuggagePiece, BaggageCartPiece };
-            case RoomTheme.SecurityCheck: return new[] { XRayScannerPiece, MetalDetectorPiece, LuggagePiece };
-            case RoomTheme.DutyFree: return new[] { StoreShelfPiece, DisplayTablePiece };
+            case RoomTheme.PatientWing: return new[] { NurseStationPiece, GurneyPiece, TrolleyPiece, WheelchairPiece };
+            case RoomTheme.GateLounge: return new[] { SeatBankPiece, SeatBankPiece, GateSeatsPiece, InfoKioskPiece, PlanterPiece };
+            case RoomTheme.CheckIn: return new[] { SeatBankPiece, InfoKioskPiece, LuggageTrolleysPiece };
+            case RoomTheme.BaggageHall: return new[] { BaggageCarouselPiece, LuggagePiece, BaggageCartPiece, LuggageTrolleysPiece };
+            case RoomTheme.SecurityCheck: return new[] { XRayScannerPiece, MetalDetectorPiece, LuggagePiece, LuggageTrolleysPiece };
+            case RoomTheme.DutyFree: return new[] { StoreShelfPiece, DisplayTablePiece, PerfumeCounterPiece };
             default: return new ThemePiece[0];
         }
     }
@@ -286,8 +312,8 @@ public partial class FloorGenerator
 
         if (pieces.Length == 0)
         {
-            // Unthemed Military Base combat rooms still get stores out in the middle.
-            if (theme == RoomTheme.None && room.Type == RoomType.Normal && Zone == Zone.MilitaryBase)
+            // Unthemed combat rooms still get their zone's things out in the middle.
+            if (theme == RoomTheme.None && room.Type == RoomType.Normal)
                 PlaceIslands(room, theme, doorways, lootPoints, taken);
 
             return RoomTheme.None;
@@ -415,17 +441,40 @@ public partial class FloorGenerator
 
         furniture.AddComponent<Smashable>();
 
+        // Shot at, it reacts: light pieces get shoved, screens and glass smash (some already have).
+        FurnitureDamage damage = FurnitureDamage.Add(furniture);
+
+        if (damage != null && rng.NextDouble() < PreBrokenChance)
+            damage.PreBreak();
+
+        // Now and then a piece is found wrecked: tipped over, collapsed, burnt (its sheet's later columns).
+        if (WreckColumns.TryGetValue(piece.Model, out int wrecks) && rng.NextDouble() < WreckChance)
+            SetColumn(furniture, 1 + rng.Next(wrecks));
+
         // A bed's state (messy, bloodied, bile, stripped, knocked over); bed bays set their own after.
         if (piece.Model == PatientBedPiece.Model)
             SetColumn(furniture, PickBedState());
         else if (piece.Model == CratePilePiece.Model)
             SetColumn(furniture, rng.Next(4));
+        else if (piece.Model == GurneyPiece.Model)
+            SetColumn(furniture, rng.Next(3));
         // Ward and barracks beds: mostly slept in and left a mess, now and then still made up.
         else if (piece.Model == HospitalBedPiece.Model || piece.Model == BunkBedPiece.Model)
             SetColumn(furniture, rng.NextDouble() < 0.15 ? 0 : rng.Next(1, piece.Model == HospitalBedPiece.Model ? 5 : 4));
 
         return furniture;
     }
+
+    private const double WreckChance = 0.22;
+    private const double PreBrokenChance = 0.15;
+
+    // Pieces whose sheets carry wrecked columns after the first (furniture.py variants), and how many.
+    private static readonly Dictionary<string, int> WreckColumns = new Dictionary<string, int>
+    {
+        { "Desk", 2 }, { "MeetingTable", 1 }, { "FoodTable", 1 }, { "DisplayTable", 1 }, { "WorkshopTable", 1 }, { "Shelving", 1 },
+        { "PartsShelf", 1 }, { "StoreShelf", 1 }, { "BinderShelf", 1 }, { "PharmacyShelf", 1 }, { "CubiclePod", 1 },
+        { "Bench", 1 }, { "GateSeats", 1 }, { "SeatBank", 1 }, { "ClothesRack", 1 }, { "Pallet", 1 }
+    };
 
     // Military Base labs had patients too: the patient wing's beds join their wall pieces and islands.
     private ThemePiece[] WithBaseLabBeds(ThemePiece[] pieces, RoomTheme theme)

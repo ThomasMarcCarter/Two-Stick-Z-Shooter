@@ -263,6 +263,40 @@ public partial class FloorGenerator
         HideIfSouth(CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end, inward, after), south);
         CreateDoorFrame(room.transform, alongX, across, middle, new Vector3(-direction.x, 0f, -direction.y));
         CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
+        CreateThreshold(room.transform, alongX, across, middle, direction);
+    }
+
+    // A steel tread-plate threshold across a doorway (the theme floors' DiamondPlate), over the
+    // gap the wall leaves and a little way into the room, so wherever the corridor's deck meets a
+    // room's own floor there's a clean edge instead of a seam. `direction` points out of the room.
+    private void CreateThreshold(Transform parent, bool alongX, float across, float middle, Vector2Int direction)
+    {
+        Material plate = SpriteVisuals.Current != null ? SpriteVisuals.Current.ThemeFloor("DiamondPlate") : null;
+
+        if (plate == null)
+            return;
+
+        const float into = 0.12f;
+        float depth = wallThickness + into + 0.08f;
+        float centre = across + (direction.x + direction.y) * (0.04f - into / 2f);
+        float width = doorWidth + 0.1f;
+
+        GameObject threshold = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        threshold.name = "Door Threshold";
+        Destroy(threshold.GetComponent<Collider>());
+        threshold.transform.SetParent(parent, false);
+        threshold.transform.position = alongX ? new Vector3(middle, 0.008f, centre) : new Vector3(centre, 0.008f, middle);
+        threshold.transform.rotation = Quaternion.Euler(90f, alongX ? 0f : 90f, 0f);
+        threshold.transform.localScale = new Vector3(width, depth, 1f);
+
+        Renderer renderer = threshold.GetComponent<Renderer>();
+        renderer.sharedMaterial = plate;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // The quad's UVs span it once: scale them so the plate's pattern is at the floors' size (8 m a tile).
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        block.SetVector("_BaseMap_ST", new Vector4(width / 8f, depth / 8f, 0f, 0f));
+        renderer.SetPropertyBlock(block);
     }
 
     // A worn yellow-and-black stripe painted on the floor across a doorway, on the room side.

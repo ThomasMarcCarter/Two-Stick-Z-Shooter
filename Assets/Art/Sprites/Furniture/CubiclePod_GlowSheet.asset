@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: CubiclePod_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: d6aeff75aa40f4243a8ca2004918187f, type: 3}
-  frameWidth: 64
+  frameWidth: 82
   frameHeight: 77
-  pivot: {x: 32, y: 1}
+  pivot: {x: 41, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

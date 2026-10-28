@@ -31,6 +31,9 @@ public class FurnitureSprite : MonoBehaviour
     private int shownColumn = -1;
     private float phase;
     private float lift;             // metres off the floor
+    private string entryName;
+    private Vector3 builtFront;
+    private Vector3 builtSize;
 
     // Whether the sprite art has a sheet for this name.
     public static bool Has(string name)
@@ -69,12 +72,49 @@ public class FurnitureSprite : MonoBehaviour
         }
     }
 
+    // Smashed (a run's screens and glass, FurnitureDamage): the same second set of rows, drawn
+    // broken for those pieces (Tools/Sprites/furniture.py ALTS) instead of dusty.
+    public bool Broken
+    {
+        get => secondRows;
+        set => Dusty = value;
+    }
+
+    // Whether this piece's second rows are drawn broken rather than dusty.
+    public bool CanBreak => entryName != null && FurnitureDamage.HasBrokenArt(entryName);
+
+    // Redrawn as another sheet where it stands now (a chair knocked over), keeping its facing,
+    // size and lift. False without a sheet for the name.
+    public bool Swap(string name)
+    {
+        SpriteVisuals.FurnitureEntry entry = SpriteVisuals.Current != null ? SpriteVisuals.Current.ForFurniture(name) : null;
+
+        if (entry == null)
+            return false;
+
+        if (sprite != null)
+            Destroy(sprite.gameObject);
+
+        if (glow != null)
+            Destroy(glow.gameObject);
+
+        sprite = null;
+        glow = null;
+        column = 0;
+        Build(entry, builtFront, builtSize, new Vector3(transform.position.x, lift, transform.position.z));
+        entryName = name;
+        return true;
+    }
+
     // Open (the survivor's cage once freed): the same second set of rows.
     public bool Open
     {
         get => secondRows;
         set => Dusty = value;
     }
+
+    // The glowing layer's renderer (screens, lamps), or null when the piece has none.
+    public Renderer GlowRenderer => glow != null ? glow.Renderer : null;
 
     // How many frames (or, for a still piece, variants) its row holds.
     public int Frames => frames;
@@ -95,6 +135,9 @@ public class FurnitureSprite : MonoBehaviour
 
     private void Build(SpriteVisuals.FurnitureEntry entry, Vector3 front, Vector3 size, Vector3 floorCentre)
     {
+        entryName = entry.name;
+        builtFront = front;
+        builtSize = size;
         frames = Mathf.Max(1, entry.frames);
         fps = entry.fps;
         phase = Random.value * 10f;

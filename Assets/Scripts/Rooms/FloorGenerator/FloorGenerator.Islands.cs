@@ -30,7 +30,7 @@ public partial class FloorGenerator
 
     private void PlaceIslands(Room room, RoomTheme theme, List<Vector3> doorways, List<Vector3> lootPoints, List<Vector3> taken)
     {
-        ThemePiece[] islands = WithBaseLabBeds(IslandsFor(theme), theme);
+        ThemePiece[] islands = theme == RoomTheme.None ? UnthemedIslands(Zone) : WithBaseLabBeds(IslandsFor(theme), theme);
 
         if (islands.Length == 0)
             return;

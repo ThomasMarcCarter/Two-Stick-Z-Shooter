@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ClothesRackSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: d5501da93c02bd0469e15ca6d4a7f359, type: 3}
-  frameWidth: 36
+  frameWidth: 48
   frameHeight: 53
-  pivot: {x: 18, y: 1}
+  pivot: {x: 24, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: dbc686234f8f1ae43981eb928601d114, type: 3}
   frameWidth: 52
-  frameHeight: 57
+  frameHeight: 63
   pivot: {x: 26, y: 1}
   pixelsPerUnit: 20
   clips:

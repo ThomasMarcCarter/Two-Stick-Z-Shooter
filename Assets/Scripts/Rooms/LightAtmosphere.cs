@@ -68,6 +68,19 @@ public static class LightAtmosphere
     // Emitted on demand: a burst falling out of the tube, bouncing once off the floor.
     private static ParticleSystem AddSparks(Transform light, Material pixel)
     {
+        return Sparks(light, pixel, new Vector3(light.position.x, 0f, light.position.z));
+    }
+
+    // A shower of sparks to Emit from `parent` (out along its forward, falling), bouncing on the
+    // floor; null without the pixel particle material. Also the sparking cables (SparkingCable).
+    public static ParticleSystem Sparks(Transform parent)
+    {
+        Material pixel = SpriteVisuals.Current != null ? SpriteVisuals.Current.particle : null;
+        return pixel != null ? Sparks(parent, pixel, new Vector3(parent.position.x, 0f, parent.position.z)) : null;
+    }
+
+    private static ParticleSystem Sparks(Transform light, Material pixel, Vector3 floorPoint)
+    {
         ParticleSystem sparks = NewSystem("Sparks", light, pixel);
 
         ParticleSystem.MainModule main = sparks.main;
@@ -92,7 +105,7 @@ public static class LightAtmosphere
 
         Transform floor = new GameObject("Floor").transform;
         floor.SetParent(sparks.transform, false);
-        floor.position = new Vector3(light.position.x, 0f, light.position.z);
+        floor.position = floorPoint;
         floor.rotation = Quaternion.identity;
         ParticleSystem.CollisionModule collision = sparks.collision;
         collision.enabled = true;

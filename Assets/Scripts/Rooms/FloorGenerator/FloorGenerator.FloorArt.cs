@@ -71,7 +71,82 @@ public partial class FloorGenerator
         Transform floor = material != null ? room.transform.Find("Floor Mesh") : null;
 
         if (floor != null && floor.TryGetComponent(out Renderer renderer))
+        {
             renderer.sharedMaterial = material;
+            BuildFloorBorder(room, material);
+        }
+    }
+
+    private const float FloorBorderWidth = 0.5f;       // 8 px of the 16 px/m floor
+    private static readonly Color FloorBorderShade = new Color(0.45f, 0.43f, 0.41f, 1f);
+
+    // A band of the room's own floor, darkened, round its edge (gaps at the doorways), so a
+    // patterned floor reads as laid with border tiles rather than just running into the walls.
+    private void BuildFloorBorder(Room room, Material material)
+    {
+        List<Vector3> doors = DoorwayPositions(room);
+        KitMesh mesh = new KitMesh();
+        Vector3 origin = room.transform.position;
+        float size = floorTextureSize > 0f ? floorTextureSize : 4f;
+        float gap = doorWidth / 2f + 0.1f;
+
+        foreach (RoomEdge edge in room.Outline)
+        {
+            Vector2 along = edge.To - edge.From;
+            float length = along.magnitude;
+
+            if (length < 0.01f)
+                continue;
+
+            along /= length;
+            Vector2 inward = -edge.Outward.normalized;
+
+            // The edge less any doorway on it.
+            List<Vector2> spans = new List<Vector2> { new Vector2(0f, length) };
+
+            foreach (Vector3 door in doors)
+            {
+                Vector2 d = new Vector2(door.x, door.z) - edge.From;
+                float t = Vector2.Dot(d, along);
+
+                if (Mathf.Abs(d.x * along.y - d.y * along.x) > 0.8f || t < -gap || t > length + gap)
+                    continue;
+
+                List<Vector2> cut = new List<Vector2>();
+
+                foreach (Vector2 span in spans)
+                {
+                    if (t - gap > span.x) cut.Add(new Vector2(span.x, Mathf.Min(span.y, t - gap)));
+                    if (t + gap < span.y) cut.Add(new Vector2(Mathf.Max(span.x, t + gap), span.y));
+                }
+
+                spans = cut;
+            }
+
+            foreach (Vector2 span in spans)
+            {
+                if (span.y - span.x < 0.05f)
+                    continue;
+
+                Vector2 a = edge.From + along * span.x, b = edge.From + along * span.y;
+                Vector2 c = b + inward * FloorBorderWidth, d2 = a + inward * FloorBorderWidth;
+                Vector3 A = new Vector3(a.x, 0.002f, a.y), B = new Vector3(b.x, 0.002f, b.y), C = new Vector3(c.x, 0.002f, c.y), D = new Vector3(d2.x, 0.002f, d2.y);
+                mesh.Quad(A - origin, B - origin, C - origin, D - origin, a / size, b / size, c / size, d2 / size, Vector3.up);
+            }
+        }
+
+        GameObject border = new GameObject("Floor Border");
+        border.transform.SetParent(room.transform, false);
+        Mesh built = mesh.Build("Floor Border");
+        floorMeshes.Add(built);
+        border.AddComponent<MeshFilter>().sharedMesh = built;
+        MeshRenderer renderer = border.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = material;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        block.SetColor("_BaseColor", FloorBorderShade);
+        renderer.SetPropertyBlock(block);
     }
 
     private static string ThemeFloorName(RoomTheme theme)

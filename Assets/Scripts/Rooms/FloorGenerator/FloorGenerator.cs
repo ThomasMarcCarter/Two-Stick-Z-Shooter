@@ -377,6 +377,7 @@ public partial class FloorGenerator : MonoBehaviour
 
     private void Awake()
     {
+        Gun.Fired += OnGunFired;
         UseSpriteArt();
         Prop.LitterPrefabs = floorLitter;
         EnemySenses.Use(enemySenses);
@@ -569,8 +570,10 @@ public partial class FloorGenerator : MonoBehaviour
         DressLowWalls(room, theme);
         DecorateWalls(room, theme);
         PaintFloor(room, theme);
+        AddRoomLife(room, theme);
         SpawnClutter(room);
         SpawnTrash(room);
+        AddDraught(room);
         List<Vector3> placed = SpawnEnemies(room);
         SpawnTreasureCrate(room);
         placed.AddRange(lootFloorPoints);
@@ -766,6 +769,8 @@ public partial class FloorGenerator : MonoBehaviour
 
     private void OnDestroy()
     {
+        Gun.Fired -= OnGunFired;
+
         if (navMesh.valid)
             navMesh.Remove();
     }
