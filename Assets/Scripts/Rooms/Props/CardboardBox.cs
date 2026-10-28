@@ -22,6 +22,10 @@ public class CardboardBox : MonoBehaviour
     private int damage;
     private bool broken;
 
+    // The clutter sprite its remains are drawn as: a flattened box, or a zone item's own
+    // (ZoneClutter: a burst suitcase's clothes, a smashed crate's splinters).
+    public string RemainsName { get; set; } = "Box_Flattened";
+
     // Set when it's placed: the room it belongs to (remains go there too).
     public Transform Room { get; set; }
 
@@ -125,7 +129,7 @@ public class CardboardBox : MonoBehaviour
             foreach (Collider part in remains.GetComponentsInChildren<Collider>())
                 Destroy(part);
 
-            ClutterSprites.DressAs(remains, "Box_Flattened");
+            ClutterSprites.DressAs(remains, RemainsName);
         }
 
         Destroy(gameObject);

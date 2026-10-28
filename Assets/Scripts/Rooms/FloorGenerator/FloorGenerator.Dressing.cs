@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The FloorGenerator's set dressing: cardboard box clusters against walls and in corners,
-// pillars in the bigger rooms and the overhead lights (trash is in FloorGenerator.Trash.cs).
+// The FloorGenerator's set dressing: cardboard box clusters against walls and in corners (or, by
+// the zone's ZoneClutter kit, its own things in their place), pillars in the bigger rooms and the
+// overhead lights (trash is in FloorGenerator.Trash.cs).
 // All kept clear of doorways and the middle of each cell, so rooms stay walkable.
 public partial class FloorGenerator
 {
@@ -128,7 +129,8 @@ public partial class FloorGenerator
     // Flattened sheets lying about on the floor, to walk over.
     private void PlaceFlattenedSheets(Room room, Vector3 centre, RoomSpots spots)
     {
-        int sheets = flattenedBox != null ? rng.Next(flattenedPerCell.x, flattenedPerCell.y + 1) : 0;
+        // Fewer where there are fewer boxes about.
+        int sheets = flattenedBox != null ? Mathf.RoundToInt(rng.Next(flattenedPerCell.x, flattenedPerCell.y + 1) * ZoneClutter.For(Zone).SheetShare) : 0;
 
         for (int f = 0; f < sheets; f++)
         {
@@ -141,7 +143,9 @@ public partial class FloorGenerator
                 continue;
 
             GameObject flat = Instantiate(flattenedBox, sheet, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f), room.transform);
-            flat.transform.localScale = Vector3.one * RandomRange(flattenedScale.x, flattenedScale.y);
+            // About a box's size across: the pack's sheet is nearly 3 m.
+            Vector3 size = LocalSize(flat);
+            flat.transform.localScale = Vector3.one * RandomRange(flattenedScale.x, flattenedScale.y) / Mathf.Max(size.x, size.z);
 
             // A hair apart in height, so overlapping sheets don't flicker against each other.
             flat.transform.position += Vector3.up * RandomRange(0f, 0.01f);
@@ -159,6 +163,15 @@ public partial class FloorGenerator
     private void PlaceCluster(Room room, Vector3 spot, Vector3 outward, Vector3 along)
     {
         Quaternion facing = Quaternion.LookRotation(-outward);
+        ZoneClutter.Kit kit = ZoneClutter.For(Zone);
+
+        // Away from the base, mostly the zone's own things instead (a trolley, a wheelchair, a suitcase).
+        if (rng.NextDouble() >= kit.BoxShare)
+        {
+            PlaceZoneItem(room.transform, kit.Clusters[rng.Next(kit.Clusters.Length)], spot, facing * Quaternion.Euler(0f, RandomRange(-12f, 12f), 0f));
+            return;
+        }
+
         GameObject first = PlaceBox(room.transform, PickBox(), spot, facing * Quaternion.Euler(0f, RandomRange(-12f, 12f), 0f));
 
         if (first == null)
@@ -255,20 +268,23 @@ public partial class FloorGenerator
     // Within distance of the straight route from any doorway to the middle of the cell.
     private static bool NearDoorRoute(Vector3 point, Vector3 centre, List<Vector3> doorways, float distance)
     {
-        Vector2 p = new Vector2(point.x, point.z);
-        Vector2 c = new Vector2(centre.x, centre.z);
-
         foreach (Vector3 door in doorways)
         {
-            Vector2 d = new Vector2(door.x, door.z);
-            Vector2 route = c - d;
-            float t = Mathf.Clamp01(Vector2.Dot(p - d, route) / Mathf.Max(0.0001f, route.sqrMagnitude));
-
-            if (Vector2.Distance(p, d + route * t) < distance)
+            if (NearSegment(point, door, centre, distance))
                 return true;
         }
 
         return false;
+    }
+
+    // Within distance of the straight line from a to b, on the floor.
+    private static bool NearSegment(Vector3 point, Vector3 a, Vector3 b, float distance)
+    {
+        Vector2 p = new Vector2(point.x, point.z);
+        Vector2 d = new Vector2(a.x, a.z);
+        Vector2 route = new Vector2(b.x, b.z) - d;
+        float t = Mathf.Clamp01(Vector2.Dot(p - d, route) / Mathf.Max(0.0001f, route.sqrMagnitude));
+        return Vector2.Distance(p, d + route * t) < distance;
     }
 
     // How far litter keeps from the hatch's middle: its sprite is HatchOpening + 0.6 m across, so

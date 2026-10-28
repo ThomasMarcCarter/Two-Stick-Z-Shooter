@@ -130,7 +130,10 @@ public partial class FloorGenerator
         Vector3 centre = HallCentre;
         Transform parent = hall.transform;
 
-        BuildDeployHatch(hall, centre + new Vector3(0f, 0f, 2.5f));
+        // The way out: the deploy hatch, or (the Hospital, the Airport) automatic doors in the north
+        // wall, built with the rest of the zone's dressing below.
+        if (!HideoutHasWallExit)
+            BuildDeployHatch(hall, centre + new Vector3(0f, 0f, 2.5f));
         BuildGeneratorCorner(parent, centre + new Vector3(-4.5f, 0f, HallHalf.y - 1f));
 
         // The intel desk east of the hatch: a planning table with a lit map and the radio (the

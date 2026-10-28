@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: HospitalBedSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 76acb435b39e53640a61ec60e858b1bc, type: 3}
-  frameWidth: 44
+  frameWidth: 52
   frameHeight: 51
-  pivot: {x: 22, y: 1}
+  pivot: {x: 26, y: 1}
   pixelsPerUnit: 20
   clips:
   - name: idle

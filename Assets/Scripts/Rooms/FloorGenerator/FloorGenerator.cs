@@ -119,7 +119,8 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private Vector2 boxScale = new Vector2(1.4f, 1.8f);
     [Tooltip("No box comes out bigger than this along its longest side, in metres (the big models at the top of the scale range were huge).")]
     [SerializeField] private float maxBoxSize = 1.1f;
-    [SerializeField] private Vector2 flattenedScale = new Vector2(0.8f, 1.3f);
+    [Tooltip("How far across a flattened cardboard sheet on the floor is, in metres.")]
+    [SerializeField] private Vector2 flattenedScale = new Vector2(0.6f, 1f);
     [Tooltip("Friction for boxes, so they don't skate when shoved.")]
     [SerializeField] private PhysicsMaterial boxPhysics;
     [Tooltip("How far enemies and crates spawn from a group of boxes.")]
@@ -130,8 +131,10 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private GameObject[] floorLitter = new GameObject[0];
     [Tooltip("Small things that get knocked about: cans, bottles, cups, bags.")]
     [SerializeField] private GameObject[] smallTrash = new GameObject[0];
-    [Tooltip("Big pieces: cinder blocks, tyres, trash bags.")]
+    [Tooltip("Big pieces: trash bags (the tyres were taken out: huge and out of place).")]
     [SerializeField] private GameObject[] largeTrash = new GameObject[0];
+    [Tooltip("Fixed cover the zones' big items are built on (ZoneClutter's \"Wheel_1\"); never placed as itself.")]
+    [SerializeField] private GameObject coverStandIn;
     [SerializeField] private Vector2Int litterPerCell = new Vector2Int(8, 14);
     [SerializeField] private Vector2Int smallTrashPerCell = new Vector2Int(6, 12);
     [SerializeField] private Vector2Int largeTrashPerCell = new Vector2Int(1, 2);
@@ -216,6 +219,10 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float roomThemeChance = 0.7f;
     [Tooltip("Furniture pieces per cell of a themed room (min, max).")]
     [SerializeField] private Vector2Int furniturePerCell = new Vector2Int(1, 3);
+    [Tooltip("Chance each quarter of a cell gets an island (cubicles, lab or work table) in themes that have them.")]
+    [SerializeField, Range(0f, 1f)] private float islandChance = 0.6f;
+    [Tooltip("Chance each parking bay of a Military Base storage room has a car parked in it.")]
+    [SerializeField, Range(0f, 1f)] private float carChance = 0.55f;
     [Header("Room Cleared Sound")]
     [Tooltip("Played when the last enemy in a room dies. Leave empty to use a generated chime.")]
     [SerializeField] private AudioClip roomClearedSound;
@@ -475,6 +482,7 @@ public partial class FloorGenerator : MonoBehaviour
             runZone = MetaProgress.ChosenZone;
 
         UseZoneArt();
+        UseZoneClutter();
 
         if (IsHideout)
         {
@@ -558,6 +566,7 @@ public partial class FloorGenerator : MonoBehaviour
     {
         List<Vector3> lootFloorPoints = SpawnLoot(room);
         RoomTheme theme = FurnishRoom(room);
+        DressLowWalls(room, theme);
         DecorateWalls(room, theme);
         PaintFloor(room, theme);
         SpawnClutter(room);

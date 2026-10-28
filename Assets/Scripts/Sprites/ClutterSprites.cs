@@ -4,7 +4,8 @@ using UnityEngine;
 // and litter), and how to size it to the prop (Tools/Sprites/clutter.py draws each item filling
 // its frame's width or height). Boxes and big trash stand upright and cast shadows; small trash
 // stands upright without, and shows its knocked-over frame (row 1) when the prop is lying down;
-// litter, sheets, planks and tyres lie flat on the floor.
+// litter, sheets, planks and tyres lie flat on the floor. Each zone's own clutter ("Zone_...")
+// is looked up in ZoneClutter.
 public static class ClutterSprites
 {
     // With the sprite art: the prop drawn as its clutter sprite, its colliders and physics as
@@ -66,6 +67,10 @@ public static class ClutterSprites
     {
         string name = prefabName.Replace("(Clone)", "").Trim();
         entry = default;
+
+        // A zone's own clutter (ZoneClutter).
+        if (name.StartsWith("Zone_"))
+            return ZoneClutter.TryFind(name, out entry);
 
         // Lying flat.
         int flat = FlatFrame(name);

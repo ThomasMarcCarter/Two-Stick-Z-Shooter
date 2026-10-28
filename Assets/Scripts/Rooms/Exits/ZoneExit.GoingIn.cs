@@ -126,6 +126,47 @@ public partial class ZoneExit
         done?.Invoke();
     }
 
+    // Out through a hideout's doors (HideoutDoor): the player walks up to them, they open (the
+    // shutter rolls up; automatic doors are open already), the player goes on through and is
+    // hidden past them, they shut behind, then `done` (the transition).
+    public static IEnumerator WalkOut(Transform player, Vector3 entry, HideoutDoor door, Action done)
+    {
+        Descending = true;
+        Rigidbody body = player.GetComponent<Rigidbody>();
+        bool gravity = body != null && body.useGravity;
+
+        if (body != null)
+        {
+            body.useGravity = false;
+            body.detectCollisions = false;
+            body.linearVelocity = Vector3.zero;
+        }
+
+        restore = () =>
+        {
+            if (player == null)
+                return;
+
+            if (body != null)
+            {
+                body.useGravity = gravity;
+                body.detectCollisions = true;
+            }
+
+            Show(player, true);
+        };
+
+        float rest = player.position.y;
+        yield return Move(player, body, new Vector3(entry.x, rest, entry.z), WalkSpeed);
+        door.Open();
+        yield return new WaitForSeconds(door.OpenTime);
+        yield return Move(player, body, new Vector3(door.Inside.x, rest, door.Inside.z), WalkSpeed * 0.8f);
+        Show(player, false);
+        door.Shut();
+        yield return new WaitForSeconds(0.7f);
+        done?.Invoke();
+    }
+
     // The player's body moved by hand to a point at a speed (metres a second).
     private static IEnumerator Move(Transform player, Rigidbody body, Vector3 target, float speed)
     {

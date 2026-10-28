@@ -53,7 +53,8 @@ public class Prop : MonoBehaviour
     private PhysicsMaterial physicsMaterial;
     private Rigidbody tipBody;
 
-    public Surface Material => surface;
+    // Set when a zone's item is built on this prop (ZoneClutter), so it sounds like what it is.
+    public Surface Material { get => surface; set => surface = value; }
 
     // Once it's placed and sized: a body if it's pushable, a gap in the navmesh if it's big
     // enough for the zombies to need to go round it.

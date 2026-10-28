@@ -10,9 +10,12 @@ using UnityEngine;
 // reason (`Blocked`, e.g. the truck part still on its shelf), which its label shows.
 // In a boss room on a run the way down is the zone's own (ZoneExit: a stairwell, an escalator, a
 // lift, a baggage chute) instead of a hatch: this sits in front of it, locked until the boss is
-// dead and usable once it's open, and Interact walks the player in before the floor changes.
+// dead and open once it's ready, and the player just walks into it (no Interact; its label, shown
+// once the boss is dead, has no key on it): it takes over and walks them in before the floor changes.
 // Down a hatch the player climbs: onto it, back to the camera, down the ladder through the floor
-// (ZoneExit.ClimbDown).
+// (ZoneExit.ClimbDown). The Mall's, the Hospital's and the Airport's hideouts have a shutter or
+// automatic doors in the wall instead (HideoutDoor): walking into them walks the player out
+// (ZoneExit.WalkOut), the same way.
 public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 {
     public enum Kind
@@ -41,7 +44,13 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     public float Reach => kind == Kind.Extraction ? 1.8f : 2.1f;
     public bool CanTake => !used && Armed && !StationScreen.IsOpen && BlockedReason == null;
 
+    private const float WalkInDistance = 0.75f;
+
     private ZoneExit zoneExit;
+    private HideoutDoor hideoutDoor;
+
+    // Used by walking into it (a zone exit, a hideout's doors), not Interact: no label either.
+    private bool WalksIn => zoneExit != null || hideoutDoor != null;
 
     private bool Armed => zoneExit != null ? zoneExit.IsOpen : Time.time >= openedAt + armDelay;
     private string BlockedReason => Blocked?.Invoke();
@@ -75,11 +84,21 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     {
         zoneExit = exit;
         Initialise(owner, Kind.NextFloor, 0f, null);
+        FloorPickups.Unregister(this);
+    }
+
+    // In front of a hideout's automatic doors (HideoutDoor), the way out into the zone.
+    public void Initialise(FloorGenerator owner, HideoutDoor door)
+    {
+        hideoutDoor = door;
+        Initialise(owner, Kind.NextFloor, 0f, null);
+        FloorPickups.Unregister(this);
     }
 
     private void OnEnable()
     {
-        FloorPickups.Register(this);
+        if (!WalksIn)
+            FloorPickups.Register(this);
     }
 
     private void OnDisable()
@@ -114,14 +133,17 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 
         Vector3 offset = playerWeapon.transform.position - transform.position;
         offset.y = 0f;
-        bool showLabel = !used && offset.magnitude <= Reach + 2.5f && !StationScreen.IsOpen;
+
+        // Walked-into exits still say what they are (in a boss room only once the boss is dead),
+        // just without a key to press.
+        bool showLabel = !used && offset.magnitude <= Reach + 2.5f && !StationScreen.IsOpen && (zoneExit == null || zoneExit.Unlocked);
 
         if (showLabel && !label.IsShowing)
             label.Show(LabelText, UiColours.Phosphor);
         else if (!showLabel && label.IsShowing)
             label.Hide();
 
-        if (FloorPickups.Pressed(this, playerWeapon))
+        if (WalksIn ? offset.magnitude <= WalkInDistance && CanTake && !GameFlow.InputBlocked : FloorPickups.Pressed(this, playerWeapon))
             Use();
     }
 
@@ -150,7 +172,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
 
     private string LabelText()
     {
-        string action = $"<size=80%><color=#FFFFFF>{InputHint.Format("[{Interact}]")} ";
+        string action = WalksIn ? "<size=80%><color=#FFFFFF>WALK IN: " : $"<size=80%><color=#FFFFFF>{InputHint.Format("[{Interact}]")} ";
 
         if (kind == Kind.Extraction)
         {
@@ -161,6 +183,9 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
                 ? header + $"<size=70%><color={UiColours.DangerHex}>{blocked}</color></size>"
                 : header + action + "CLIMB OUT AND HEAD HOME</color></size>";
         }
+
+        if (floor != null && floor.IsHideout && hideoutDoor != null)
+            return $"WAY OUT  <size=70%><alpha=#99>// {floor.ZoneName} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
 
         if (floor != null && floor.IsHideout)
             return $"DEPLOY HATCH  <size=70%><alpha=#99>// {floor.ZoneName} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
@@ -187,7 +212,9 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         used = true;
         label.Hide();
 
-        if (zoneExit != null && playerWeapon != null)
+        if (hideoutDoor != null && playerWeapon != null)
+            StartCoroutine(ZoneExit.WalkOut(playerWeapon.transform, transform.position, hideoutDoor, () => floor.UseExit(kind)));
+        else if (zoneExit != null && playerWeapon != null)
             zoneExit.Use(playerWeapon.transform, () => floor.UseExit(kind));
         else if (kind == Kind.NextFloor && playerWeapon != null)
             StartCoroutine(ZoneExit.ClimbDown(playerWeapon.transform, transform.position, () => floor.UseExit(kind)));

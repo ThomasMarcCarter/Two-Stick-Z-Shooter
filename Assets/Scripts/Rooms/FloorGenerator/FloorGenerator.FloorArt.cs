@@ -1,24 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Floor decals: markings painted on the room floors and the mess left on them. Now and then a
-// cell gets one of its theme's markings (bay lines and KEEP CLEAR boxes in a storage room, a
-// compass star inlaid on a shop floor, coloured wayfinding lines across a hospital ward, WAIT HERE
-// lines at a security check...) and, separately, some of its zone's mess (RoomKits.FloorGrime:
-// rubble and oil on the base, shattered shop glass in the mall, spilt pills in the hospital,
-// trodden paper in the airport, and blood and cracks everywhere); boss arenas get blood and scorch marks clear of the painted
-// arena ring. Each is a flat 3 x 3 m quad just above the floor, turned a random quarter turn
-// (ones with writing on stay the right way up), on
-// the floor texture's pixel grid (16 px per metre; Tools/Sprites/floordecals.py), lit like the
-// floor and under everything else on it (blood, litter, door stripes). Kept off doorways, the
-// hatch and each other. Uses the wall decals' random sequence (FloorGenerator.WallArt.cs), so
-// the rest of the floor comes out the same for a seed.
+// Floor decals: one-off things on the room floors and the mess left on them. The room's painted
+// lines, tape and carpets are laid first (FloorGenerator.FloorLines.cs); then now and then a cell
+// gets one of its theme's own marks (an oil stain in a workshop, a spilt drink in a food court,
+// a biohazard spill in a lab), a few themes get a fixture in each cell's middle (an inlaid star on
+// a mall entrance floor, a drain in an operating theatre) and, separately, some of its zone's
+// mess (RoomKits.FloorGrime: rubble and oil on the base, shattered shop glass in the mall, spilt
+// pills in the hospital, trodden paper in the airport, and blood and cracks everywhere); boss
+// arenas get blood and scorch marks clear of the painted arena ring. Each is a flat 3 x 3 m quad
+// just above the floor, turned a random quarter turn, on the floor texture's pixel grid (16 px
+// per metre; Tools/Sprites/floordecals.py), lit like the floor and under everything else on it
+// (blood, litter, door stripes). Kept off doorways, the hatch and each other. Uses the wall
+// decals' random sequence (FloorGenerator.WallArt.cs), so the rest of the floor comes out the
+// same for a seed.
 public partial class FloorGenerator
 {
     [Header("Floor Decals")]
     [Tooltip("URP Lit, alpha clipped, FloorDecals.png as the base map. Empty = no floor decals.")]
     [SerializeField] private Material floorDecalMaterial;
-    [Tooltip("Chance a cell gets one of its theme's floor markings.")]
+    [Tooltip("Chance a cell gets one of its theme's own floor marks.")]
     [Range(0f, 1f)]
     [SerializeField] private float themeFloorDecalChance = 0.45f;
     [Tooltip("Chance a cell gets some mess on the floor (oil, cracks, scorches, blood).")]
@@ -34,60 +35,93 @@ public partial class FloorGenerator
     private static readonly string[] FloorDecalNames =
     {
         "OilStain", "Drain", "FloorCrack", "Scorch", "BloodDrag", "BloodyPrints", "Puddle",
-        "BayLines", "HazardBox", "FloorArrow", "HelipadH",
-        "MallStar", "SpiltDrink", "WetFootprints",
-        "Wayfinding", "WayfindingTurn", "BiohazardSpill",
-        "QueueLine", "GateNumber",
+        "MallStar", "SpiltDrink", "WetFootprints", "BiohazardSpill",
         "Rubble", "TileDamage", "ShatteredGlass", "ScatteredPills", "PaperScatter"
     };
 
     private static readonly string[] BossFloorDecals = { "BloodDrag", "BloodDrag", "BloodyPrints", "Scorch", "FloorCrack" };
 
-    // Ones with writing on, kept the right way up to the camera instead of turned at random.
-    private static readonly string[] UprightFloorDecals = { "BayLines", "HazardBox", "QueueLine", "GateNumber", "HelipadH", "Wayfinding" };
-
-    // What a theme paints on its floor (empty: nothing but mess). Unthemed rooms get the zone's.
-    private string[] ThemeFloorDecals(RoomTheme theme)
+    // A theme's own marks, scattered (empty: nothing but the zone's mess).
+    private static string[] ThemeFloorDecals(RoomTheme theme)
     {
         switch (theme)
         {
-            case RoomTheme.Storage: return new[] { "BayLines", "BayLines", "HazardBox", "FloorArrow" };
-            case RoomTheme.Workshop: return new[] { "OilStain", "HazardBox", "BayLines", "Drain" };
-            case RoomTheme.Infirmary: return new[] { "Drain", "Puddle" };
-            case RoomTheme.Armoury: return new[] { "HazardBox", "FloorArrow" };
-            case RoomTheme.Checkpoint: return new[] { "HazardBox", "FloorArrow", "HelipadH" };
-            case RoomTheme.Lab: return new[] { "BiohazardSpill", "Drain", "HazardBox" };
-            case RoomTheme.ShopFloor: return new[] { "MallStar", "SpiltDrink", "WetFootprints" };
+            case RoomTheme.Workshop: return new[] { "OilStain", "OilStain", "Drain" };
+            case RoomTheme.Storage:
+            case RoomTheme.BaggageHall: return new[] { "OilStain" };
+            case RoomTheme.Infirmary: return new[] { "Puddle", "Drain" };
+            case RoomTheme.PatientWing: return new[] { "BloodDrag", "BloodyPrints", "ScatteredPills", "Puddle" };
+            case RoomTheme.Lab: return new[] { "BiohazardSpill", "Drain" };
+            case RoomTheme.Theatre: return new[] { "BiohazardSpill" };
             case RoomTheme.FoodCourt: return new[] { "SpiltDrink", "SpiltDrink", "WetFootprints" };
-            case RoomTheme.StoreRoom: return new[] { "BayLines", "FloorArrow", "HazardBox" };
-            case RoomTheme.Entrance: return new[] { "MallStar", "WetFootprints" };
-            case RoomTheme.Ward:
-            case RoomTheme.WaitingRoom:
-            case RoomTheme.Reception: return new[] { "Wayfinding", "Wayfinding", "Drain" };
-            case RoomTheme.Theatre: return new[] { "Drain", "BiohazardSpill", "Wayfinding" };
-            case RoomTheme.Pharmacy: return new[] { "Wayfinding" };
-            case RoomTheme.GateLounge: return new[] { "GateNumber", "QueueLine" };
-            case RoomTheme.BaggageHall: return new[] { "FloorArrow", "HazardBox" };
-            case RoomTheme.SecurityCheck: return new[] { "QueueLine", "QueueLine", "FloorArrow" };
-            case RoomTheme.CheckIn: return new[] { "QueueLine", "FloorArrow" };
-            case RoomTheme.Barracks:
-            case RoomTheme.Office:
-            case RoomTheme.SecurityOffice:
-            case RoomTheme.DutyFree: return new string[0];
+            case RoomTheme.ShopFloor:
+            case RoomTheme.Entrance: return new[] { "WetFootprints" };
+            default: return new string[0];
         }
+    }
 
-        switch (Zone)
+    // A themed room's own floor in place of the zone's concrete or tiles (SpriteVisuals.themeFloors,
+    // Tools/Sprites/themefloors.py): carparks and stores polished concrete, workshops tread plate,
+    // offices carpet tiles, barracks parquet, labs vinyl, mall floors terrazzo, and so on. Rooms
+    // without a theme (and the operating theatre, which keeps the hospital's mint tiles) keep theirs.
+    private void UseThemeFloor(Room room, RoomTheme theme)
+    {
+        string name = ThemeFloorName(theme);
+        Material material = name != null && SpriteVisuals.Current != null ? SpriteVisuals.Current.ThemeFloor(name) : null;
+        Transform floor = material != null ? room.transform.Find("Floor Mesh") : null;
+
+        if (floor != null && floor.TryGetComponent(out Renderer renderer))
+            renderer.sharedMaterial = material;
+    }
+
+    private static string ThemeFloorName(RoomTheme theme)
+    {
+        switch (theme)
         {
-            case Zone.ShoppingMall: return new[] { "WetFootprints", "SpiltDrink" };
-            case Zone.Hospital: return new[] { "Wayfinding", "Puddle" };
-            case Zone.Airport: return new[] { "FloorArrow", "QueueLine" };
-            default: return new[] { "OilStain", "Drain", "FloorArrow" };
+            case RoomTheme.Storage:
+            case RoomTheme.StoreRoom:
+            case RoomTheme.Checkpoint:
+            case RoomTheme.BaggageHall: return "ConcreteBays";
+            case RoomTheme.Workshop: return "DiamondPlate";
+            case RoomTheme.Armoury:
+            case RoomTheme.SecurityCheck: return "RubberMat";
+            case RoomTheme.Infirmary:
+            case RoomTheme.Ward:
+            case RoomTheme.PatientWing: return "LinoGreen";
+            case RoomTheme.WaitingRoom:
+            case RoomTheme.Reception: return "LinoBlue";
+            case RoomTheme.Barracks: return "WoodBasket";
+            case RoomTheme.Office:
+            case RoomTheme.SecurityOffice: return "CarpetTiles";
+            case RoomTheme.Lab:
+            case RoomTheme.Pharmacy: return "LabVinyl";
+            case RoomTheme.ShopFloor:
+            case RoomTheme.Entrance: return "Terrazzo";
+            case RoomTheme.FoodCourt: return "Chequer";
+            case RoomTheme.DutyFree:
+            case RoomTheme.CheckIn: return "Marble";
+            case RoomTheme.GateLounge: return "AirCarpet";
+            default: return null;
+        }
+    }
+
+    // A fixture in the middle of every cell of the theme's rooms, or null.
+    private static string CentreFloorDecal(RoomTheme theme)
+    {
+        switch (theme)
+        {
+            case RoomTheme.Entrance: return "MallStar";
+            case RoomTheme.Theatre: return "Drain";
+            default: return null;
         }
     }
 
     // Paints the room's floor. Run after FurnishRoom (with its theme) and the boss arena ring.
     private void PaintFloor(Room room, RoomTheme theme)
     {
+        UseThemeFloor(room, theme);
+        PaintFloorLines(room, theme);
+
         if (floorDecalMaterial == null || floorDecalMaterial.mainTexture == null)
             return;
 
@@ -103,9 +137,17 @@ public partial class FloorGenerator
         float grimeChance = boss ? 0.8f : grimeFloorDecalChance;
         string[] grime = RoomKits.For(Zone).FloorGrime;
 
+        string fixture = boss ? null : CentreFloorDecal(theme);
+
         foreach (Vector2Int cell in room.Cells)
         {
             Vector3 centre = CellToWorld(cell);
+
+            if (fixture != null && IsClear(centre, keepClear, 2.6f) && IsClear(centre, hatch, HatchClearance + 1.5f))
+            {
+                PlaceFloorDecal(room.transform, fixture, centre);
+                painted.Add(centre);
+            }
 
             if (markings.Length > 0 && decalRng.NextDouble() < markingChance)
                 TryPaintFloor(room, markings[decalRng.Next(markings.Length)], centre, keepClear, hatch, painted, boss);
@@ -120,26 +162,6 @@ public partial class FloorGenerator
         // Clear of the painted arena ring in a boss room (85% of the room's short side across).
         float hatchClearance = boss ? Mathf.Min(roomSize.x, roomSize.y) * 0.43f + 1.2f : HatchClearance + 1.5f;
         Vector2 range = roomSize / 2f - Vector2.one * 1.6f;
-
-        // Wayfinding lines run the width of the cell, wall to wall, a tile at a time.
-        if (name == "Wayfinding")
-        {
-            float z = centre.z + RandomDecal(-range.y, range.y);
-            int tiles = Mathf.FloorToInt(roomSize.x / FloorDecalSize);
-
-            for (int i = 0; i < tiles; i++)
-            {
-                Vector3 tile = new Vector3(centre.x + (i - (tiles - 1) / 2f) * FloorDecalSize, 0f, z);
-
-                if (IsClear(tile, doorways, 2.2f) && IsClear(tile, hatch, hatchClearance))
-                {
-                    PlaceFloorDecal(room.transform, name, tile);
-                    painted.Add(tile);
-                }
-            }
-
-            return;
-        }
 
         for (int attempt = 0; attempt < 10; attempt++)
         {
@@ -178,8 +200,7 @@ public partial class FloorGenerator
         Destroy(decal.GetComponent<Collider>());
         decal.transform.SetParent(parent, true);
         decal.transform.position = new Vector3(spot.x, FloorDecalHeight, spot.z);
-        int turns = System.Array.IndexOf(UprightFloorDecals, name) >= 0 ? 0 : decalRng.Next(4);
-        decal.transform.rotation = Quaternion.Euler(90f, turns * 90f, 0f);
+        decal.transform.rotation = Quaternion.Euler(90f, decalRng.Next(4) * 90f, 0f);
         decal.transform.localScale = new Vector3(FloorDecalSize, FloorDecalSize, 1f);
 
         Renderer renderer = decal.GetComponent<Renderer>();

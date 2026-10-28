@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5385f53a8c47ca249bb27f3ecff3f5d3, type: 3}
+  m_Name: LowBaseInfirmary3Sheet
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
+  texture: {fileID: 2800000, guid: d5033d418298dfa4183c0de8032e205d, type: 3}
+  frameWidth: 66
+  frameHeight: 70
+  pivot: {x: 33, y: 1}
+  pixelsPerUnit: 20
+  clips:
+  - name: idle
+    row: 0
+    frames: 1
+    fps: 1
+    directional: 0
+  bodyRadius: 0.25
+  hitRadius: 0
+  bodyHeight: 1.75
+  holdHeight: 12
+  holdReach: 0.3
+  muzzle: {x: 15, y: 10}
+  footprint: {x: 3, y: 1, z: 0.5}

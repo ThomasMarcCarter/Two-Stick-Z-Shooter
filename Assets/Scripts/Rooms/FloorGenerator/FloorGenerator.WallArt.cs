@@ -70,7 +70,8 @@ public partial class FloorGenerator
             case RoomTheme.StoreRoom: return new[] { "StaffOnly", "StaffOnly", "Bay", "NoSmoking" };
             case RoomTheme.SecurityOffice: return new[] { "Security", "Cctv", "Cctv", "NoEntry" };
             case RoomTheme.Entrance: return new[] { "Welcome", "MallDirectory", "Sale" };
-            case RoomTheme.Ward: return new[] { "Ward", "Ward", "HandWash", "Whiteboard" };
+            case RoomTheme.Ward:
+            case RoomTheme.PatientWing: return new[] { "Ward", "Ward", "HandWash", "Whiteboard" };
             case RoomTheme.Theatre: return new[] { "Theatre", "InUse", "XRay", "HandWash" };
             case RoomTheme.WaitingRoom: return new[] { "Waiting", "Quiet", "Ticket", "Clock" };
             case RoomTheme.Pharmacy: return new[] { "PharmacyCross", "Pharmacy", "Pharmacy" };

@@ -135,6 +135,20 @@ public class SpriteVisuals : ScriptableObject
     public Material corridorFloor;
     public Material wall;
     public Material door;
+    [Tooltip("Floors for themed rooms (Tools/Sprites/themefloors.py), found by name: PixelTheme<Name> (FloorGenerator ThemeFloorName).")]
+    public Material[] themeFloors = new Material[0];
+
+    // A theme floor by its name (without the PixelTheme prefix), or null.
+    public Material ThemeFloor(string name)
+    {
+        foreach (Material material in themeFloors)
+        {
+            if (material != null && material.name == "PixelTheme" + name)
+                return material;
+        }
+
+        return null;
+    }
 
     [Header("Effects")]
     [Tooltip("Hard-edged square for blood and spark particles.")]

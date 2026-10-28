@@ -76,6 +76,9 @@ public class FurnitureSprite : MonoBehaviour
         set => Dusty = value;
     }
 
+    // How many frames (or, for a still piece, variants) its row holds.
+    public int Frames => frames;
+
     // A still piece's frame along its row (when it isn't animated).
     public int Column
     {

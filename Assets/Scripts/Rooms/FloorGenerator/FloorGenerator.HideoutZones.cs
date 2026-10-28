@@ -18,6 +18,12 @@ public partial class FloorGenerator
     // room), from the hall's middle.
     private const float HideoutDoorX = 4.2f;
 
+    // The Mall's, the Hospital's and the Airport's hideouts are left through the north wall
+    // (HideoutDoor: the store's shop shutter, automatic doors) instead of down the deploy hatch.
+    private bool HideoutHasWallExit => Zone != Zone.MilitaryBase && FurnitureSprite.Has(WallExitModel);
+
+    private string WallExitModel => Zone == Zone.Airport ? "AutoDoorAir" : Zone == Zone.ShoppingMall ? "ShutterDoor" : "AutoDoorHosp";
+
     private void DressHideout(Room hall)
     {
         switch (Zone)
@@ -52,10 +58,12 @@ public partial class FloorGenerator
         Transform parent = hall.transform;
 
         WallPiece("BoardedWindow", parent, HideoutDoorX - 3f, new Vector3(2.3f, 2.3f, 0.16f));
-        WallPiece("BoardedDoor", parent, HideoutDoorX, new Vector3(1.9f, 2.45f, 0.16f));
+        if (!WallExit(hall))
+            WallPiece("BoardedDoor", parent, HideoutDoorX, new Vector3(1.9f, 2.45f, 0.16f));
+
         DoorLamp(parent, new Color(0.8f, 0.9f, 1f));
         WallPiece("BoardedWindow", parent, HideoutDoorX + 3f, new Vector3(2.3f, 2.3f, 0.16f));
-        Furniture("Pallet", "Barricade", parent, NorthWall(HideoutDoorX + 1.6f, 0.7f), Vector3.back, new Vector3(1.2f, 1.2f, 1f), new Color(0.5f, 0.4f, 0.25f));
+        Furniture("Pallet", "Barricade", parent, NorthWall(HideoutDoorX + 2.4f, 0.7f), Vector3.back, new Vector3(1.2f, 1.2f, 1f), new Color(0.5f, 0.4f, 0.25f));
 
         SideSeats(hall, "DisplayTable", new Vector3(1.6f, 0.8f, 0.9f), new Color(0.6f, 0.55f, 0.45f));
         SouthWallPieces(hall, "StoreShelf", new Vector3(2.4f, 1.8f, 0.6f), new Color(0.5f, 0.5f, 0.52f), 0.5f);
@@ -67,7 +75,9 @@ public partial class FloorGenerator
         Vector3 centre = HallCentre;
 
         WallPiece("BarredWindow", parent, HideoutDoorX - 3.1f, new Vector3(2.1f, 2.25f, 0.16f));
-        WallPiece("BarredDoor", parent, HideoutDoorX, new Vector3(2.4f, 2.6f, 0.2f));
+        if (!WallExit(hall))
+            WallPiece("BarredDoor", parent, HideoutDoorX, new Vector3(2.4f, 2.6f, 0.2f));
+
         DoorLamp(parent, new Color(1f, 0.55f, 0.5f));
         WallPiece("BarredWindow", parent, HideoutDoorX + 3.1f, new Vector3(2.1f, 2.25f, 0.16f));
 
@@ -86,14 +96,16 @@ public partial class FloorGenerator
         Color luggage = new Color(0.4f, 0.3f, 0.25f);
         Color cart = new Color(0.35f, 0.37f, 0.4f);
 
-        // The belt comes through the wall and runs a few metres into the room.
-        WallPiece("BeltHatch", parent, HideoutDoorX, new Vector3(2.4f, 2.65f, 0.2f));
+        // The terminal's automatic doors out; the belt comes through the wall beside them (in
+        // their place without the door art) and runs a few metres into the room.
+        float belt = WallExit(hall) ? HideoutDoorX + 3.8f : HideoutDoorX;
+        WallPiece("BeltHatch", parent, belt, new Vector3(2.4f, 2.65f, 0.2f));
         DoorLamp(parent, new Color(1f, 0.75f, 0.4f));
-        Furniture("Conveyor", "Conveyor", parent, NorthWall(HideoutDoorX, 2.2f), Vector3.back, new Vector3(1f, 0.9f, 4f), new Color(0.6f, 0.62f, 0.64f));
+        Furniture("Conveyor", "Conveyor", parent, NorthWall(belt, 2.2f), Vector3.back, new Vector3(1f, 0.9f, 4f), new Color(0.6f, 0.62f, 0.64f));
 
         Furniture("Luggage", "Luggage", parent, NorthWall(HideoutDoorX - 2.4f, 0.5f), Vector3.back, new Vector3(1f, 0.9f, 0.6f), luggage);
-        Furniture("Luggage", "Luggage", parent, NorthWall(HideoutDoorX + 2.3f, 0.5f), Vector3.back, new Vector3(1f, 0.9f, 0.6f), luggage);
-        Furniture("Luggage", "Luggage", parent, NorthWall(HideoutDoorX + 1.5f, 4.4f), Vector3.back, new Vector3(1f, 0.9f, 0.6f), luggage);
+        Furniture("Luggage", "Luggage", parent, NorthWall(belt - 1.7f, 0.5f), Vector3.back, new Vector3(1f, 0.9f, 0.6f), luggage);
+        Furniture("Luggage", "Luggage", parent, NorthWall(belt - 2.6f, 4.4f), Vector3.back, new Vector3(1f, 0.9f, 0.6f), luggage);
 
         SideSeats(hall, "BaggageCart", new Vector3(2.3f, 1f, 1.1f), cart);
 
@@ -104,6 +116,25 @@ public partial class FloorGenerator
     }
 
     // ---------- Helpers ----------
+
+    // The automatic doors out (HideoutDoor) in the north wall at the way in, with the FloorExit in
+    // front that walks the player through. False when this hideout leaves by the hatch.
+    private bool WallExit(Room hall)
+    {
+        if (!HideoutHasWallExit)
+            return false;
+
+        Vector3 size = new Vector3(2.4f, 2.6f, 0.2f);
+        GameObject doors = Furniture(WallExitModel, "Way Out", hall.transform, NorthWall(HideoutDoorX, size.z / 2f + 0.02f), Vector3.back, size,
+            new Color(0.3f, 0.3f, 0.3f), false);
+        HideoutDoor door = HideoutDoor.Add(doors, Zone != Zone.ShoppingMall);
+
+        GameObject exit = new GameObject("Way Out Exit");
+        exit.transform.SetParent(hall.transform, false);
+        exit.transform.position = NorthWall(HideoutDoorX, 0.9f);
+        exit.AddComponent<FloorExit>().Initialise(this, door);
+        return true;
+    }
 
     // A floor point `out` metres in from the north wall, `x` along it from the hall's middle.
     private Vector3 NorthWall(float x, float outFromWall)

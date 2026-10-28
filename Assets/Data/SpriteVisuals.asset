@@ -89,7 +89,7 @@ MonoBehaviour:
   - name: HospitalBed
     sheet: {fileID: 11400000, guid: 5ec07e89bda25f84ca70aac3cc95bc10, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 5
     fps: 0
   - name: MedCabinet
     sheet: {fileID: 11400000, guid: 76625c590004296418d5a123191e8202, type: 2}
@@ -104,7 +104,7 @@ MonoBehaviour:
   - name: BunkBed
     sheet: {fileID: 11400000, guid: e5087092576c667478132fc66d354de7, type: 2}
     glow: {fileID: 0}
-    frames: 1
+    frames: 4
     fps: 0
   - name: Locker
     sheet: {fileID: 11400000, guid: 2e76f7ffc0e8f0141b2175542dd69aa5, type: 2}
@@ -481,6 +481,351 @@ MonoBehaviour:
     glow: {fileID: 11400000, guid: f8cd136a63fcdae4795b79e8a3d22d51, type: 2}
     frames: 3
     fps: 0
+  - name: DeskChair
+    sheet: {fileID: 11400000, guid: 2445416a1614fcb4c8df747a99636c20, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: DeskChairTipped
+    sheet: {fileID: 11400000, guid: 78e32a926ef14bb4cbdd52d1e314ef3c, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: CubiclePod
+    sheet: {fileID: 11400000, guid: 4a065636a21d9ca429576ac0ff858caa, type: 2}
+    glow: {fileID: 11400000, guid: bd2d6ad5222831643af6f5626c14f306, type: 2}
+    frames: 1
+    fps: 0
+  - name: MeetingTable
+    sheet: {fileID: 11400000, guid: 2bcdd3c783de999428c91181328a2027, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: LabTable
+    sheet: {fileID: 11400000, guid: 98ec3f4d6e681704b8e3ce2bd7ce8da9, type: 2}
+    glow: {fileID: 11400000, guid: 7361649d50a7bc74ba52965801436c70, type: 2}
+    frames: 3
+    fps: 8
+  - name: WorkshopTable
+    sheet: {fileID: 11400000, guid: 8365b22d2e24629428f09cf1b6d00520, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: PartsShelf
+    sheet: {fileID: 11400000, guid: 39346bda93eaadf4e8f85a1188d80f79, type: 2}
+    glow: {fileID: 0}
+    frames: 1
+    fps: 0
+  - name: LowBaseStorage3
+    sheet: {fileID: 11400000, guid: 6772167d71ed18c4fa546792853373e8, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseStorage4
+    sheet: {fileID: 11400000, guid: 0d71a94fec976b749b64089aba906fdc, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseInfirmary3
+    sheet: {fileID: 11400000, guid: 8789019e27f74c64c88aa4cab3c04bb9, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseInfirmary4
+    sheet: {fileID: 11400000, guid: 559dace29f6282e49b34ecf892d434c3, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseBarracks3
+    sheet: {fileID: 11400000, guid: 182bdd334e4083c4f8fc042f91dd7a86, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseBarracks4
+    sheet: {fileID: 11400000, guid: 17b6f33353cd891498440e96b6a76654, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseWorkshop3
+    sheet: {fileID: 11400000, guid: a803e0195e2f0b04095d4facd5dbceb4, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseWorkshop4
+    sheet: {fileID: 11400000, guid: ce5b62c48655a424db21c81c54d191f1, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseOffice3
+    sheet: {fileID: 11400000, guid: 12d9a183447fa8b4f98a882a15447b9f, type: 2}
+    glow: {fileID: 11400000, guid: 1c579eae66bc4764cb6995fedc91543c, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowBaseOffice4
+    sheet: {fileID: 11400000, guid: 7a443ce7a51f64742815b21b595fe672, type: 2}
+    glow: {fileID: 11400000, guid: 05adc97b898f5f5469fd12c918f42346, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowLab3
+    sheet: {fileID: 11400000, guid: ef3eebc23cca7e54fa1f6adbfa2f6e6d, type: 2}
+    glow: {fileID: 11400000, guid: 01d14c9cc4f595d408859ac317e966a8, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowLab4
+    sheet: {fileID: 11400000, guid: c70c3efeb81ff0344a27c7369e50dabc, type: 2}
+    glow: {fileID: 11400000, guid: dd271acf373b82f4ba78bfad400c9fd4, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowBaseArmoury3
+    sheet: {fileID: 11400000, guid: aa48ba3172787ed4f853e5bb3dbe5b3c, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseArmoury4
+    sheet: {fileID: 11400000, guid: 69ec9289d04541c49aa89699d742e511, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBaseCheckpoint3
+    sheet: {fileID: 11400000, guid: 062a3f2b28083cd4db289d5100c83d81, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowBaseCheckpoint4
+    sheet: {fileID: 11400000, guid: 98bcdcea75002974dbc69412737c1736, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowBase3
+    sheet: {fileID: 11400000, guid: 4004182613ecec741885fccf22b7aa05, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowBase4
+    sheet: {fileID: 11400000, guid: c2f63ca1c3f9ca044a31b3d704a43c53, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowMallShopFloor3
+    sheet: {fileID: 11400000, guid: a0621e089023d6f45971a399713b5f4d, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowMallShopFloor4
+    sheet: {fileID: 11400000, guid: 5e7648a1645d00f4fa4b55dd600f560c, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowMallFoodCourt3
+    sheet: {fileID: 11400000, guid: 3a6a1a4416def6c47a61901da93ba727, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowMallFoodCourt4
+    sheet: {fileID: 11400000, guid: e18d306350834cc4e99256a38b658d9a, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowMallStoreRoom3
+    sheet: {fileID: 11400000, guid: dbefb674b145a6440b0e8066dc53f6ca, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowMallStoreRoom4
+    sheet: {fileID: 11400000, guid: 431d0866a2a083d42a183614005d71c4, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowMallSecurityOffice3
+    sheet: {fileID: 11400000, guid: 559035135446ef24aa3cfd1c886b263e, type: 2}
+    glow: {fileID: 11400000, guid: 7b0ef05b69e608b4f97d384b128a3ee4, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowMallSecurityOffice4
+    sheet: {fileID: 11400000, guid: b9882f1cd607d624481087d8eac4d291, type: 2}
+    glow: {fileID: 11400000, guid: 604020198b1b80544bf43427d799089e, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowMallEntrance3
+    sheet: {fileID: 11400000, guid: f543564528dbd0343ae9bc1af88d85f4, type: 2}
+    glow: {fileID: 11400000, guid: 8469b08f5837ac345876cda2d3444ccf, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowMallEntrance4
+    sheet: {fileID: 11400000, guid: 743af3b6753848e4eaedb37cdcbbd6d9, type: 2}
+    glow: {fileID: 11400000, guid: b3dcb4b6d142e94419cfbc3a2a2a3b89, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowMall3
+    sheet: {fileID: 11400000, guid: d013e5dfeba616a4b9513e62b109b611, type: 2}
+    glow: {fileID: 11400000, guid: 84cce399817b85143b6859306cca91aa, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowMall4
+    sheet: {fileID: 11400000, guid: 9d78a2d554279f6419c95e69fd93dc22, type: 2}
+    glow: {fileID: 11400000, guid: dbe5042cee92b3f498834b169ec7dd0a, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowHospWard3
+    sheet: {fileID: 11400000, guid: 0e8ea56704bbd684f97dc2621fe43a95, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowHospWard4
+    sheet: {fileID: 11400000, guid: 4a27cf2f9008904478b9636e1991703c, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowHospTheatre3
+    sheet: {fileID: 11400000, guid: 3f270d4e247a9a140b1717d0372c3c98, type: 2}
+    glow: {fileID: 11400000, guid: f82f8e51393c881429c3b1f364a75a27, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHospTheatre4
+    sheet: {fileID: 11400000, guid: 8bc9bc1d2e906e44fa9eed663354e722, type: 2}
+    glow: {fileID: 11400000, guid: 432e339139eb41949975f4c050f7a411, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHospWaitingRoom3
+    sheet: {fileID: 11400000, guid: a5a687f5d937cc7469d01fcbda291fe6, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowHospWaitingRoom4
+    sheet: {fileID: 11400000, guid: 49d59c446287b24438494e78367faffd, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowHospPharmacy3
+    sheet: {fileID: 11400000, guid: 17ae0233b42388c41913c76c2a23b672, type: 2}
+    glow: {fileID: 11400000, guid: 9b982a9adf16fb540a9ac0b6d5caaa7e, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHospPharmacy4
+    sheet: {fileID: 11400000, guid: 5f7777da72cf26c43bcd49bae142c85e, type: 2}
+    glow: {fileID: 11400000, guid: 0736dedcf6a22f645a6153c98f335390, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHospReception3
+    sheet: {fileID: 11400000, guid: c7d89d80925cf1745b005b822b45e737, type: 2}
+    glow: {fileID: 11400000, guid: ce9d40fa0b747204f9b9a24f8ee5b162, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHospReception4
+    sheet: {fileID: 11400000, guid: ff6a727133fb1bb46a479124ea9a2a71, type: 2}
+    glow: {fileID: 11400000, guid: ed7a6858178d141488cc726418a7d1f3, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowHosp3
+    sheet: {fileID: 11400000, guid: c8e74bd864e18c6468c1062a1f9f4297, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowHosp4
+    sheet: {fileID: 11400000, guid: edb6d279b7fdfcc4f864824a388f9ec9, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowAirGateLounge3
+    sheet: {fileID: 11400000, guid: 86fef1f11c062e746ae0c7abfd6a32aa, type: 2}
+    glow: {fileID: 11400000, guid: ca0654f41b7fe164ea307d2b1689df9b, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowAirGateLounge4
+    sheet: {fileID: 11400000, guid: 70da5aa475e4e7a40b377d8534eb2a14, type: 2}
+    glow: {fileID: 11400000, guid: 83e82248a86bc6d4d9f3f1ccb9ec0a48, type: 2}
+    frames: 4
+    fps: 0
+  - name: LowAirBaggageHall3
+    sheet: {fileID: 11400000, guid: a66e18da581a8e744b0afc79b61cc31e, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowAirBaggageHall4
+    sheet: {fileID: 11400000, guid: 8b235e78186af1240a53595127856203, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: LowAirSecurityCheck3
+    sheet: {fileID: 11400000, guid: 791f1a9ab827cc141ab9994ec66a18f0, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowAirSecurityCheck4
+    sheet: {fileID: 11400000, guid: af55857aeae23c643b89d1376bdf64dd, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowAirDutyFree3
+    sheet: {fileID: 11400000, guid: 80aa08dabd7f9614985b6776b63b5436, type: 2}
+    glow: {fileID: 11400000, guid: 155adc4c7a549e0458b37d757c0f7130, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowAirDutyFree4
+    sheet: {fileID: 11400000, guid: 0a06c2345ce1c0f4490c4d5d34d46969, type: 2}
+    glow: {fileID: 11400000, guid: a263951ff0c613e4793c48bf06177cba, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowAirCheckIn3
+    sheet: {fileID: 11400000, guid: a610bc15ab93f814fbd40b34643223d2, type: 2}
+    glow: {fileID: 11400000, guid: 10b04e021d7f2684ab5fec8a15e5663d, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowAirCheckIn4
+    sheet: {fileID: 11400000, guid: a6bd261cbae3aa544ab80de4d0ae45c5, type: 2}
+    glow: {fileID: 11400000, guid: ad5bc55a26dfd89409c94039895be8a2, type: 2}
+    frames: 3
+    fps: 0
+  - name: LowAir3
+    sheet: {fileID: 11400000, guid: fc49cc169ae93e54e8c0041658779969, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: LowAir4
+    sheet: {fileID: 11400000, guid: af01641eb3cb17c4f9096550873bf328, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: Car
+    sheet: {fileID: 11400000, guid: 28c578cf83c8a234ea3fc4f0d5ef939d, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: PatientBed
+    sheet: {fileID: 11400000, guid: 5da5d56944858914e9837478174d1c30, type: 2}
+    glow: {fileID: 0}
+    frames: 5
+    fps: 0
+  - name: BedCurtain
+    sheet: {fileID: 11400000, guid: f32cabb06b2e83949ba708fbadf20052, type: 2}
+    glow: {fileID: 0}
+    frames: 3
+    fps: 0
+  - name: BedMonitor
+    sheet: {fileID: 11400000, guid: ba3c5338fc0c1be449cf7f78930f8552, type: 2}
+    glow: {fileID: 11400000, guid: 37ddd85b49c5a9740b2a259e0de65744, type: 2}
+    frames: 2
+    fps: 1.5
+  - name: CratePile
+    sheet: {fileID: 11400000, guid: 7b4d4a5839c6713499eabb76e6013d0a, type: 2}
+    glow: {fileID: 0}
+    frames: 4
+    fps: 0
+  - name: AutoDoorHosp
+    sheet: {fileID: 11400000, guid: 687b3a4047b5f0e4dbd698163d7a289e, type: 2}
+    glow: {fileID: 11400000, guid: 2e8c8db4458b7fd4a8d047115394c866, type: 2}
+    frames: 5
+    fps: 0
+  - name: AutoDoorAir
+    sheet: {fileID: 11400000, guid: e29a2b9a42456904e877bb902f0951ce, type: 2}
+    glow: {fileID: 11400000, guid: ac9b058dae21ddd44917f491b33a85b8, type: 2}
+    frames: 5
+    fps: 0
+  - name: ShutterDoor
+    sheet: {fileID: 11400000, guid: a15d1798d9b501a4489f17607633042f, type: 2}
+    glow: {fileID: 11400000, guid: 5f5e87edff56a214db2319c1d092a9cd, type: 2}
+    frames: 5
+    fps: 0
   guns:
   - gun: Pistol
     sheet: {fileID: 11400000, guid: 589cb0018c58f9443aa526adcc07890a, type: 2}
@@ -506,6 +851,19 @@ MonoBehaviour:
   corridorFloor: {fileID: 2100000, guid: d0657ef77c898444db2ca7ebbb08b1e7, type: 2}
   wall: {fileID: 2100000, guid: 8116898d5618b54408596b42024cdac2, type: 2}
   door: {fileID: 2100000, guid: b729cab1d5f39774e8445995578aec7c, type: 2}
+  themeFloors:
+  - {fileID: 2100000, guid: 09c9dbd5f12452f4390a3e638677c2c8, type: 2}
+  - {fileID: 2100000, guid: 602b536f98a51624c804e1db6455cd77, type: 2}
+  - {fileID: 2100000, guid: 946ba04b76088d746afa413af1802eb9, type: 2}
+  - {fileID: 2100000, guid: eb0809894025ab44a9c160facb1a9c91, type: 2}
+  - {fileID: 2100000, guid: 1a82c24da8fce6142a30616dd99b6738, type: 2}
+  - {fileID: 2100000, guid: 8445357c1de66b64786c3bd0018b1830, type: 2}
+  - {fileID: 2100000, guid: 75d7f951a1b1db544b64aa78bf22cc77, type: 2}
+  - {fileID: 2100000, guid: 412e6dd41a3b0904c9a0371b2ca2ac24, type: 2}
+  - {fileID: 2100000, guid: d85cdc98fe363b046b4df4f6921474bd, type: 2}
+  - {fileID: 2100000, guid: f741a2b099651624badc48e5a4914e84, type: 2}
+  - {fileID: 2100000, guid: 311b1a8fe26ba934fb4c7cda3d37a33c, type: 2}
+  - {fileID: 2100000, guid: ea91945f76306b948b2b4aa3e50ecbd7, type: 2}
   particle: {fileID: 2100000, guid: fdbb028ac0342934f9a380cf11bc741f, type: 2}
   muzzleFlame: {fileID: 2100000, guid: 508bfb5953e9a444f9bdb67acdffa6b5, type: 2}
   glowSprite: {fileID: 2100000, guid: 0db1df26f2158f44da184bd2cf65829d, type: 2}

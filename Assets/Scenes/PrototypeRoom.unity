@@ -4339,7 +4339,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 754034354}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4347,7 +4347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640, y: -360.00015}
+  m_AnchoredPosition: {x: -627.2, y: -352.80246}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &754034357
@@ -7295,16 +7295,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fe70768325149a40a3f0c1074470a0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FloorGenerator
+  cutoutChance: 0.55
+  lowWallHeight: 1
   floorDecalMaterial: {fileID: 2100000, guid: e7dd45fc85008a6408c8f79cc6787ad3, type: 2}
   themeFloorDecalChance: 0.45
   grimeFloorDecalChance: 0.45
+  floorLineMaterial: {fileID: 2100000, guid: e111ae6dde0a58443ae23991231e8e98, type: 2}
   armoryWeapons:
   - {fileID: 1053666970914164882, guid: 341248c36f425884e8e90d1cc22b6c83, type: 3}
   - {fileID: 1053666970914164882, guid: d29644b2bc67d414c99d08aecf10b935, type: 3}
   - {fileID: 1053666970914164882, guid: 92c76f7b7f1319249b3e548478591e5f, type: 3}
   sealedDoorTint: {r: 0.55, g: 0.12, b: 0.08, a: 1}
-  survivorChance: 0.25
-  distressCallDelay: 3
   modularRooms: 1
   wallKitMaterial: {fileID: 2100000, guid: ba52d9a246d36f24896d93d02ae0c23d, type: 2}
   supplyScrapBase: 12
@@ -7313,6 +7314,8 @@ MonoBehaviour:
   supplyKillsPerMaterial: 12
   supplyBonusScrap: 25
   supplyBonusMaterials: 2
+  survivorChance: 0.25
+  distressCallDelay: 3
   wallDecalMaterial: {fileID: 2100000, guid: 24a3783e4f9a9754a8d29a6ae891b21a, type: 2}
   themeDecalChance: 0.8
   grimeDecalChance: 0.25
@@ -7414,7 +7417,7 @@ MonoBehaviour:
   flattenedPerCell: {x: 2, y: 5}
   boxScale: {x: 1.4, y: 1.8}
   maxBoxSize: 1.1
-  flattenedScale: {x: 0.8, y: 1.3}
+  flattenedScale: {x: 0.6, y: 1}
   boxPhysics: {fileID: 13400000, guid: 3cd1d17810b5e62499b37bad9a048aae, type: 2}
   clutterClearance: 1.4
   floorLitter:
@@ -7501,8 +7504,7 @@ MonoBehaviour:
   largeTrash:
   - {fileID: 1372981082142533888, guid: df8296e0e1f9e5646a0641996fd63f39, type: 3}
   - {fileID: 2389036812753988495, guid: 04f205932f265354f8fad5e27bbdfc8a, type: 3}
-  - {fileID: 1026301919506260479, guid: 2ec2e8b8d5178ec44a0b3a84d642a9f6, type: 3}
-  - {fileID: 7227897370270068493, guid: cb33106713cff0c4b96a08a277b08de4, type: 3}
+  coverStandIn: {fileID: 1026301919506260479, guid: 2ec2e8b8d5178ec44a0b3a84d642a9f6, type: 3}
   litterPerCell: {x: 8, y: 14}
   smallTrashPerCell: {x: 6, y: 12}
   largeTrashPerCell: {x: 1, y: 2}
@@ -7584,6 +7586,8 @@ MonoBehaviour:
   furnitureVisuals: {fileID: 11400000, guid: f43fbf84295bbbd4da735e99e4201379, type: 2}
   roomThemeChance: 0.7
   furniturePerCell: {x: 1, y: 3}
+  islandChance: 0.6
+  carChance: 0.55
   roomClearedSound: {fileID: 0}
   roomClearedVolume: 0.45
   footstepSounds:
@@ -7592,8 +7596,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b38481360c41a7f4d95413469c444a80, type: 3}
   suppressedShotSound: {fileID: 8300000, guid: 08bec65613c06d144a1906533c376a4a, type: 3}
   screamSound: {fileID: 8300000, guid: e2e5656a482044e4da46dc586e8dbd2e, type: 3}
-  hideoutMusic: {fileID: 8300000, guid: 0d715d527507d9b4ebd3731041b79bbc, type: 3}
-  backgroundMusic: {fileID: 8300000, guid: 5f74ad1ba036697409183711c945c3ad, type: 3}
+  hideoutMusic: {fileID: 8300000, guid: 5f74ad1ba036697409183711c945c3ad, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 0d715d527507d9b4ebd3731041b79bbc, type: 3}
   bossMusic: {fileID: 8300000, guid: 99c232f88d0e82d41a5d7b8c2d20d95f, type: 3}
   pickupPrefab: {fileID: 8820733638236343572, guid: 28d7fb57f98dc11439500aadc959bbdf, type: 3}
   treasureWeapons:
@@ -8609,7 +8613,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1703304440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000033011805}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8617,7 +8621,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -640, y: -360.00015}
+  m_AnchoredPosition: {x: -627.2, y: -352.80246}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1703304442

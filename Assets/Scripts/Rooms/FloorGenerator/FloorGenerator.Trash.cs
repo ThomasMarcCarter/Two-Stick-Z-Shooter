@@ -3,7 +3,9 @@ using UnityEngine;
 
 // The FloorGenerator's trash: flat litter strewn across the floor, small things scattered about
 // (more of them near the walls, round ones sometimes tipped over) and big pieces against the
-// walls as cover. Kept off doorways, pillars, wall loot points and the hatch.
+// walls as cover, each a mix of the art pack's trash that belongs in the zone and the zone's own
+// things (ZoneClutter, FloorGenerator.ZoneClutter.cs). Kept off doorways, pillars, wall loot
+// points and the hatch.
 public partial class FloorGenerator
 {
     // Dresses a room with rubbish from the trash pack: flat litter strewn across the floor, small
@@ -38,7 +40,7 @@ public partial class FloorGenerator
     // Flat litter, anywhere but the doorways (a `fraction` of the usual amount).
     private void ScatterLitter(Room room, Vector3 centre, RoomSpots spots, int fraction)
     {
-        if (floorLitter == null || floorLitter.Length == 0)
+        if (zoneLitter == null || zoneLitter.Length == 0)
             return;
 
         int litter = rng.Next(litterPerCell.x, litterPerCell.y + 1) / fraction;
@@ -50,8 +52,11 @@ public partial class FloorGenerator
             if (!IsClear(spot, spots.Doorways, 1.4f) || !IsClear(spot, PillarsOf(room), 0.9f) || !IsClear(spot, spots.Hatch, HatchClearance))
                 continue;
 
-            GameObject flat = PlaceTrash(room.transform, floorLitter[rng.Next(floorLitter.Length)], spot,
-                Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
+            ZoneClutter.Kit kit = ZoneClutter.For(Zone);
+            Quaternion turn = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
+            GameObject flat = rng.NextDouble() < kit.FlatShare
+                ? PlaceZoneItem(room.transform, kit.Flat[rng.Next(kit.Flat.Length)], spot, turn)
+                : PlaceTrash(room.transform, zoneLitter[rng.Next(zoneLitter.Length)], spot, turn);
 
             // A hair apart in height, so overlapping litter doesn't flicker against itself.
             if (flat != null)
@@ -87,8 +92,13 @@ public partial class FloorGenerator
                 continue;
             }
 
-            if (PlaceTrash(room.transform, largeTrash[rng.Next(largeTrash.Length)], spot,
-                Quaternion.LookRotation(-outward) * Quaternion.Euler(0f, RandomRange(-25f, 25f), 0f)) != null)
+            ZoneClutter.Kit kit = ZoneClutter.For(Zone);
+            Quaternion facing = Quaternion.LookRotation(-outward) * Quaternion.Euler(0f, RandomRange(-25f, 25f), 0f);
+            GameObject piece = rng.NextDouble() < kit.LargeShare
+                ? PlaceZoneItem(room.transform, kit.Large[rng.Next(kit.Large.Length)], spot, facing)
+                : PlaceTrash(room.transform, largeTrash[rng.Next(largeTrash.Length)], spot, facing);
+
+            if (piece != null)
             {
                 spots.Placed.Add(spot);
             }
@@ -99,7 +109,7 @@ public partial class FloorGenerator
     // on their side, rolled to any angle.
     private void ScatterSmallTrash(Room room, Vector2Int cell, Vector3 centre, RoomSpots spots)
     {
-        if (smallTrash == null || smallTrash.Length == 0)
+        if (zoneSmallTrash == null || zoneSmallTrash.Length == 0)
             return;
 
         int small = rng.Next(smallTrashPerCell.x, smallTrashPerCell.y + 1);
@@ -114,7 +124,15 @@ public partial class FloorGenerator
                 continue;
             }
 
-            GameObject prefab = smallTrash[rng.Next(smallTrash.Length)];
+            ZoneClutter.Kit kit = ZoneClutter.For(Zone);
+
+            if (rng.NextDouble() < kit.SmallShare)
+            {
+                PlaceZoneItem(room.transform, kit.Small[rng.Next(kit.Small.Length)], spot, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
+                continue;
+            }
+
+            GameObject prefab = zoneSmallTrash[rng.Next(zoneSmallTrash.Length)];
             bool tipped = rng.NextDouble() < tippedChance && IsRound(prefab.name);
             Quaternion rotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
 
@@ -174,6 +192,13 @@ public partial class FloorGenerator
         if (SpriteVisuals.Current != null)
             item.transform.localScale *= ClutterSprites.SizeFactor(prefab.name);
 
+        SettleProp(item, parent);
+        return item;
+    }
+
+    // Sat on the floor whatever way up it is, given its physics and drawn as its clutter sprite.
+    private void SettleProp(GameObject item, Transform parent)
+    {
         // Rest the lowest point on the floor (it may be on its side).
         Bounds bounds = new Bounds(item.transform.position, Vector3.zero);
         bool any = false;
@@ -205,6 +230,5 @@ public partial class FloorGenerator
         }
 
         SpriteClutter(item);
-        return item;
     }
 }

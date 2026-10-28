@@ -5,7 +5,7 @@ using UnityEngine.AI;
 // Room themes: what a room was before the outbreak, told by the furniture against its walls.
 // Most combat rooms get one (at the Military Base: storage, infirmary, barracks, workshop, office
 // or lab; at the Shopping Mall: shop floor, food court or storeroom; at the Hospital: ward,
-// operating theatre, waiting room or lab; at the Airport: gate lounge, baggage hall or security check), the
+// operating theatre, waiting room, lab or patient wing; at the Airport: gate lounge, baggage hall or security check), the
 // treasure room is an armoury (the mall's security office, the hospital's pharmacy, the airport's
 // duty free) and the spawn room a checkpoint (the mall's entrance, the hospital's reception, the
 // airport's check-in); the boss arena stays bare. Each piece stands with its
@@ -42,7 +42,8 @@ public partial class FloorGenerator
         DutyFree,
         CheckIn,
         Office,
-        Lab
+        Lab,
+        PatientWing
     }
 
     // A piece of furniture a theme can place: the model and the space it takes (width along the
@@ -104,6 +105,9 @@ public partial class FloorGenerator
     private static readonly ThemePiece XRayScannerPiece = new ThemePiece("XRayScanner", 2.2f, 1.6f, 0.9f);
     private static readonly ThemePiece MetalDetectorPiece = new ThemePiece("MetalDetector", 1.2f, 2.3f, 0.6f);
     private static readonly ThemePiece CheckInDeskPiece = new ThemePiece("CheckInDesk", 2.2f, 1.3f, 0.8f);
+    // A messy pile of crates, ammo boxes, cardboard and drums (4 columns; lowwalls.py).
+    private static readonly ThemePiece CratePilePiece = new ThemePiece("CratePile", 2.4f, 1.3f, 1.2f);
+    private static readonly ThemePiece BaggageCartPiece = new ThemePiece("BaggageCart", 2.3f, 1f, 1.1f);
 
     // Offices and labs (sprite only).
     private static readonly ThemePiece DeskPiece = new ThemePiece("Desk", 1.6f, 1.2f, 0.8f);
@@ -115,6 +119,15 @@ public partial class FloorGenerator
     private static readonly ThemePiece SpecimenTankPiece = new ThemePiece("SpecimenTank", 0.8f, 2.05f, 0.8f);
     private static readonly ThemePiece ServerRackPiece = new ThemePiece("ServerRack", 0.7f, 2f, 0.9f);
 
+    // Military Base offices, labs and workshops: islands out in the room, chairs and parts shelves (sprite only).
+    private static readonly ThemePiece CubiclePodPiece = new ThemePiece("CubiclePod", 3f, 1.46f, 2.6f);
+    private static readonly ThemePiece MeetingTablePiece = new ThemePiece("MeetingTable", 2.4f, 0.84f, 1.2f);
+    private static readonly ThemePiece LabTablePiece = new ThemePiece("LabTable", 2.4f, 1.37f, 1.2f);
+    private static readonly ThemePiece WorkshopTablePiece = new ThemePiece("WorkshopTable", 2.4f, 1.24f, 1.1f);
+    private static readonly ThemePiece PartsShelfPiece = new ThemePiece("PartsShelf", 2.4f, 2f, 0.6f);
+    private static readonly ThemePiece DeskChairPiece = new ThemePiece("DeskChair", 0.6f, 1.06f, 0.6f);
+    private static readonly ThemePiece DeskChairTippedPiece = new ThemePiece("DeskChairTipped", 0.6f, 0.5f, 1.1f);
+
     // What each theme is furnished with (picked from at random, so repeats are likely).
     private static ThemePiece[] PiecesFor(RoomTheme theme)
     {
@@ -123,7 +136,7 @@ public partial class FloorGenerator
             case RoomTheme.Storage: return new[] { CratePiece, CratePiece, DrumRedPiece, DrumBluePiece, ShelvingPiece, AmmoCratePiece };
             case RoomTheme.Infirmary: return new[] { HospitalBedPiece, HospitalBedPiece, MedCabinetPiece, ScreenPiece };
             case RoomTheme.Barracks: return new[] { BunkBedPiece, BunkBedPiece, LockerPiece, LockerPiece };
-            case RoomTheme.Workshop: return new[] { ShelvingPiece, TyresPiece, DrumRedPiece, BenchPiece, CratePiece };
+            case RoomTheme.Workshop: return new[] { ShelvingPiece, TyresPiece, DrumRedPiece, BenchPiece, CratePiece, PartsShelfPiece, PartsShelfPiece };
             case RoomTheme.Armoury: return new[] { GunRackPiece, AmmoCratePiece, AmmoCratePiece, CratePiece };
             case RoomTheme.Checkpoint: return new[] { SandbagsPiece, BenchPiece, DrumBluePiece };
             case RoomTheme.ShopFloor: return new[] { ClothesRackPiece, ClothesRackPiece, DisplayTablePiece, StoreShelfPiece, CheckoutPiece };
@@ -143,6 +156,40 @@ public partial class FloorGenerator
             case RoomTheme.CheckIn: return new[] { CheckInDeskPiece, CheckInDeskPiece, LuggagePiece, GateSeatsPiece };
             case RoomTheme.Office: return new[] { DeskPiece, DeskPiece, DeskPiece, FilingCabinetPiece, FilingCabinetPiece, WaterCoolerPiece, BinderShelfPiece };
             case RoomTheme.Lab: return new[] { LabBenchPiece, LabBenchPiece, FumeHoodPiece, SpecimenTankPiece, SpecimenTankPiece, ServerRackPiece };
+            // Its walls are lined with bed bays instead (FloorGenerator.Islands.cs, LineBedBays).
+            case RoomTheme.PatientWing: return new[] { IVStandPiece };
+            default: return new ThemePiece[0];
+        }
+    }
+
+    // What stands out in the room's quarters, away from the walls (most themes have nothing).
+    private static ThemePiece[] IslandsFor(RoomTheme theme)
+    {
+        switch (theme)
+        {
+            case RoomTheme.Office: return new[] { CubiclePodPiece, CubiclePodPiece, MeetingTablePiece };
+            case RoomTheme.Lab: return new[] { LabTablePiece };
+            case RoomTheme.Workshop: return new[] { WorkshopTablePiece, WorkshopTablePiece, ShelvingPiece, TyresPiece };
+            case RoomTheme.Storage: return new[] { ShelvingPiece, CratePilePiece, CratePiece, AmmoCratePiece, DrumBluePiece };
+            case RoomTheme.Infirmary: return new[] { HospitalBedPiece, HospitalBedPiece, ScreenPiece, TrolleyPiece };
+            case RoomTheme.Barracks: return new[] { BunkBedPiece, BunkBedPiece, BenchPiece };
+            case RoomTheme.Armoury: return new[] { AmmoCratePiece, CratePiece, CratePilePiece };
+            case RoomTheme.Checkpoint: return new[] { CratePilePiece, CratePilePiece, BenchPiece, DrumBluePiece, CratePiece };
+            // Unthemed Military Base rooms (FurnishRoom only asks there): left-behind stores.
+            case RoomTheme.None: return new[] { CratePilePiece, CratePilePiece, CratePiece, DrumRedPiece, DrumBluePiece, ShelvingPiece };
+            case RoomTheme.ShopFloor: return new[] { ClothesRackPiece, ClothesRackPiece, DisplayTablePiece, StoreShelfPiece };
+            case RoomTheme.FoodCourt: return new[] { FoodTablePiece, FoodTablePiece, FoodTablePiece, PlanterPiece };
+            case RoomTheme.StoreRoom: return new[] { PalletPiece, PalletPiece, ShelvingPiece, StoreShelfPiece };
+            case RoomTheme.SecurityOffice: return new[] { CounterPiece, LockerPiece };
+            case RoomTheme.Ward: return new[] { HospitalBedPiece, HospitalBedPiece, TrolleyPiece, IVStandPiece };
+            case RoomTheme.Theatre: return new[] { OperatingTablePiece, TrolleyPiece, SurgicalLampPiece };
+            case RoomTheme.WaitingRoom: return new[] { BenchPiece, BenchPiece, PlanterPiece, WheelchairPiece };
+            case RoomTheme.Pharmacy: return new[] { PharmacyShelfPiece };
+            case RoomTheme.PatientWing: return new[] { TrolleyPiece, WheelchairPiece, IVStandPiece };
+            case RoomTheme.GateLounge: return new[] { GateSeatsPiece, GateSeatsPiece, PlanterPiece };
+            case RoomTheme.BaggageHall: return new[] { BaggageCarouselPiece, LuggagePiece, BaggageCartPiece };
+            case RoomTheme.SecurityCheck: return new[] { XRayScannerPiece, MetalDetectorPiece, LuggagePiece };
+            case RoomTheme.DutyFree: return new[] { StoreShelfPiece, DisplayTablePiece };
             default: return new ThemePiece[0];
         }
     }
@@ -162,6 +209,7 @@ public partial class FloorGenerator
             case RoomTheme.SecurityCheck: return "SECURITY CHECK";
             case RoomTheme.DutyFree: return "DUTY FREE";
             case RoomTheme.CheckIn: return "CHECK-IN";
+            case RoomTheme.PatientWing: return "PATIENT WING";
             default: return theme.ToString().ToUpperInvariant();
         }
     }
@@ -209,7 +257,7 @@ public partial class FloorGenerator
             return new[] { RoomTheme.ShopFloor, RoomTheme.ShopFloor, RoomTheme.FoodCourt, RoomTheme.StoreRoom };
 
         if (zone == Zone.Hospital)
-            return new[] { RoomTheme.Ward, RoomTheme.Ward, RoomTheme.Theatre, RoomTheme.WaitingRoom, RoomTheme.Lab };
+            return new[] { RoomTheme.Ward, RoomTheme.PatientWing, RoomTheme.PatientWing, RoomTheme.Theatre, RoomTheme.WaitingRoom, RoomTheme.Lab };
 
         return new[] { RoomTheme.Storage, RoomTheme.Infirmary, RoomTheme.Barracks, RoomTheme.Workshop, RoomTheme.Office, RoomTheme.Lab };
     }
@@ -222,12 +270,7 @@ public partial class FloorGenerator
             return RoomTheme.None;
 
         RoomTheme theme = PickTheme(room);
-        ThemePiece[] pieces = PiecesFor(theme);
-
-        if (pieces.Length == 0)
-            return RoomTheme.None;
-
-        room.DisplayName = $"{TypeLabel(room.Type)} // {ThemeName(theme)}";
+        ThemePiece[] pieces = WithBaseLabBeds(PiecesFor(theme), theme);
 
         List<Vector3> doorways = DoorwayPositions(room);
         List<Vector3> lootPoints = new List<Vector3>();
@@ -241,7 +284,27 @@ public partial class FloorGenerator
             clutter[room] = taken;
         }
 
+        if (pieces.Length == 0)
+        {
+            // Unthemed Military Base combat rooms still get stores out in the middle.
+            if (theme == RoomTheme.None && room.Type == RoomType.Normal && Zone == Zone.MilitaryBase)
+                PlaceIslands(room, theme, doorways, lootPoints, taken);
+
+            return RoomTheme.None;
+        }
+
+        room.DisplayName = $"{TypeLabel(room.Type)} // {ThemeName(theme)}";
+
         Vector2Int count = room.Type == RoomType.Start ? new Vector2Int(1, 2) : furniturePerCell;
+
+        // Bed bays, islands and parked cars first, so the wall pieces keep clear of them.
+        if (theme == RoomTheme.PatientWing)
+        {
+            foreach (Vector2Int cell in room.Cells)
+                LineBedBays(room, cell, CellToWorld(cell), doorways, lootPoints, taken);
+        }
+
+        PlaceIslands(room, theme, doorways, lootPoints, taken);
 
         foreach (Vector2Int cell in room.Cells)
         {
@@ -253,6 +316,11 @@ public partial class FloorGenerator
                 if (!room.Contains(cell + side))
                     walls.Add(side);
             }
+
+            PlaceCars(room, theme, centre, doorways, lootPoints, taken);
+
+            if (theme == RoomTheme.PatientWing)
+                continue;
 
             if (walls.Count == 0)
                 continue;
@@ -289,21 +357,7 @@ public partial class FloorGenerator
             return false;
 
         Vector3 spot = centre + outward * (halfExtent - piece.Size.z / 2f - 0.15f) + along * RandomRange(-range, range);
-
-        // The footprint as points about a metre apart, so long pieces are kept clear along
-        // their whole length (and enemies, crates and boxes keep off all of it).
-        List<Vector3> footprint = new List<Vector3>();
-        int across = Mathf.Max(1, Mathf.CeilToInt(piece.Size.x));
-        int deep = Mathf.Max(1, Mathf.CeilToInt(piece.Size.z));
-
-        for (int i = 0; i < across; i++)
-        {
-            for (int j = 0; j < deep; j++)
-            {
-                footprint.Add(spot + along * ((i + 0.5f) / across - 0.5f) * piece.Size.x
-                    + outward * ((j + 0.5f) / deep - 0.5f) * piece.Size.z);
-            }
-        }
+        List<Vector3> footprint = Footprint(spot, along, outward, piece.Size);
 
         foreach (Vector3 point in footprint)
         {
@@ -315,22 +369,71 @@ public partial class FloorGenerator
             }
         }
 
-        GameObject furniture = PropModel(piece.Model, piece.Model, room.transform, spot, -outward, piece.Size);
-
-        if (furniture == null)
+        if (SpawnFurniture(room, piece, spot, -outward) == null)
             return false;
 
-        // Zombies path round it (the navmesh was baked before it went in).
+        taken.AddRange(footprint);
+
+        // Someone's chair, pushed back from the desk (facing it).
+        if (piece.Model == DeskPiece.Model && rng.NextDouble() < 0.85)
+            PlaceChair(room, spot - outward * (piece.Size.z / 2f + 0.45f), outward, doorways, taken, true);
+
+        return true;
+    }
+
+    // The footprint as points about a metre apart, so long pieces are kept clear along their
+    // whole length (and enemies, crates and boxes keep off all of it).
+    private static List<Vector3> Footprint(Vector3 spot, Vector3 along, Vector3 outward, Vector3 size)
+    {
+        List<Vector3> footprint = new List<Vector3>();
+        int across = Mathf.Max(1, Mathf.CeilToInt(size.x));
+        int deep = Mathf.Max(1, Mathf.CeilToInt(size.z));
+
+        for (int i = 0; i < across; i++)
+        {
+            for (int j = 0; j < deep; j++)
+                footprint.Add(spot + along * ((i + 0.5f) / across - 0.5f) * size.x + outward * ((j + 0.5f) / deep - 0.5f) * size.z);
+        }
+
+        return footprint;
+    }
+
+    // The piece itself, facing `front`. Solid pieces carve the navmesh (it was baked before they
+    // went in) and are wrecked by a boss's charge or acid; others are only drawn.
+    private GameObject SpawnFurniture(Room room, ThemePiece piece, Vector3 spot, Vector3 front, bool solid = true)
+    {
+        GameObject furniture = PropModel(piece.Model, piece.Model, room.transform, spot, front, piece.Size, solid);
+
+        if (furniture == null || !solid)
+            return furniture;
+
         NavMeshObstacle obstacle = furniture.AddComponent<NavMeshObstacle>();
         obstacle.shape = NavMeshObstacleShape.Box;
         obstacle.center = Vector3.up * piece.Size.y / 2f;
         obstacle.size = piece.Size;
         obstacle.carving = true;
 
-        // A boss's charge or acid wrecks it.
         furniture.AddComponent<Smashable>();
 
-        taken.AddRange(footprint);
-        return true;
+        // A bed's state (messy, bloodied, bile, stripped, knocked over); bed bays set their own after.
+        if (piece.Model == PatientBedPiece.Model)
+            SetColumn(furniture, PickBedState());
+        else if (piece.Model == CratePilePiece.Model)
+            SetColumn(furniture, rng.Next(4));
+        // Ward and barracks beds: mostly slept in and left a mess, now and then still made up.
+        else if (piece.Model == HospitalBedPiece.Model || piece.Model == BunkBedPiece.Model)
+            SetColumn(furniture, rng.NextDouble() < 0.15 ? 0 : rng.Next(1, piece.Model == HospitalBedPiece.Model ? 5 : 4));
+
+        return furniture;
+    }
+
+    // Military Base labs had patients too: the patient wing's beds join their wall pieces and islands.
+    private ThemePiece[] WithBaseLabBeds(ThemePiece[] pieces, RoomTheme theme)
+    {
+        if (theme != RoomTheme.Lab || Zone != Zone.MilitaryBase)
+            return pieces;
+
+        List<ThemePiece> withBeds = new List<ThemePiece>(pieces) { PatientBedPiece, PatientBedPiece };
+        return withBeds.ToArray();
     }
 }
