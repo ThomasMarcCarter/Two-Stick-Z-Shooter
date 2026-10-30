@@ -21,7 +21,8 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     public enum Kind
     {
         NextFloor,
-        Extraction
+        Extraction,
+        Hideout     // the training floor's hatch home
     }
 
     private const float OpenAngle = 112f;
@@ -112,7 +113,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
     private void Update()
     {
         // The hatch's sprite (sprite art) shows it open once it's ready to use.
-        if (hatchSprite == null && kind == Kind.NextFloor)
+        if (hatchSprite == null && kind != Kind.Extraction)
             hatchSprite = GetComponent<ItemSprite>();
 
         if (hatchSprite != null && !spriteOpen && Armed)
@@ -190,7 +191,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
         if (floor != null && floor.IsHideout)
             return $"DEPLOY HATCH  <size=70%><alpha=#99>// {floor.ZoneName} // FLOOR 1</size>\n" + action + "DEPLOY</color></size>";
 
-        string where = floor == null ? "" : floor.FloorNumber >= floor.TotalFloors ? "DOWN TO THE SUPPLY ROOM" : $"DOWN TO FLOOR {floor.FloorNumber + 1}";
+        string where = kind == Kind.Hideout ? "BACK TO THE HIDEOUT" : floor == null ? "" : floor.FloorNumber >= floor.TotalFloors ? "DOWN TO THE SUPPLY ROOM" : $"DOWN TO FLOOR {floor.FloorNumber + 1}";
 
         if (zoneExit != null)
         {
@@ -216,7 +217,7 @@ public class FloorExit : MonoBehaviour, FloorPickups.IPickup
             StartCoroutine(ZoneExit.WalkOut(playerWeapon.transform, transform.position, hideoutDoor, () => floor.UseExit(kind)));
         else if (zoneExit != null && playerWeapon != null)
             zoneExit.Use(playerWeapon.transform, () => floor.UseExit(kind));
-        else if (kind == Kind.NextFloor && playerWeapon != null)
+        else if (kind != Kind.Extraction && playerWeapon != null)
             StartCoroutine(ZoneExit.ClimbDown(playerWeapon.transform, transform.position, () => floor.UseExit(kind)));
         else
             floor.UseExit(kind);

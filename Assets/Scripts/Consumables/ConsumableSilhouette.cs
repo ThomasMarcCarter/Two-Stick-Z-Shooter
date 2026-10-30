@@ -6,6 +6,7 @@ using UnityEngine.UI;
 // (adrenaline), a pineapple grenade with its pin, a bottle with a burning rag (molotov) and a
 // plain bottle. Drawn in a 100x50 box (y down) and fitted into the cell, like the attachments'
 // and materials' pictures (AttachmentSilhouette, MaterialSilhouette).
+// With the sprite art the item's own sprite is drawn instead (PixelIcon); these are the fallback.
 public static class ConsumableSilhouette
 {
     private static readonly LineArt Medkit = new LineArt(0, 0, 100, 50)
@@ -54,7 +55,8 @@ public static class ConsumableSilhouette
 
     public static void Draw(VertexHelper vh, ConsumableType type, Rect area, Color colour)
     {
-        Drawing(type).Draw(vh, area, colour);
+        if (!PixelIcon.DrawItem(vh, ItemSprites.Consumable(type), area, colour))
+            Drawing(type).Draw(vh, area, colour);
     }
 
     private static LineArt Drawing(ConsumableType type)

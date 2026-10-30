@@ -47,6 +47,8 @@ public class SpriteSheet : ScriptableObject
     [Header("Guns")]
     [Tooltip("The muzzle's pixel, from the bottom-left of the frame (guns only).")]
     public Vector2 muzzle = new Vector2(15f, 10f);
+    [Tooltip("The bottom middle of the gun's magazine, in pixels (guns only): mag attachments hang from it. (0, 0) for guns with no box mag to draw one on.")]
+    public Vector2 magazine;
 
     [Header("Furniture")]
     [Tooltip("The size the piece is drawn for, in metres (width, height, depth in its own axes); FurnitureSprite scales it to the piece it stands in for.")]

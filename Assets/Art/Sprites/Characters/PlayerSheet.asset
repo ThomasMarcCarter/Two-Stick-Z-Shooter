@@ -53,6 +53,11 @@ MonoBehaviour:
     frames: 2
     fps: 5
     directional: 0
+  - name: roll
+    row: 27
+    frames: 4
+    fps: 9
+    directional: 1
   bodyRadius: 0.28
   hitRadius: 0
   bodyHeight: 1.4

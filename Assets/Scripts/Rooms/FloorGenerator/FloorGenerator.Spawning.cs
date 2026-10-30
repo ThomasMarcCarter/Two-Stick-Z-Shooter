@@ -23,10 +23,13 @@ public partial class FloorGenerator
         if (room.Type != RoomType.Normal)
             return placed;
 
-        room.Cleared += OnCombatRoomCleared;
+        if (IsTutorial)
+            room.Cleared += OnTutorialRoomCleared;
+        else
+            room.Cleared += OnCombatRoomCleared;
 
         // New Game+ adds one more per loop (MetaProgress.Loop).
-        int count = rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1) + MetaProgress.Loop;
+        int count = IsTutorial ? TutorialZombies : rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1) + MetaProgress.Loop;
         List<Vector3> doorways = DoorwayPositions(room);
         Dictionary<EnemyKind, int> kindsPlaced = new Dictionary<EnemyKind, int>();
 
@@ -35,7 +38,7 @@ public partial class FloorGenerator
             if (TryFindSpawnPoint(room, doorways, placed, out Vector3 position))
             {
                 placed.Add(position);
-                EnemyKind kind = PickEnemyKind((float)rng.NextDouble(), kindsPlaced);
+                EnemyKind kind = IsTutorial ? EnemyKind.Walker : PickEnemyKind((float)rng.NextDouble(), kindsPlaced);
                 kindsPlaced[kind] = kindsPlaced.TryGetValue(kind, out int already) ? already + 1 : 1;
                 SpawnNormalEnemy(room, position, kind);
             }
@@ -107,9 +110,35 @@ public partial class FloorGenerator
     // Weighted pick among the kinds allowed on this floor that aren't at their room limit.
     private EnemyKind PickEnemyKind(float roll, Dictionary<EnemyKind, int> placed)
     {
-        bool Allowed(EnemyKindOdds odds) =>
-            odds.weight > 0f && FloorNumber >= odds.minFloor
-            && (odds.maxPerRoom <= 0 || !placed.TryGetValue(odds.kind, out int count) || count < odds.maxPerRoom);
+        // Bullet-hell kinds: one of each and two in all per room on floor 1, three on floor 2, four below.
+        int ranged = 0;
+
+        foreach (KeyValuePair<EnemyKind, int> pair in placed)
+        {
+            if (EnemyKinds.IsRanged(pair.Key))
+                ranged += pair.Value;
+        }
+
+        int rangedCap = Mathf.Min(4, FloorNumber + 1);
+
+        bool Allowed(EnemyKindOdds odds)
+        {
+            if (odds.weight <= 0f || FloorNumber < odds.minFloor)
+                return false;
+
+            int limit = odds.maxPerRoom;
+
+            if (EnemyKinds.IsRanged(odds.kind))
+            {
+                if (ranged >= rangedCap)
+                    return false;
+
+                if (FloorNumber == 1)
+                    limit = 1;
+            }
+
+            return limit <= 0 || !placed.TryGetValue(odds.kind, out int count) || count < limit;
+        }
 
         float total = 0f;
 
@@ -164,9 +193,19 @@ public partial class FloorGenerator
         AmmoPickup.Spawn(type, DropAmount(type, Drops.crateMultiplier, (float)rng.NextDouble()), position, room.transform, ammoMaterial, true);
     }
 
+    private const float GunnerAmmoChance = 0.25f;
+
     // A dead enemy sometimes leaves ammo (a boss's goes in its supply crate instead).
     private void DropAmmo(Room room, Enemy enemy)
     {
+        // A gunner sometimes leaves a little for the gun it was holding.
+        if (ammoMaterial != null && enemy.Kind == EnemyKind.Gunner && UnityEngine.Random.value < GunnerAmmoChance)
+        {
+            AmmoType held = EnemyGunner.AmmoFor(Zone);
+            AmmoPickup.Spawn(held, DropAmount(held, 0.6f, UnityEngine.Random.value), InsideRoom(room, enemy.transform.position), room.transform, ammoMaterial, false);
+            return;
+        }
+
         if (ammoMaterial == null || UnityEngine.Random.value >= EnemyAmmoDropChance)
             return;
 
@@ -299,11 +338,34 @@ public partial class FloorGenerator
             enemyObject.AddComponent<EnemyBloater>();
         else if (kind == EnemyKind.Screamer)
             enemyObject.AddComponent<EnemyScreamer>();
+        else if (kind == EnemyKind.Pustule)
+            enemyObject.AddComponent<EnemyPustule>().Floor = FloorNumber;
+        else
+            AddRangedAttack(enemyObject, kind);
 
         AddEnemySounds(enemyObject, kind, boss);
         enemy.Died += dead => OnEnemyDied(room, dead, boss);
         room.AddEnemy(enemy);
         return enemy;
+    }
+
+    // The bullet-hell kinds' attacks, told the floor (patterns get denser deeper down) and zone.
+    private void AddRangedAttack(GameObject enemyObject, EnemyKind kind)
+    {
+        EnemyRangedAttack attack;
+
+        switch (kind)
+        {
+            case EnemyKind.Spitter: attack = enemyObject.AddComponent<EnemySpitter>(); break;
+            case EnemyKind.Retcher: attack = enemyObject.AddComponent<EnemyRetcher>(); break;
+            case EnemyKind.Gunner: attack = enemyObject.AddComponent<EnemyGunner>(); break;
+            case EnemyKind.Lobber: attack = enemyObject.AddComponent<EnemyLobber>(); break;
+            case EnemyKind.Leaper: attack = enemyObject.AddComponent<EnemyLeaper>(); break;
+            default: return;
+        }
+
+        attack.Floor = FloorNumber;
+        attack.Zone = Zone;
     }
 
     // Footsteps (heavier, lower steps than the player's, heard from where the enemy is; the boss
@@ -364,6 +426,8 @@ public partial class FloorGenerator
             case EnemyKind.Brute: return 0.75f;
             case EnemyKind.Bloater: return 0.85f;
             case EnemyKind.Screamer: return 1.3f;
+            case EnemyKind.Leaper: return 1.15f;
+            case EnemyKind.Retcher: return 0.85f;
             default: return 1f;
         }
     }

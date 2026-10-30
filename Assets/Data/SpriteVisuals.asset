@@ -34,6 +34,30 @@ MonoBehaviour:
   airBrute: {fileID: 11400000, guid: c9dfeb668bef0864dbb5b104270ca543, type: 2}
   airBloater: {fileID: 11400000, guid: bab919c84b8da3b42a213442265a3232, type: 2}
   airScreamer: {fileID: 11400000, guid: 36d1680a5360a1e4aae3010b86d5a1f3, type: 2}
+  spitter: {fileID: 11400000, guid: 05d51844047a5ec46b618ff752aac0cf, type: 2}
+  retcher: {fileID: 11400000, guid: b5b70bbcf6471ad43905e642391944ff, type: 2}
+  gunner: {fileID: 11400000, guid: 9d92a73d440169d4b801b4a45ea638a5, type: 2}
+  lobber: {fileID: 11400000, guid: ac2822d39c96ed34bbf9f898832233a7, type: 2}
+  pustule: {fileID: 11400000, guid: 2d7cce190e6d7be4bb294a9cd407f9fb, type: 2}
+  leaper: {fileID: 11400000, guid: 0070435d87f36ab4c996b9d5eb4d8959, type: 2}
+  mallSpitter: {fileID: 11400000, guid: 986bfa1593146e04cad2f177f7ca14ea, type: 2}
+  mallRetcher: {fileID: 11400000, guid: c5f6ac7ef1fc8d245afb70d24b619c53, type: 2}
+  mallGunner: {fileID: 11400000, guid: 1948a8e51798a1c42a098a3aa06adda3, type: 2}
+  mallLobber: {fileID: 11400000, guid: 231731b7f3d8ce442a8a2c7da0f95906, type: 2}
+  mallPustule: {fileID: 11400000, guid: 656bbb73508d54442a579fe1a75ad4c4, type: 2}
+  mallLeaper: {fileID: 11400000, guid: 572e36e5470f3b643b3a77e22fd1c38f, type: 2}
+  hospSpitter: {fileID: 11400000, guid: 9482c2edb6a4d9041b9c7cd0561e06a6, type: 2}
+  hospRetcher: {fileID: 11400000, guid: eaf9051ae613e684db7b26eb3f8f6f3a, type: 2}
+  hospGunner: {fileID: 11400000, guid: 901a33123661801458580d52a8575df0, type: 2}
+  hospLobber: {fileID: 11400000, guid: 2458c3ff43ef92b4186c765fbcc06e3b, type: 2}
+  hospPustule: {fileID: 11400000, guid: 4591c5b9dceb7e04e84390d701523a08, type: 2}
+  hospLeaper: {fileID: 11400000, guid: e582dea8ea0cdf043a4b2ce368f4bc5b, type: 2}
+  airSpitter: {fileID: 11400000, guid: 7726aa6d2f2a4324486c69209e17995f, type: 2}
+  airRetcher: {fileID: 11400000, guid: 0f0ad7a8aaf3e4042a3711d4cd5ff034, type: 2}
+  airGunner: {fileID: 11400000, guid: 203d3132eb7be9744b815fce43dfeb78, type: 2}
+  airLobber: {fileID: 11400000, guid: d97dccddcac36d941a9006b445e4e0f2, type: 2}
+  airPustule: {fileID: 11400000, guid: 6d2f70dc5ce19b546b2a0c9052537eab, type: 2}
+  airLeaper: {fileID: 11400000, guid: b34d09b4b31a00f4ca6e570ccb188966, type: 2}
   butcher: {fileID: 11400000, guid: f6aa8abe466d9ef489954a8363f60436, type: 2}
   broodmother: {fileID: 11400000, guid: b4bbd692446e0004ba7be19bdd0be441, type: 2}
   howler: {fileID: 11400000, guid: 844a350067dc593409dffc600eb592ad, type: 2}
@@ -926,6 +950,7 @@ MonoBehaviour:
   acidBurst: {fileID: 11400000, guid: bd04e414132c0914c877f3ce52f7b76e, type: 2}
   acidPool: {fileID: 11400000, guid: 3b49902bcec0ec4439a1a573898631cc, type: 2}
   acidGlob: {fileID: 11400000, guid: 7f9e17711e331904eada058d873c829e, type: 2}
+  enemyShots: {fileID: 11400000, guid: 6cfd8ae1715441b49b6d6f0bfd8e5d61, type: 2}
   casing: {fileID: 11400000, guid: cb7f488b1aa5ef54684f334d475c5316, type: 2}
   shadow: {fileID: 11400000, guid: 2ac5bf4bc1507c84cadd11e89f9547df, type: 2}
   footprint: {fileID: 11400000, guid: d4b45c8ba4ff2a14ea83f90612976ca6, type: 2}

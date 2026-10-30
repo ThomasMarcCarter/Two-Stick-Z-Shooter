@@ -7575,6 +7575,30 @@ MonoBehaviour:
     weight: 1.5
     minFloor: 2
     maxPerRoom: 2
+  - kind: 5
+    weight: 2
+    minFloor: 1
+    maxPerRoom: 2
+  - kind: 7
+    weight: 1.5
+    minFloor: 1
+    maxPerRoom: 1
+  - kind: 8
+    weight: 1.2
+    minFloor: 1
+    maxPerRoom: 1
+  - kind: 9
+    weight: 1.5
+    minFloor: 1
+    maxPerRoom: 2
+  - kind: 10
+    weight: 1.5
+    minFloor: 1
+    maxPerRoom: 2
+  - kind: 6
+    weight: 1
+    minFloor: 2
+    maxPerRoom: 1
   doorwayClearance: 5
   enemySpacing: 1.5
   ammoMaterial: {fileID: 2100000, guid: 7920ffa4baf1c1447a7aa832c9613f30, type: 2}

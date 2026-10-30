@@ -227,7 +227,7 @@ public class FirePatch : MonoBehaviour
             if (collider.TryGetComponent(out Enemy enemy) && done.Add(enemy))
                 enemy.TakeDamage(1);
             else if (collider.TryGetComponent(out PlayerHealth player) && done.Add(player))
-                player.TakeDamage(1, transform.position);
+                player.TakeDamage(1, transform.position, true);
         }
     }
 }

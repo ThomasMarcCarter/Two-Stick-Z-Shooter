@@ -235,6 +235,9 @@ public partial class Gun : MonoBehaviour
     // Shot Sound). Without one, a suppressed gun plays its own shot quieter and higher.
     public static AudioClip SuppressedShot { get; set; }
 
+    // This gun's own shot sound (a zombie gunner borrows it).
+    public AudioClip ShotClip => shotAudio != null ? shotAudio.clip : null;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetFreeAmmo()
     {

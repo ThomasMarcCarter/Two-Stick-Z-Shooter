@@ -122,7 +122,10 @@ public class GunPickup : MonoBehaviour
         SpriteSheet sheet = SpriteVisuals.Current != null && weaponPrefab != null ? SpriteVisuals.Current.ForGun(weaponPrefab.name) : null;
 
         if (sheet != null)
-            ItemSprite.Apply(gameObject, sheet, Vector2Int.zero, onFloor, onFloor ? 0f : Mathf.Max(0f, target.y - 0.3f), frameOnFloor: onFloor);
+        {
+            ItemSprite item = ItemSprite.Apply(gameObject, sheet, Vector2Int.zero, onFloor, onFloor ? 0f : Mathf.Max(0f, target.y - 0.3f), frameOnFloor: onFloor);
+            PickupAttachments.Apply(item, sheet, attachments);
+        }
     }
 
     // The box the prefab shows when there's no model. Its collider stays either way.

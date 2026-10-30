@@ -164,7 +164,7 @@ public class QuickBar : MonoBehaviour
         if (usingItem && Time.time >= useEnd)
             Finish();
 
-        if (GameFlow.InputBlocked || (health != null && health.IsDead))
+        if (GameFlow.InputBlocked || (health != null && health.IsDead) || PlayerDodge.For(gameObject).Rolling)
             return;
 
         for (int i = 0; i < SlotCount; i++)

@@ -35,6 +35,8 @@ public class ItemSprite : MonoBehaviour
     private Vector2Int standingFrame;
     private int shownTip = -1;      // 0 standing, 1 lying to the right, 2 lying to the left
 
+    public PixelSprite Sprite => sprite;
+
     // Room clutter (ApplyProp), as opposed to a pickup or crate.
     public bool IsClutter => anchor != null;
 

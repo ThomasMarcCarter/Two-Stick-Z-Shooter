@@ -43,8 +43,13 @@ MonoBehaviour:
     frames: 1
     fps: 1
     directional: 0
-  - name: corpse
+  - name: stunned
     row: 21
+    frames: 4
+    fps: 4
+    directional: 1
+  - name: corpse
+    row: 26
     frames: 4
     fps: 1
     directional: 0

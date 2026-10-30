@@ -10,6 +10,9 @@ public partial class FloorGenerator
 {
     private List<PlannedRoom> GenerateLayout()
     {
+        if (IsTutorial)
+            return TutorialLayout();
+
         int target = rng.Next(minRooms, maxRooms + 1);
 
         for (int attempt = 0; attempt < 200; attempt++)

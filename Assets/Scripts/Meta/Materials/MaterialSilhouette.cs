@@ -6,6 +6,7 @@ using UnityEngine.UI;
 // models: a gear and bolt (parts), a cable drum (wiring), a flask and vial (chemicals), a powder
 // keg and pouch (gunpowder) and a jerry can (fuel). Drawn in a 100x50 box (y down) and fitted
 // into the cell, like the attachments' pictures (AttachmentSilhouette).
+// With the sprite art the item's own sprite is drawn instead (PixelIcon); these are the fallback.
 public static class MaterialSilhouette
 {
     private static readonly LineArt Parts = new LineArt(0, 0, 100, 50)
@@ -53,7 +54,8 @@ public static class MaterialSilhouette
 
     public static void Draw(VertexHelper vh, MaterialType type, Rect area, Color colour)
     {
-        Drawing(type).Draw(vh, area, colour);
+        if (!PixelIcon.DrawItem(vh, ItemSprites.Material(type), area, colour))
+            Drawing(type).Draw(vh, area, colour);
     }
 
     private static LineArt Drawing(MaterialType type)

@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5385f53a8c47ca249bb27f3ecff3f5d3, type: 3}
+  m_Name: AirLobberSheet
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
+  texture: {fileID: 2800000, guid: 55805cc2013e0bc489d271a0dceabf1f, type: 3}
+  frameWidth: 32
+  frameHeight: 32
+  pivot: {x: 16, y: 2}
+  pixelsPerUnit: 20
+  clips:
+  - name: idle
+    row: 0
+    frames: 2
+    fps: 2
+    directional: 1
+  - name: walk
+    row: 5
+    frames: 4
+    fps: 8
+    directional: 1
+  - name: attack
+    row: 10
+    frames: 6
+    fps: 8
+    directional: 1
+  - name: dead
+    row: 15
+    frames: 1
+    fps: 1
+    directional: 0
+  - name: corpse
+    row: 16
+    frames: 4
+    fps: 1
+    directional: 0
+  bodyRadius: 0.2
+  hitRadius: 0
+  bodyHeight: 1.35
+  holdHeight: 15
+  holdReach: 0.3
+  muzzle: {x: 15, y: 10}
+  magazine: {x: 0, y: 0}
+  footprint: {x: 1, y: 1, z: 1}

@@ -5,7 +5,8 @@ using UnityEngine.UI;
 // same side-view outlines (in reference-image pixels, muzzle to the right) that the Blender
 // scripts in Tools/Blender/ extrude into the models, so if a model is reshaped, copy its new
 // numbers here (for guns built with gunkit.py, Tools/Blender/export_icons.py prints them).
-// Drawn fitted to the area, centred, with a faint fill under bright outlines.
+// Drawn fitted to the area, centred, with a faint fill under bright outlines. With the sprite art
+// the gun's own sprite is drawn instead (PixelIcon); these are the fallback.
 public static class WeaponSilhouette
 {
     // Glock-style pistol (Tools/Blender/Pistol.py).
@@ -174,7 +175,25 @@ public static class WeaponSilhouette
         // Keep to the old 2:1 box so every gun sits in the same space and the pistol stays smaller.
         float width = Mathf.Min(area.width, area.height * 2f);
         Rect box = new Rect(area.center - new Vector2(width, width * 0.5f) / 2f, new Vector2(width, width * 0.5f));
-        Drawing(icon).Draw(vh, box, colour);
+        if (!PixelIcon.DrawGun(vh, SpriteName(icon), box, colour))
+            Drawing(icon).Draw(vh, box, colour);
+    }
+
+    // The gun's name in SpriteVisuals (its prefab's name).
+    private static string SpriteName(Gun.Icon icon)
+    {
+        switch (icon)
+        {
+            case Gun.Icon.Pistol: return "Pistol";
+            case Gun.Icon.Shotgun: return "Shotgun";
+            case Gun.Icon.Carbine: return "M4A1";
+            case Gun.Icon.SMG: return "MP5";
+            case Gun.Icon.MachinePistol: return "Uzi";
+            case Gun.Icon.Revolver: return "Revolver";
+            case Gun.Icon.DoubleBarrel: return "DoubleBarrel";
+            case Gun.Icon.BoltAction: return "HuntingRifle";
+            default: return "AK47";
+        }
     }
 
     private static LineArt Drawing(Gun.Icon icon)

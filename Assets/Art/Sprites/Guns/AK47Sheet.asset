@@ -28,3 +28,4 @@ MonoBehaviour:
   holdHeight: 12
   holdReach: 0.3
   muzzle: {x: 31, y: 10}
+  magazine: {x: 18, y: 2}

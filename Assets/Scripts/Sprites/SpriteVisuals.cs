@@ -43,6 +43,32 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet airBloater;
     public SpriteSheet airScreamer;
 
+    [Header("Ranged zombies (the bullet-hell kinds), by zone")]
+    public SpriteSheet spitter;
+    public SpriteSheet retcher;
+    public SpriteSheet gunner;
+    public SpriteSheet lobber;
+    public SpriteSheet pustule;
+    public SpriteSheet leaper;
+    public SpriteSheet mallSpitter;
+    public SpriteSheet mallRetcher;
+    public SpriteSheet mallGunner;
+    public SpriteSheet mallLobber;
+    public SpriteSheet mallPustule;
+    public SpriteSheet mallLeaper;
+    public SpriteSheet hospSpitter;
+    public SpriteSheet hospRetcher;
+    public SpriteSheet hospGunner;
+    public SpriteSheet hospLobber;
+    public SpriteSheet hospPustule;
+    public SpriteSheet hospLeaper;
+    public SpriteSheet airSpitter;
+    public SpriteSheet airRetcher;
+    public SpriteSheet airGunner;
+    public SpriteSheet airLobber;
+    public SpriteSheet airPustule;
+    public SpriteSheet airLeaper;
+
     [Header("Bosses")]
     public SpriteSheet butcher;
     public SpriteSheet broodmother;
@@ -181,6 +207,8 @@ public class SpriteVisuals : ScriptableObject
     public SpriteSheet acidPool;
     [Tooltip("The Broodmother's glob: row 0 wobbling in flight (trail to the left), row 1 its shadow.")]
     public SpriteSheet acidGlob;
+    [Tooltip("Zombie projectiles (EnemyBullet): row 0 bile glob, row 1 tracer round, row 2 thrown debris; pointing right.")]
+    public SpriteSheet enemyShots;
 
     [Header("Small effects")]
     [Tooltip("Spent cases: 4 turns per row, row 0 brass, row 1 shotgun shell (ShellCasing).")]
@@ -218,6 +246,12 @@ public class SpriteVisuals : ScriptableObject
             case EnemyKind.Brute: return brute;
             case EnemyKind.Bloater: return bloater;
             case EnemyKind.Screamer: return screamer;
+            case EnemyKind.Spitter: return spitter;
+            case EnemyKind.Retcher: return retcher;
+            case EnemyKind.Gunner: return gunner;
+            case EnemyKind.Lobber: return lobber;
+            case EnemyKind.Pustule: return pustule;
+            case EnemyKind.Leaper: return leaper;
             default: return walker;
         }
     }
@@ -236,6 +270,12 @@ public class SpriteVisuals : ScriptableObject
                 case EnemyKind.Brute: dressed = mallBrute; break;
                 case EnemyKind.Bloater: dressed = mallBloater; break;
                 case EnemyKind.Screamer: dressed = mallScreamer; break;
+                case EnemyKind.Spitter: dressed = mallSpitter; break;
+                case EnemyKind.Retcher: dressed = mallRetcher; break;
+                case EnemyKind.Gunner: dressed = mallGunner; break;
+                case EnemyKind.Lobber: dressed = mallLobber; break;
+                case EnemyKind.Pustule: dressed = mallPustule; break;
+                case EnemyKind.Leaper: dressed = mallLeaper; break;
                 default: dressed = mallWalker; break;
             }
         }
@@ -247,6 +287,12 @@ public class SpriteVisuals : ScriptableObject
                 case EnemyKind.Brute: dressed = hospBrute; break;
                 case EnemyKind.Bloater: dressed = hospBloater; break;
                 case EnemyKind.Screamer: dressed = hospScreamer; break;
+                case EnemyKind.Spitter: dressed = hospSpitter; break;
+                case EnemyKind.Retcher: dressed = hospRetcher; break;
+                case EnemyKind.Gunner: dressed = hospGunner; break;
+                case EnemyKind.Lobber: dressed = hospLobber; break;
+                case EnemyKind.Pustule: dressed = hospPustule; break;
+                case EnemyKind.Leaper: dressed = hospLeaper; break;
                 default: dressed = hospWalker; break;
             }
         }
@@ -258,6 +304,12 @@ public class SpriteVisuals : ScriptableObject
                 case EnemyKind.Brute: dressed = airBrute; break;
                 case EnemyKind.Bloater: dressed = airBloater; break;
                 case EnemyKind.Screamer: dressed = airScreamer; break;
+                case EnemyKind.Spitter: dressed = airSpitter; break;
+                case EnemyKind.Retcher: dressed = airRetcher; break;
+                case EnemyKind.Gunner: dressed = airGunner; break;
+                case EnemyKind.Lobber: dressed = airLobber; break;
+                case EnemyKind.Pustule: dressed = airPustule; break;
+                case EnemyKind.Leaper: dressed = airLeaper; break;
                 default: dressed = airWalker; break;
             }
         }

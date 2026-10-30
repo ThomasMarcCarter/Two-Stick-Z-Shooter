@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 // The Handler (the Airport's floor 1 boss): a baggage handler, big and strong. Every few seconds,
@@ -96,54 +95,7 @@ public class BossHandler : MonoBehaviour, IBossMoves
     private void Launch(Vector3 target)
     {
         Transform room = enemy.Room != null ? enemy.Room.transform : null;
-        FloorMarker.Disc(target, BurstRadius, CaseColour, FlightTime, room, null);
-        StartCoroutine(Fly(transform.position + Vector3.up * transform.localScale.y * 0.7f, target));
-    }
-
-    // The case in the air: a brown block arcing over, then the burst.
-    private IEnumerator Fly(Vector3 from, Vector3 to)
-    {
-        GameObject suitcase = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        suitcase.name = "Suitcase";
-        Destroy(suitcase.GetComponent<Collider>());
-        suitcase.transform.localScale = new Vector3(0.6f, 0.4f, 0.3f);
-        Renderer renderer = suitcase.GetComponent<Renderer>();
-
-        if (ConsumablePickup.DefaultMaterial != null)
-        {
-            renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-            ConsumableModel.Tint(renderer, new Color(0.45f, 0.26f, 0.14f), Color.black);
-        }
-
-        for (float t = 0f; t < FlightTime; t += Time.deltaTime)
-        {
-            float k = t / FlightTime;
-            suitcase.transform.position = Vector3.Lerp(from, to, k) + Vector3.up * (Mathf.Sin(k * Mathf.PI) * 3.5f);
-            suitcase.transform.Rotate(new Vector3(260f, 120f, 0f) * Time.deltaTime);
-            yield return null;
-        }
-
-        Destroy(suitcase);
-        Burst(to);
-    }
-
-    private void Burst(Vector3 point)
-    {
-        CameraFollow.Shake(0.2f);
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("cardboard.break", 3, ProceduralAudio.CardboardBreak)), point, 1f, 0.7f);
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), point, 0.7f, 0.8f);
-
-        foreach (Collider part in Physics.OverlapSphere(point + Vector3.up * 0.5f, BurstRadius, ~0, QueryTriggerInteraction.Ignore))
-        {
-            if (part.attachedRigidbody != null && part.attachedRigidbody.TryGetComponent(out PlayerHealth player))
-            {
-                float distance = Bosses.FlatDistance(player.transform.position, point);
-                player.TakeDamage(distance < BurstRadius * 0.4f ? 2 : 1, point);
-            }
-            else if (part.attachedRigidbody == null || part.attachedRigidbody.GetComponent<Enemy>() == null)
-            {
-                Smashable.Break(part, part.ClosestPoint(point), Bosses.Flat(part.transform.position - point).normalized);
-            }
-        }
+        Lobbed.Throw(transform.position + Vector3.up * transform.localScale.y * 0.7f, target, FlightTime, BurstRadius, CaseColour,
+            room, 1, 2, Lobbed.Style.Suitcase);
     }
 }

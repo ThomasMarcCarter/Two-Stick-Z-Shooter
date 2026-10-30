@@ -62,6 +62,7 @@ public class PlayerWeapon : MonoBehaviour
         Backpack = Backpack.For(gameObject);
         QuickBar = QuickBar.For(gameObject);
         Melee = PlayerMelee.For(gameObject);
+        PlayerDodge.For(gameObject);
     }
 
     private void Start()

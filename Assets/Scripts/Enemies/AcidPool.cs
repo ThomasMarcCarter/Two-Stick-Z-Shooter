@@ -179,7 +179,7 @@ public class AcidPool : MonoBehaviour
                 continue;
 
             if (collider.TryGetComponent(out PlayerHealth player))
-                player.TakeDamage(1, transform.position);
+                player.TakeDamage(1, transform.position, true);
             else if (burnt != null && collider.TryGetComponent(out Enemy enemy) && enemy.IsActive && burnt.Add(enemy))
                 enemy.TakeDamage(1);
         }

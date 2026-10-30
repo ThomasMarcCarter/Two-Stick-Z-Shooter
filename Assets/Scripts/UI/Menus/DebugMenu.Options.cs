@@ -48,6 +48,7 @@ public partial class DebugMenu
         Add("GIVE CONSUMABLES (1 STACK EACH)", GiveConsumables, false);
         Add(() => $"GIVE 100 SCRAP ({MetaProgress.Scrap})", () => MetaProgress.AddScrap(100), false);
         Add("RESET META PROGRESS (ALL HIDEOUT)", MetaProgress.ResetAll, false);
+        Add("REPLAY TUTORIAL", () => { MetaProgress.ResetTutorial(); RunFlow.RestartRun(); }, true);
 
         Section(1, "SPAWN ITEMS");
         Add("SPAWN WEAPONS", SpawnWeapons, true);

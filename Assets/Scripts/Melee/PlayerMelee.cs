@@ -107,7 +107,7 @@ public class PlayerMelee : MonoBehaviour
         if (GameFlow.InputBlocked || (health != null && health.IsDead))
             return;
 
-        if (!GameInput.Melee.WasPressedThisFrame() || Time.time < nextSwing)
+        if (!GameInput.Melee.WasPressedThisFrame() || Time.time < nextSwing || PlayerDodge.For(gameObject).Rolling)
             return;
 
         // Hands full with a medkit, or too winded to swing.
@@ -189,6 +189,7 @@ public class PlayerMelee : MonoBehaviour
             if (enemy.BlocksHitFrom(origin))
             {
                 SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), enemy.transform.position, 0.7f, 0.8f);
+                enemy.MeleeBlocked();
                 continue;
             }
 
@@ -196,7 +197,7 @@ public class PlayerMelee : MonoBehaviour
                 ImpactEffects.FleshHit(enemy.transform.position - direction * 0.4f, -direction, direction * 5f, enemy.transform, materials);
 
             enemy.Knock(direction * Knockback, Stagger);
-            enemy.TakeDamage(Damage);
+            enemy.TakeDamage(Damage, true);
         }
 
         return count;

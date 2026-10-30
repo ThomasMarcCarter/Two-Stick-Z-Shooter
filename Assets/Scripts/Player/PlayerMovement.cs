@@ -24,6 +24,7 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody rb;
     private PlayerStamina stamina;
     private QuickBar quickBar;
+    private PlayerDodge dodge;
     private bool sprinting;
     private bool winded;
     private Vector3 movement;
@@ -33,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         stamina = GetComponent<PlayerStamina>();
         quickBar = QuickBar.For(gameObject);
+        dodge = PlayerDodge.For(gameObject);
     }
 
     private void Update()
@@ -59,12 +61,16 @@ public class PlayerMovement : MonoBehaviour
         if (GameInput.Sneak.WasPressedThisFrame())
             IsSneaking = !IsSneaking;
 
-        if (IsSneaking && GameInput.Sprint.WasPressedThisFrame())
+        if (IsSneaking && (GameInput.Sprint.WasPressedThisFrame() || dodge.Rolling))
             IsSneaking = false;
     }
 
     private void FixedUpdate()
     {
+        // PlayerDodge drives the body through a roll.
+        if (dodge.Rolling)
+            return;
+
         float multiplier = winded ? windedMultiplier : sprinting ? sprintMultiplier : 1f;
 
         if (IsSneaking)

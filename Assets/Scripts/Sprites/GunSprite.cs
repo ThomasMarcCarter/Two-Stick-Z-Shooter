@@ -10,9 +10,11 @@ using UnityEngine;
 // distance ahead). It stands upright just in front of its holder's sprite, or just behind when
 // they face away up the screen (pulled toward the camera when it would dip into the floor), casts no shadow (it would block the flashlight), moves
 // through a reload (ReloadAngle: mag out, slapped in, racked; or a nod per shell) and swings through an arc in a melee bash (PlayerMelee.SwingProgress). Added by CharacterVisuals.DressGun for guns with a sheet in SpriteVisuals.
-// A suppressor or laser sight is drawn on it as sprites of their own (SpriteVisuals.gunAttachments)
-// that turn, flip and tip with the drawn barrel: the can on the muzzle (shots then come out of the
-// can's end), the laser under the barrel's front with the beam starting at its lens.
+// Attachments are drawn on it as sprites of their own (SpriteVisuals.gunAttachments) that turn,
+// flip and tip with the drawn barrel: a long or match barrel on the muzzle, then a suppressor or
+// choke on the end of that (shots then come out of the last part's end), a mag attachment hung
+// from the bottom of the gun's own mag (the sheet's magazine point; none on guns without one), and
+// the laser under the barrel's front with the beam starting at its lens. Trigger parts aren't drawn.
 [DefaultExecutionOrder(260)]
 public class GunSprite : MonoBehaviour
 {
@@ -21,8 +23,12 @@ public class GunSprite : MonoBehaviour
     private const float MeleeArc = 150f;   // degrees the gun sweeps through in a melee swing
     private const float FloorClearance = 0.05f;  // lowest the gun's quad may reach, in metres
     private const float AttachmentGap = 0.01f;   // metres an attachment sits in front of the gun
-    private const float SuppressorLength = 8f;   // gun pixels the can reaches past the muzzle
     private const float LaserSetBack = 2f;       // gun pixels the laser's front sits behind the muzzle
+    private const int LaserFrame = 1;
+    // Mag frames hang from this point of their frame (its top middle).
+    private static readonly Vector2 MagTop = new Vector2(8.5f, 8f);
+    // The drawn slots, in the order parts sit along the barrel (a muzzle part on a barrel part).
+    private static readonly AttachmentSlot[] DrawnSlots = { AttachmentSlot.Barrel, AttachmentSlot.Muzzle, AttachmentSlot.Magazine };
     // The laser's front on the barrel line is 5 px right of and 2 px above its sheet's pivot (the
     // sheet's one pivot suits the can), and its lens is at (-0.5, -2.5) from that front.
     private static readonly Vector2 LaserFront = new Vector2(5f, 2f);
@@ -37,7 +43,7 @@ public class GunSprite : MonoBehaviour
     private Vector2 aim = Vector2.right;
     private Light flashlight;
     private float flashlightThrow;   // how far ahead the flashlight's beam meets the floor
-    private PixelSprite suppressor;
+    private readonly PixelSprite[] slotParts = new PixelSprite[3];   // per DrawnSlots
     private PixelSprite laserModule;
     private bool putAway;
     private Vector2 screenGrip;      // this frame's grip on screen and screen pixels per metre
@@ -109,8 +115,11 @@ public class GunSprite : MonoBehaviour
 
         if (away)
         {
-            if (suppressor != null)
-                suppressor.Renderer.enabled = false;
+            foreach (PixelSprite part in slotParts)
+            {
+                if (part != null)
+                    part.Renderer.enabled = false;
+            }
 
             if (laserModule != null)
                 laserModule.Renderer.enabled = false;
@@ -132,12 +141,8 @@ public class GunSprite : MonoBehaviour
         // Screen pixels per metre across, at the holder (with perspective it depends on the distance).
         float pixelsPerMetre = Vector2.Distance(hands, camera.WorldToScreenPoint(handsWorld + camera.transform.right));
         Vector2 grip = hands + aim * reach * pixelsPerMetre;
-        float barrel = (sheet.muzzle - sheet.pivot).magnitude / Mathf.Max(1f, sheet.pixelsPerUnit);
-        bool canDrawn = gun.Suppressed && AttachmentArt != null;
-
-        if (canDrawn)
-            barrel += SuppressorLength / Mathf.Max(1f, sheet.pixelsPerUnit);
-
+        float barrel = ((sheet.muzzle - sheet.pivot).magnitude + Extension(AttachmentSlot.Barrel) + Extension(AttachmentSlot.Muzzle))
+                       / Mathf.Max(1f, sheet.pixelsPerUnit);
         Vector2 tip = grip + aim * barrel * pixelsPerMetre;
 
         bool left = aim.x < 0f;
@@ -264,7 +269,7 @@ public class GunSprite : MonoBehaviour
             sprite.DepthOffset -= (FloorClearance - lowest) / -view.y;
     }
 
-    private static SpriteSheet AttachmentArt => SpriteVisuals.Current != null ? SpriteVisuals.Current.gunAttachments : null;
+    public static SpriteSheet AttachmentArt => SpriteVisuals.Current != null ? SpriteVisuals.Current.gunAttachments : null;
 
     // Where a pixel of the gun's sheet is on screen as the gun is drawn this frame.
     private Vector2 ScreenOf(Vector2 pixel)
@@ -279,17 +284,86 @@ public class GunSprite : MonoBehaviour
         return screenGrip + new Vector2(offset.x * cos - offset.y * sin, offset.x * sin + offset.y * cos) * screenScale;
     }
 
-    // The suppressor and laser sprites on the drawn barrel (barrelAngle is its angle on screen),
+    // The attachments' frames in the art, and how many gun pixels a barrel or muzzle part carries
+    // the muzzle on by. -1: not drawn.
+    private static int FrameOf(WeaponAttachment attachment, out float length)
+    {
+        length = 0f;
+
+        switch (attachment != null ? attachment.name : null)
+        {
+            case "Suppressor": length = 8f; return 0;
+            case "Laser Sight": return LaserFrame;
+            case "Choke": length = 3f; return 2;
+            case "Long Barrel": length = 7f; return 3;
+            case "Match Barrel": length = 5f; return 4;
+            case "Extended Mag": return 5;
+            case "Drum Mag": return 6;
+            case "Quick Mag": return 7;
+            default: return -1;
+        }
+    }
+
+    // The frame of the attachment art showing a fitted part (-1: not drawn), and the gun pixel
+    // the art's pivot goes on: barrel parts on the muzzle, muzzle parts on the end of the barrel
+    // part (barrelPart, if any), mag parts hung under the gun's mag, the laser under the barrel's
+    // front. Shared with gun pickups (PickupAttachments).
+    public static int Mount(SpriteSheet sheet, SpriteSheet art, WeaponAttachment part, WeaponAttachment barrelPart, out Vector2 mount)
+    {
+        mount = sheet.muzzle;
+        int frame = art != null ? FrameOf(part, out _) : -1;
+
+        switch (frame < 0 ? AttachmentSlot.Trigger : part.slot)
+        {
+            case AttachmentSlot.Muzzle:
+                FrameOf(barrelPart, out float barrel);
+                mount.x += barrel;
+                break;
+            case AttachmentSlot.Magazine:
+                if (sheet.magazine == Vector2.zero)
+                    return -1;
+
+                mount = sheet.magazine - (MagTop - art.pivot);
+                break;
+            case AttachmentSlot.Rail:
+                mount = new Vector2(sheet.muzzle.x - LaserSetBack, sheet.pivot.y) - LaserFront;
+                break;
+        }
+
+        return frame;
+    }
+
+    // How far the part in a slot carries the drawn muzzle on, in gun pixels.
+    private float Extension(AttachmentSlot slot)
+    {
+        if (AttachmentArt == null)
+            return 0f;
+
+        FrameOf(gun.AttachmentIn(slot), out float length);
+        return length;
+    }
+
+    // The attachment sprites on the drawn gun (barrelAngle is the barrel's angle on screen),
     // and the laser's beam from the drawn lens.
     private void PlaceAttachments(Camera camera, float barrelAngle, bool left, bool tipped, Vector3 view)
     {
         SpriteSheet art = AttachmentArt;
         LaserSight laser = gun.Laser;
         Vector2 laserMount = new Vector2(sheet.muzzle.x - LaserSetBack, sheet.pivot.y);
+        WeaponAttachment barrelPart = gun.AttachmentIn(AttachmentSlot.Barrel);
 
-        suppressor = Show(suppressor, art, gun.Suppressed, 0, "Suppressor Sprite");
-        laserModule = Show(laserModule, art, laser != null, 1, "Laser Sprite");
-        PlaceAttachment(suppressor, camera, sheet.muzzle, barrelAngle, left, view);
+        for (int i = 0; i < DrawnSlots.Length; i++)
+        {
+            int frame = Mount(sheet, art, gun.AttachmentIn(DrawnSlots[i]), barrelPart, out Vector2 mount);
+            slotParts[i] = Show(slotParts[i], art, frame >= 0, Mathf.Max(0, frame), DrawnSlots[i] + " Sprite");
+
+            if (slotParts[i] != null && frame >= 0)
+                slotParts[i].SetFrame(frame, 0, false);
+
+            PlaceAttachment(slotParts[i], camera, mount, barrelAngle, left, view);
+        }
+
+        laserModule = Show(laserModule, art, laser != null, LaserFrame, "Laser Sprite");
         PlaceAttachment(laserModule, camera, laserMount - LaserFront, barrelAngle, left, view);
 
         if (laser == null)

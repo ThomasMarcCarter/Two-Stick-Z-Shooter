@@ -107,7 +107,12 @@ public class MainMenu : MonoBehaviour
         switch (menu.Update())
         {
             case 0:
-                RunFlow.ExitToHideout();
+                // A new profile plays the training floor first.
+                if (MetaProgress.TutorialDone)
+                    RunFlow.ExitToHideout();
+                else
+                    RunFlow.RestartRun();
+
                 break;
             case 1:
                 OpenProfiles();

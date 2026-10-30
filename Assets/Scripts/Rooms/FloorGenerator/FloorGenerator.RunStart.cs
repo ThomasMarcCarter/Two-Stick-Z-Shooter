@@ -95,7 +95,7 @@ public partial class FloorGenerator
 
         // Until the mechanic's been found, every Military Base run starts with their call from the
         // supply room.
-        if (Zone == Zone.MilitaryBase && !MetaProgress.IsRescued(NpcKind.Mechanic))
+        if (!IsTutorial && Zone == Zone.MilitaryBase && !MetaProgress.IsRescued(NpcKind.Mechanic))
             StartCoroutine(DistressCall(NpcKind.Mechanic));
     }
 }

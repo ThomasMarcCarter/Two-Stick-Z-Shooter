@@ -16,6 +16,26 @@ public partial class Enemy
         switch (state)
         {
             case State.Chase:
+                // Ranged kinds back off when the player's too close, and hold their ground
+                // a little way past that, while they can see them.
+                if (KeepAway > 0f && canSee)
+                {
+                    float distance = FlatDistance(rb.position, target.position);
+
+                    if (distance < KeepAway)
+                    {
+                        Vector3 away = Flat(rb.position - target.position).normalized;
+                        destination = FurthestClearPoint(rb.position, away, 2.5f);
+                        return true;
+                    }
+
+                    if (distance < KeepAway + 2f)
+                    {
+                        destination = rb.position;
+                        return false;
+                    }
+                }
+
                 destination = Flat(target.position);
                 return true;
 

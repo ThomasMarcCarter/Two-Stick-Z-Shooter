@@ -9,6 +9,7 @@ using UnityEngine.UI;
 // with a cross, a tray of vials, a drip stand and bag, a centrifuge, and a folder of notes; the
 // radio parts: a power cell, a circuit board, a folded mast, a crystal and a logbook. Drawn in a
 // 100x50 box (y down) and fitted into the slot, like the other items'.
+// With the sprite art the item's own sprite is drawn instead (PixelIcon); these are the fallback.
 public static class StoryItemSilhouette
 {
     private static readonly LineArt Battery = new LineArt(0, 0, 100, 50)
@@ -193,7 +194,8 @@ public static class StoryItemSilhouette
 
     public static void Draw(VertexHelper vh, StoryItem item, Rect area, Color colour)
     {
-        Drawing(item).Draw(vh, area, colour);
+        if (!PixelIcon.DrawStory(vh, StoryItems.SheetFrame(item), area, colour))
+            Drawing(item).Draw(vh, area, colour);
     }
 
     private static LineArt Drawing(StoryItem item)

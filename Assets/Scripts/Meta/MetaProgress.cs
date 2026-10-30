@@ -46,6 +46,7 @@ public static partial class MetaProgress
         public int[] zones = new int[0];    // zones unlocked from the debug menu, by Zone
         public int loop;                    // New Game+ loops started (0: the first playthrough)
         public int loopEvacs;               // evacs when the current loop began
+        public int tutorialDone;            // 1 once the hideout's been reached (the training floor comes first)
     }
 
     // What the main menu shows for a profile without switching to it.
@@ -262,6 +263,22 @@ public static partial class MetaProgress
             Array.Resize(ref Data.levels, MetaUpgrades.All.Length);
 
         Data.levels[index] = level;
+    }
+
+    // ---------- Tutorial ----------
+
+    public static bool TutorialDone => Data.tutorialDone != 0;
+
+    public static void FinishTutorial()
+    {
+        Data.tutorialDone = 1;
+        Save();
+    }
+
+    public static void ResetTutorial()
+    {
+        Data.tutorialDone = 0;
+        Save();
     }
 
     // ---------- Runs ----------

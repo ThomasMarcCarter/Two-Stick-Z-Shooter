@@ -165,7 +165,7 @@ public class SpeechText : MonoBehaviour
     }
 
     // A short soft square blip, like a terminal printing.
-    private static AudioClip Blip()
+    public static AudioClip Blip()
     {
         return SoundFX.Pick(SoundFX.Clips("speech-blip", 1, seed =>
         {

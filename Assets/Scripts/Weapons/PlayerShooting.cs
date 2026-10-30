@@ -13,6 +13,7 @@ public class PlayerShooting : MonoBehaviour
     private Rigidbody rb;
     private Quaternion targetRotation;
     private QuickBar quickBar;
+    private PlayerDodge dodge;
     private bool holdFire;
 
 
@@ -21,6 +22,7 @@ public class PlayerShooting : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         targetRotation = transform.rotation;
         quickBar = QuickBar.For(gameObject);
+        dodge = PlayerDodge.For(gameObject);
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Confined;
     }
@@ -50,7 +52,8 @@ public class PlayerShooting : MonoBehaviour
             equippedGun.TryReload();
         }
 
-        if (holdFire)
+        // No shooting mid-roll (a reload carries on).
+        if (holdFire || (dodge != null && dodge.Rolling))
             return;
 
         if (equippedGun.GetFireMode() == Gun.FireMode.Semi)

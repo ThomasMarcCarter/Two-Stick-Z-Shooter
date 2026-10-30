@@ -13,7 +13,7 @@ public partial class SettingsMenu
     private Cell optionsResetCell;
 
     // Tabs + header + action rows + gap + two buttons, for fitting everything into the container.
-    private const float LayoutRows = 1 + 1 + 23 + 0.5f + 2;
+    private const float LayoutRows = 1 + 1 + 24 + 0.5f + 2;
 
     private void BuildRows()
     {
@@ -55,6 +55,7 @@ public partial class SettingsMenu
         AddRow(ref y, "MOVE RIGHT", Part(GameInput.Move, "Right"), Fixed("L-STICK"));
         AddRow(ref y, "SPRINT", Binding(GameInput.Sprint, false), Binding(GameInput.Sprint, true));
         AddRow(ref y, "SNEAK (TOGGLE)", Binding(GameInput.Sneak, false), Binding(GameInput.Sneak, true));
+        AddRow(ref y, "DODGE ROLL", Binding(GameInput.Dodge, false), Binding(GameInput.Dodge, true));
         AddRow(ref y, "AIM", Fixed("MOUSE"), Fixed("R-STICK"));
         AddRow(ref y, "FIRE", Binding(GameInput.Fire, false), Binding(GameInput.Fire, true));
         AddRow(ref y, "RELOAD", Binding(GameInput.Reload, false), Binding(GameInput.Reload, true));

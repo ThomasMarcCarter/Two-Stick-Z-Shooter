@@ -5,6 +5,7 @@ using UnityEngine.UI;
 // flared choke, barrels, magazines, trigger parts and a laser module, drawn side-on in a 100x50
 // box (y down) and fitted into the cell. Picked by the attachment's name, since the list is
 // editable on the FloorGenerator; anything unrecognised gets its slot's general picture.
+// With the sprite art the item's own sprite is drawn instead (PixelIcon); these are the fallback.
 public static class AttachmentSilhouette
 {
     private static readonly LineArt Suppressor = new LineArt(0, 0, 100, 50)
@@ -71,7 +72,8 @@ public static class AttachmentSilhouette
 
     public static void Draw(VertexHelper vh, WeaponAttachment attachment, Rect area, Color colour)
     {
-        Drawing(attachment).Draw(vh, area, colour);
+        if (attachment == null || !PixelIcon.DrawItem(vh, ItemSprites.Attachment(attachment.name), area, colour))
+            Drawing(attachment).Draw(vh, area, colour);
     }
 
     private static LineArt Drawing(WeaponAttachment attachment)

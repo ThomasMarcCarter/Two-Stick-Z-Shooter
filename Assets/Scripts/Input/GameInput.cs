@@ -47,6 +47,7 @@ public static partial class GameInput
     public static InputAction Reload { get; private set; }
     public static InputAction Sprint { get; private set; }
     public static InputAction Sneak { get; private set; }
+    public static InputAction Dodge { get; private set; }
     public static InputAction Interact { get; private set; }
     public static InputAction Map { get; private set; }
     public static InputAction Pause { get; private set; }
@@ -131,6 +132,7 @@ public static partial class GameInput
         Reload = AddButton(gameplay, "Reload", "<Keyboard>/r", "<Gamepad>/buttonWest");
         Sprint = AddButton(gameplay, "Sprint", "<Keyboard>/leftShift", "<Gamepad>/leftTrigger");
         Sneak = AddButton(gameplay, "Sneak", "<Keyboard>/leftCtrl", "<Gamepad>/leftStickPress");
+        Dodge = AddButton(gameplay, "Dodge", "<Keyboard>/space", "<Gamepad>/buttonSouth");
         Interact = AddButton(gameplay, "Interact", "<Keyboard>/e", "<Gamepad>/buttonNorth");
         Map = AddButton(gameplay, "Map", "<Keyboard>/m", "<Gamepad>/select");
         Pause = AddButton(gameplay, "Pause", "<Keyboard>/escape", "<Gamepad>/start");

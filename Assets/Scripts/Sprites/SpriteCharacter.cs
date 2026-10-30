@@ -5,8 +5,9 @@ using UnityEngine;
 // eight directions, and plays "walk" while moving, stepping a frame per strideLength travelled so
 // the feet keep pace with the ground, "idle" when still, "attack" on the enemy's swing clock (so
 // the blow frame shows as the hit lands, like CharacterAnimator's swings), "special" through a
-// boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves), the player's "heal" and
-// "inject" through a medkit or adrenaline (QuickBar), "climb" down a hatch's ladder and "dead"
+// boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves; a sheet with a "stunned"
+// clip loops that while dazed instead, e.g. the Warden without its shield), the player's "heal" and
+// "inject" through a medkit or adrenaline (QuickBar), "climb" down a hatch's ladder, "roll" through a dodge roll and "dead"
 // once the player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
 // A soft round shadow lies on the floor under every character (SpriteVisuals.shadow), and a hit
 // squashes the sprite wide and short for a moment (an enemy's or the player's Damaged).
@@ -31,10 +32,13 @@ public class SpriteCharacter : MonoBehaviour
     private SpriteSheet.Clip attack;
     private SpriteSheet.Clip dead;
     private SpriteSheet.Clip special;
+    private SpriteSheet.Clip stunned;
     private SpriteSheet.Clip melee;
     private SpriteSheet.Clip heal;
     private SpriteSheet.Clip inject;
     private SpriteSheet.Clip climb;
+    private SpriteSheet.Clip roll;
+    private PlayerDodge dodge;
     private QuickBar quickBar;
     private PlayerMelee playerMelee;
     private IBossMoves boss;
@@ -115,10 +119,13 @@ public class SpriteCharacter : MonoBehaviour
         character.attack = sheet.Find("attack");
         character.dead = sheet.Find("dead");
         character.special = sheet.Find("special");
+        character.stunned = sheet.Find("stunned");
         character.melee = sheet.Find("melee");
         character.heal = sheet.Find("heal");
         character.inject = sheet.Find("inject");
         character.climb = sheet.Find("climb");
+        character.roll = sheet.Find("roll");
+        character.dodge = body.GetComponent<PlayerDodge>();
         character.quickBar = body.GetComponent<QuickBar>();
         character.playerMelee = body.GetComponent<PlayerMelee>();
         character.lastPosition = body.position;
@@ -161,11 +168,21 @@ public class SpriteCharacter : MonoBehaviour
 
         facing = SpriteFacing.For(facingSource.forward, camera.transform);
 
+        // Rolling: faces the way the roll goes, not the aim.
+        if (dodge != null && dodge.Rolling)
+            facing = SpriteFacing.For(dodge.Direction, camera.transform);
+
         // Boss behaviours are added after the body, so look for one the first time round.
         if (!lookedForBoss)
         {
             lookedForBoss = true;
             boss = GetComponent<IBossMoves>();
+        }
+
+        if (boss != null && stunned != null && boss.Move == BossMove.Dazed)
+        {
+            sprite.SetFrame(stunned, Mathf.FloorToInt(Time.time * stunned.fps), facing);
+            return;
         }
 
         if (boss != null && special != null && boss.Move != BossMove.None)
@@ -186,7 +203,7 @@ public class SpriteCharacter : MonoBehaviour
             return;
         }
 
-        float swing = enemy != null ? enemy.AttackTime : -1f;
+        float swing = enemy == null ? -1f : enemy.AttackTime >= 0f ? enemy.AttackTime : enemy.PoseTime;
 
         if (swing >= 0f && attack != null)
         {
@@ -235,6 +252,12 @@ public class SpriteCharacter : MonoBehaviour
     // adrenaline through its use time. False when they're not (or the sheet has no clip for it).
     private bool UpdatePlayerActions(SpriteFacing.Facing facing)
     {
+        if (dodge != null && dodge.Rolling && roll != null)
+        {
+            sprite.SetFrame(roll, Mathf.Min(roll.frames - 1, Mathf.FloorToInt(dodge.Progress * roll.frames)), facing);
+            return true;
+        }
+
         if (ZoneExit.Climbing && climb != null)
         {
             sprite.SetFrame(climb, Mathf.FloorToInt(Time.time * climb.fps), facing);
@@ -258,7 +281,7 @@ public class SpriteCharacter : MonoBehaviour
         return true;
     }
 
-    // Busy with both hands (a medkit, adrenaline, a ladder): GunSprite puts the gun away.
-    public bool HandsBusy => player != null && (ZoneExit.Climbing || (quickBar != null && quickBar.IsUsing
+    // Busy with both hands (a medkit, adrenaline, a ladder, a roll): GunSprite puts the gun away.
+    public bool HandsBusy => player != null && (ZoneExit.Climbing || (dodge != null && dodge.Rolling) || (quickBar != null && quickBar.IsUsing
         && (ConsumableInfo.IsMedkit(quickBar.UsingType) || quickBar.UsingType == ConsumableType.Adrenaline)));
 }

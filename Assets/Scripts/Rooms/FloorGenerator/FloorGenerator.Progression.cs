@@ -25,6 +25,7 @@ public partial class FloorGenerator
     // everything home anyway.
     private void OnBossRoomCleared(Room room)
     {
+        EnemyBullet.ClearAll();
         PlayRoomCleared();
         ZoneExit zoneExit = room.GetComponentInChildren<ZoneExit>();
 
@@ -85,6 +86,7 @@ public partial class FloorGenerator
     // fell, and sometimes a supply (grenade, molotov and so on) beside it.
     private void OnCombatRoomCleared(Room room)
     {
+        EnemyBullet.ClearAll();
         // A room that ended up with no enemies is "cleared" on entry; there was no fight.
         if (!lastDeaths.ContainsKey(room))
             return;
@@ -133,6 +135,12 @@ public partial class FloorGenerator
         if (kind == FloorExit.Kind.Extraction)
         {
             Extract();
+            return;
+        }
+
+        if (kind == FloorExit.Kind.Hideout)
+        {
+            RunFlow.ExitToHideout();
             return;
         }
 

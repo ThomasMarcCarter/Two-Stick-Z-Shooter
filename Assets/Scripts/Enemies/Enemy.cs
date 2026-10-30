@@ -69,6 +69,17 @@ public partial class Enemy : MonoBehaviour
     // Took damage and survived it (the killing blow raises Died instead).
     public event Action<Enemy> Damaged;
 
+    // A melee blow struck it and it survived, whether it landed or a shield took it (MeleeBlocked):
+    // the Warden counts them.
+    public event Action<Enemy> MeleeHit;
+
+    // A melee blow stopped by its shield (HitBlocker) still counts as a melee hit.
+    public void MeleeBlocked()
+    {
+        if (IsActive)
+            MeleeHit?.Invoke(this);
+    }
+
     // Caught sight of the player, having not been chasing them (for the screamer).
     public event Action<Enemy> SpottedPlayer;
 
@@ -171,6 +182,13 @@ public partial class Enemy : MonoBehaviour
 
     // A swing length to use instead of its kind's (a boss with its own attack); 0 for the kind's.
     public float AttackPeriodOverride { get; set; }
+
+    // Ranged kinds: how close the player can get before it backs off (0 = it doesn't).
+    public float KeepAway { get; set; }
+
+    // Ranged kinds: where the sprite's attack clip is (0 to 1) through a wind-up and throw or
+    // spit, when it isn't swinging; -1 when it isn't.
+    public float PoseTime { get; set; } = -1f;
 
     public bool CanSeeTarget => canSee;
     public int MaxHealth => maxHealth;
@@ -459,7 +477,7 @@ public partial class Enemy : MonoBehaviour
 
     // ---------- Health ----------
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, bool melee = false)
     {
         // Can't be hurt until the player is locked in with it, so a room can't be cleared
         // by shooting through an open door.
@@ -480,6 +498,9 @@ public partial class Enemy : MonoBehaviour
         }
 
         Damaged?.Invoke(this);
+
+        if (melee)
+            MeleeHit?.Invoke(this);
     }
 
     // Alive and locked in with the player, so it can be hurt.

@@ -183,7 +183,13 @@ public partial class FloorGenerator : MonoBehaviour
         new EnemyKindOdds { kind = EnemyKind.Runner, weight = 2.5f, minFloor = 1, maxPerRoom = 3 },
         new EnemyKindOdds { kind = EnemyKind.Bloater, weight = 1.5f, minFloor = 1, maxPerRoom = 2 },
         new EnemyKindOdds { kind = EnemyKind.Screamer, weight = 1f, minFloor = 1, maxPerRoom = 1 },
-        new EnemyKindOdds { kind = EnemyKind.Brute, weight = 1.5f, minFloor = 2, maxPerRoom = 2 }
+        new EnemyKindOdds { kind = EnemyKind.Brute, weight = 1.5f, minFloor = 2, maxPerRoom = 2 },
+        new EnemyKindOdds { kind = EnemyKind.Spitter, weight = 2f, minFloor = 1, maxPerRoom = 2 },
+        new EnemyKindOdds { kind = EnemyKind.Gunner, weight = 1.5f, minFloor = 1, maxPerRoom = 1 },
+        new EnemyKindOdds { kind = EnemyKind.Lobber, weight = 1.2f, minFloor = 1, maxPerRoom = 1 },
+        new EnemyKindOdds { kind = EnemyKind.Pustule, weight = 1.5f, minFloor = 1, maxPerRoom = 2 },
+        new EnemyKindOdds { kind = EnemyKind.Leaper, weight = 1.5f, minFloor = 1, maxPerRoom = 2 },
+        new EnemyKindOdds { kind = EnemyKind.Retcher, weight = 1f, minFloor = 2, maxPerRoom = 1 }
     };
 
     [Serializable]
@@ -308,7 +314,7 @@ public partial class FloorGenerator : MonoBehaviour
 
     // Floor 0 is the hideout: the hub with the stations, the rescued survivors and the hatch to floor 1.
     public bool IsHideout => FloorNumber == 0;
-    public string FloorName => IsHideout ? "HIDEOUT" : IsEvac ? "ROOF" : IsSupplyRoom ? "SUPPLY ROOM" : $"FLOOR {FloorNumber}";
+    public string FloorName => IsHideout ? "HIDEOUT" : IsTutorial ? "TRAINING" : IsEvac ? "ROOF" : IsSupplyRoom ? "SUPPLY ROOM" : $"FLOOR {FloorNumber}";
 
     // The zone of the map this run is in, read from the save when floor 1 is built. In the
     // hideout, the zone the next run will deploy to.
@@ -438,6 +444,8 @@ public partial class FloorGenerator : MonoBehaviour
         if (RunFlow.ConsumeHideoutRequest())
             FloorNumber = 0;
 
+        tutorialRun = FloorNumber == 1 && !MetaProgress.TutorialDone;
+
         // The player's capsule is 2 tall around its middle; the model stands on the floor.
         CharacterVisuals.AttachToPlayer(player, 1f);
 
@@ -487,6 +495,7 @@ public partial class FloorGenerator : MonoBehaviour
 
         if (IsHideout)
         {
+            Tutorial.Attach(this);
             GenerateHideout();
             return;
         }
@@ -507,7 +516,8 @@ public partial class FloorGenerator : MonoBehaviour
         BuildStructure(plan);
 
         // The cage is solid, so it goes in before the navmesh.
-        PlaceCagedSurvivor(plan);
+        if (!IsTutorial)
+            PlaceCagedSurvivor(plan);
 
         // Once all the walls, doors and pillars are up, and before anything moves in.
         BuildNavMesh();
@@ -518,6 +528,7 @@ public partial class FloorGenerator : MonoBehaviour
 
         PlacePlayer();
         ApplyRecon();
+        Tutorial.Attach(this);
 
         if (FloorNumber == 1 && !runPerksApplied)
             StartCoroutine(BeginRun());
@@ -552,6 +563,9 @@ public partial class FloorGenerator : MonoBehaviour
             if (planned.Parent >= 0)
                 BuildCorridor(planned.ParentCell, planned.DoorDirection);
         }
+
+        if (IsTutorial)
+            ReserveTutorialHatch();
 
         // The boss room's way down (shut until the boss is dead) is solid too.
         foreach (Room room in rooms)

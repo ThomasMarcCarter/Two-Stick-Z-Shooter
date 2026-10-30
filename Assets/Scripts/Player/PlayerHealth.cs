@@ -26,7 +26,7 @@ public class PlayerHealth : MonoBehaviour
     public int MaxHealth => maxHealth;
     public bool IsDead { get; private set; }
     public bool IsFull => Health >= maxHealth;
-    public bool IsInvulnerable => Time.time < invulnerableUntil;
+    public bool IsInvulnerable => Time.time < invulnerableUntil || (dodge != null && dodge.Invulnerable);
 
     // Debug: ignore all damage, and the held gun's magazine never runs dry (Gun).
     public bool GodMode { get; set; }
@@ -44,11 +44,13 @@ public class PlayerHealth : MonoBehaviour
     private Rigidbody rb;
     private Renderer[] bodies = new Renderer[0];
     private float invulnerableUntil;
+    private PlayerDodge dodge;
 
     private void Awake()
     {
         Health = maxHealth;
         rb = GetComponent<Rigidbody>();
+        dodge = PlayerDodge.For(gameObject);
         Renderer own = GetComponent<Renderer>();
         bodies = own != null ? new[] { own } : new Renderer[0];
     }
@@ -58,16 +60,17 @@ public class PlayerHealth : MonoBehaviour
         if (IsDead)
             return;
 
-        bool visible = !Hidden && (!IsInvulnerable || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f);
+        bool visible = !Hidden && (Time.time >= invulnerableUntil || Mathf.Repeat(Time.time * blinkRate, 1f) < 0.5f);
 
         foreach (Renderer renderer in bodies)
             renderer.enabled = visible;
     }
 
     // Returns false if the hit didn't land (dead, or still invulnerable from the last one).
-    public bool TakeDamage(int amount, Vector3 source)
+    // fromFloor: acid or fire underfoot, which a dodge roll's untouchable start doesn't avoid.
+    public bool TakeDamage(int amount, Vector3 source, bool fromFloor = false)
     {
-        if (IsDead || IsInvulnerable || GodMode || amount <= 0)
+        if (IsDead || GodMode || amount <= 0 || Time.time < invulnerableUntil || (!fromFloor && dodge != null && dodge.Invulnerable))
             return false;
 
         Health = Mathf.Max(0, Health - amount);
