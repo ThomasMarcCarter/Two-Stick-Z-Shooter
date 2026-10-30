@@ -111,6 +111,8 @@ public partial class InventoryScreen : MonoBehaviour
     private TMP_Text hint;
     private TMP_Text meleeStats;
     private TMP_Text meleeUpgrades;
+    private GameObject runItemsPanel;
+    private TMP_Text runItemsText;
     private TMP_Text capacity;
     private TMP_Text footer;
     private TMP_Text storyLabel;

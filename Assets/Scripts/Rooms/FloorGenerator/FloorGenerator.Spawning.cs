@@ -29,7 +29,8 @@ public partial class FloorGenerator
             room.Cleared += OnCombatRoomCleared;
 
         // New Game+ adds one more per loop (MetaProgress.Loop).
-        int count = IsTutorial ? TutorialZombies : rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1) + MetaProgress.Loop;
+        int count = IsTutorial ? TutorialZombies : rng.Next(minEnemiesPerRoom, maxEnemiesPerRoom + 1) + extraEnemiesPerCell * (room.Cells.Count - 1) + MetaProgress.Loop
+            + (PlayerItems.Has(RunItem.DinnerBell) ? DinnerBellZombies : 0);
         List<Vector3> doorways = DoorwayPositions(room);
         Dictionary<EnemyKind, int> kindsPlaced = new Dictionary<EnemyKind, int>();
 
@@ -399,6 +400,7 @@ public partial class FloorGenerator
     {
         EnemiesKilled++;
         lastDeaths[room] = dead.transform.position;
+        PlayerItems.EnemyKilled(dead, boss, room.transform);
 
         if (!ImpactEffects.FloorPool(dead.transform.position, boss ? 3f : 1.6f, room.transform)
             && bloodSplatMaterials != null && bloodSplatMaterials.Length > 0)
@@ -415,6 +417,7 @@ public partial class FloorGenerator
 
         DropAmmo(room, dead);
         DropMaterials(room, dead.transform.position);
+        DropPlate(room, dead.transform.position);
     }
 
     // Higher for small, quick kinds, lower for big ones.

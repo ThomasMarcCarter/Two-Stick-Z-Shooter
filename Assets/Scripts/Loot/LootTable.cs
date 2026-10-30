@@ -94,6 +94,12 @@ public class LootTable : ScriptableObject
     [Tooltip("Chance a cleared combat room also leaves a melee upgrade.")]
     [Range(0f, 1f)] public float meleeUpgradeChance = 0.12f;
 
+    [Header("Run items")]
+    [Tooltip("Run items a treasure or boss crate offers, of which the player takes one.")]
+    [Min(0)] public int runItemOffers = 3;
+    [Tooltip("Chance a zombie drops an armour plate, if the player wears the carrier.")]
+    [Range(0f, 1f)] public float enemyPlateChance = 0.03f;
+
     [Header("Crafting materials")]
     [Tooltip("Chance a zombie drops a material when it dies.")]
     [Range(0f, 1f)] public float enemyMaterialChance = 0.06f;

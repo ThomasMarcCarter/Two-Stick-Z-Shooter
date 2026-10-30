@@ -105,6 +105,8 @@ public partial class EquipmentHud : MaskableGraphic
         {
             QuickBarHud bar = QuickBarHud.Create(transform.parent, weapons, font, UiColours.Phosphor, margin + new Vector2(width + 20f, 0f));
             bar.transform.SetSiblingIndex(transform.GetSiblingIndex() + 1);
+            RunItemsHud runItems = RunItemsHud.Create(transform.parent, weapons, margin + new Vector2(width + 20f, 96f));
+            runItems.transform.SetSiblingIndex(transform.GetSiblingIndex() + 2);
         }
     }
 

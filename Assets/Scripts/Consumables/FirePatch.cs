@@ -30,18 +30,24 @@ public class FirePatch : MonoBehaviour
     private float started;
     private float nextTick;
     private float seed;
+    private float radius = Radius;
+    private float life = Duration;
     private PixelSprite poolSprite;
     private readonly List<PixelSprite> flameSprites = new List<PixelSprite>();
     private readonly List<float> flamePhase = new List<float>();
     private readonly List<bool> flameMirror = new List<bool>();
 
-    public static FirePatch Create(Vector3 position, Transform room)
+    // scale: its size against a molotov's (a smaller fire lights without the whoomp). life: how long
+    // it burns, by default as long as a molotov's.
+    public static FirePatch Create(Vector3 position, Transform room, float scale = 1f, float life = Duration)
     {
         GameObject root = new GameObject("Fire");
         root.transform.SetParent(room, true);
         root.transform.position = new Vector3(position.x, 0f, position.z);
 
         FirePatch fire = root.AddComponent<FirePatch>();
+        fire.radius = Radius * scale;
+        fire.life = life;
         fire.started = Time.time;
         fire.nextTick = Time.time + 0.1f;
         fire.seed = Random.value * 100f;
@@ -59,7 +65,7 @@ public class FirePatch : MonoBehaviour
         fire.glow = light.AddComponent<Light>();
         fire.glow.type = LightType.Point;
         fire.glow.color = new Color(1f, 0.5f, 0.15f);
-        fire.glow.range = Radius * 3.5f;
+        fire.glow.range = fire.radius * 3.5f;
         fire.glow.shadows = LightShadows.None;
 
         fire.crackle = GameAudio.Route(root.AddComponent<AudioSource>());
@@ -72,7 +78,8 @@ public class FirePatch : MonoBehaviour
         fire.crackle.volume = 0.5f;
         fire.crackle.Play();
 
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("explosion", 3, ProceduralAudio.Explosion)), root.transform.position, 0.4f, 1.6f);
+        if (scale >= 1f)
+            SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("explosion", 3, ProceduralAudio.Explosion)), root.transform.position, 0.4f, 1.6f);
         fire.Update();
         return fire;
     }
@@ -83,7 +90,7 @@ public class FirePatch : MonoBehaviour
     {
         transform.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         poolSprite = PixelSprite.Create("Burning Fuel", transform, pool, PixelSprite.Mode.Flat);
-        poolSprite.Scale = Radius * 2f / (pool.frameWidth / Mathf.Max(1f, pool.pixelsPerUnit));
+        poolSprite.Scale = radius * 2f / (pool.frameWidth / Mathf.Max(1f, pool.pixelsPerUnit));
         poolSprite.Lift = SpriteLift;
         poolSprite.UseGlow();
 
@@ -91,7 +98,7 @@ public class FirePatch : MonoBehaviour
         {
             GameObject spot = new GameObject("Flame");
             spot.transform.SetParent(transform, false);
-            Vector2 offset = Random.insideUnitCircle * Radius * Mathf.Lerp(0.15f, 0.75f, i / (float)SpriteFlameCount);
+            Vector2 offset = Random.insideUnitCircle * radius * Mathf.Lerp(0.15f, 0.75f, i / (float)SpriteFlameCount);
             spot.transform.localPosition = new Vector3(offset.x, 0f, offset.y);
 
             PixelSprite sprite = PixelSprite.Create("Sprite", spot.transform, flame, PixelSprite.Mode.Facing);
@@ -121,7 +128,7 @@ public class FirePatch : MonoBehaviour
             pool.transform.SetParent(transform, false);
             pool.transform.localPosition = Vector3.up * 0.015f;
             pool.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            pool.transform.localScale = Vector3.one * Radius * 2.6f;
+            pool.transform.localScale = Vector3.one * radius * 2.6f;
             poolRenderer = pool.GetComponent<Renderer>();
             poolRenderer.sharedMaterial = visuals.glowMaterial;
             poolRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -136,7 +143,7 @@ public class FirePatch : MonoBehaviour
             flame.transform.SetParent(transform, false);
 
             // Bunched towards the middle, where the fuel is deepest.
-            Vector2 spot = Random.insideUnitCircle * Radius * Mathf.Lerp(0.3f, 0.9f, i / (float)FlameCount);
+            Vector2 spot = Random.insideUnitCircle * radius * Mathf.Lerp(0.3f, 0.9f, i / (float)FlameCount);
             flame.transform.localPosition = new Vector3(spot.x, 0f, spot.y);
             flame.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 90f), 0f);
 
@@ -156,17 +163,17 @@ public class FirePatch : MonoBehaviour
     {
         float age = Time.time - started;
 
-        if (age >= Duration)
+        if (age >= life)
         {
             Destroy(gameObject);
             return;
         }
 
         // 1 while burning, falling to 0 over the last second.
-        float strength = Mathf.Clamp01((Duration - age) / FadeTime) * Mathf.Clamp01(age / 0.15f);
+        float strength = Mathf.Clamp01((life - age) / FadeTime) * Mathf.Clamp01(age / 0.15f);
 
         // Pixel fire: burning loops, then the dying frames over the last second.
-        float dying = 1f - (Duration - age) / FadeTime;
+        float dying = 1f - (life - age) / FadeTime;
         int dyingFrame = Mathf.Min(3, Mathf.FloorToInt(Mathf.Max(0f, dying) * 4f));
 
         if (poolSprite != null)
@@ -216,12 +223,12 @@ public class FirePatch : MonoBehaviour
         Vector3 centre = transform.position + Vector3.up * 0.5f;
         HashSet<Object> done = new HashSet<Object>();
 
-        foreach (Collider collider in Physics.OverlapSphere(centre, Radius, ~0, QueryTriggerInteraction.Ignore))
+        foreach (Collider collider in Physics.OverlapSphere(centre, radius, ~0, QueryTriggerInteraction.Ignore))
         {
             Vector3 offset = collider.transform.position - transform.position;
             offset.y = 0f;
 
-            if (offset.magnitude > Radius)
+            if (offset.magnitude > radius)
                 continue;
 
             if (collider.TryGetComponent(out Enemy enemy) && done.Add(enemy))

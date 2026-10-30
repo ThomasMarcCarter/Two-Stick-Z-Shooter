@@ -43,6 +43,8 @@ public partial class DebugMenu
         Section(1, "PLAYER");
         Add(() => "GOD MODE: " + (Health != null && Health.GodMode ? "ON" : "OFF"), ToggleGodMode, false);
         Add("REFILL HEALTH + AMMO", Refill, false);
+        Add(() => $"GIVE NEXT RUN ITEM ({PlayerItems.For(player.gameObject).Held.Count}/{RunItems.All.Length})", GiveNextRunItem, false);
+        Add("SPAWN ARMOR PLATE", () => floor.SpawnArmorPlate(player.position + player.forward * 2f), true);
         Add("HURT PLAYER (1)", HurtPlayer, false);
         Add("GIVE MAX AMMO (ALL TYPES)", GiveAllAmmo, false);
         Add("GIVE CONSUMABLES (1 STACK EACH)", GiveConsumables, false);
@@ -227,6 +229,15 @@ public partial class DebugMenu
 
             if (ammo != null)
                 ammo.Add(gun.AmmoType, Backpack.StackSize(gun.AmmoType) * 3);
+        }
+    }
+
+    private void GiveNextRunItem()
+    {
+        foreach (RunItem item in RunItems.All)
+        {
+            if (PlayerItems.For(player.gameObject).Add(item))
+                return;
         }
     }
 

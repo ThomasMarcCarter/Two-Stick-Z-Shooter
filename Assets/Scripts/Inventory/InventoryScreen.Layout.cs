@@ -132,6 +132,26 @@ public partial class InventoryScreen
         meleeUpgrades = MakeText(panel.transform, "", 10, new Rect(Left, lastBar.yMin - 38f, Middle - 14f - Left, 16f), dim, TextAlignmentOptions.Left, 3f);
         meleeUpgrades.richText = true;
 
+        // Run items: a panel of their own under the main one, only there once there's one to list.
+        runItemsPanel = new GameObject("Run Items", typeof(RectTransform));
+        runItemsPanel.layer = gameObject.layer;
+        runItemsPanel.transform.SetParent(panel.transform, false);
+        runItemsPanel.AddComponent<CanvasRenderer>();
+        UnityEngine.UI.Image runItemsBack = runItemsPanel.AddComponent<UnityEngine.UI.Image>();
+        runItemsBack.color = UiColours.PanelBackground;
+        runItemsBack.raycastTarget = false;
+        RectTransform runItemsRect = runItemsPanel.GetComponent<RectTransform>();
+        runItemsRect.anchorMin = runItemsRect.anchorMax = new Vector2(0.5f, 0.5f);
+        runItemsText = MakeText(runItemsPanel.transform, "", 11, new Rect(0f, 0f, size.x - 40f, 20f), UiColours.Phosphor, TextAlignmentOptions.TopLeft, 2f);
+        runItemsText.richText = true;
+        runItemsText.enableAutoSizing = true;
+        runItemsText.fontSizeMin = 7f;
+        runItemsText.fontSizeMax = 11f;
+        runItemsText.rectTransform.anchorMin = runItemsText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        runItemsText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        runItemsText.rectTransform.anchoredPosition = Vector2.zero;
+        runItemsPanel.SetActive(false);
+
         for (int i = 0; i < Backpack.CellCount; i++)
         {
             Rect cell = CellRect(i);

@@ -6,7 +6,8 @@ using UnityEngine;
 // itself on the crate screen and how to go to the player when picked: ammo, consumables and
 // materials go in the backpack (as much as fits, the rest stays in the crate); an attachment is
 // fitted to a gun with that slot free, stored, or swapped onto a gun if the pack is full; a gun
-// goes into its slot and the one it replaces goes back in the crate; a melee upgrade is applied.
+// goes into its slot and the one it replaces goes back in the crate; a melee upgrade is applied;
+// an armour plate is slotted in.
 public class CrateItem
 {
     public enum ItemKind
@@ -16,7 +17,8 @@ public class CrateItem
         Consumable,
         Attachment,
         MeleeUpgrade,
-        Material
+        Material,
+        ArmorPlate
     }
 
     public ItemKind Kind { get; private set; }
@@ -50,6 +52,8 @@ public class CrateItem
     public static CrateItem ForMeleeUpgrade(MeleeUpgrade upgrade) => new CrateItem { Kind = ItemKind.MeleeUpgrade, Upgrade = upgrade, Amount = 1 };
     public static CrateItem ForMaterial(MaterialType type, int amount) => new CrateItem { Kind = ItemKind.Material, Material = type, Amount = amount };
 
+    public static CrateItem ForArmorPlate() => new CrateItem { Kind = ItemKind.ArmorPlate, Amount = 1 };
+
     // Whether another item can simply be added onto this one (materials of a kind share a row).
     public bool Merges(CrateItem other)
     {
@@ -72,6 +76,7 @@ public class CrateItem
                 case ItemKind.Attachment: return Attachment.colour;
                 case ItemKind.MeleeUpgrade: return MeleeUpgrades.Colour(Upgrade);
                 case ItemKind.Material: return Materials.Colour(Material);
+                case ItemKind.ArmorPlate: return RunItems.PlateColour;
                 default: return Color.white;
             }
         }
@@ -91,6 +96,7 @@ public class CrateItem
                 case ItemKind.Consumable: return ConsumableInfo.Name(Consumable) + (Amount > 1 ? $" x{Amount}" : "");
                 case ItemKind.Attachment: return Attachment.name.ToUpperInvariant();
                 case ItemKind.MeleeUpgrade: return MeleeUpgrades.Name(Upgrade);
+                case ItemKind.ArmorPlate: return "ARMOR PLATE";
                 default: return $"{Materials.Name(Material)} x{Amount}";
             }
         }
@@ -110,6 +116,7 @@ public class CrateItem
                 case ItemKind.Consumable: return ConsumableInfo.Describe(Consumable);
                 case ItemKind.Attachment: return $"{WeaponAttachment.SlotName(Attachment.slot)} // {Attachment.Describe()}";
                 case ItemKind.MeleeUpgrade: return "MELEE UPGRADE // " + MeleeUpgrades.Describe(Upgrade);
+                case ItemKind.ArmorPlate: return "STOPS 1 DAMAGE // GOES IN A CARRIER SLOT";
                 default: return "CRAFTING MATERIAL // LOST IF YOU DIE // SEND IT HOME FROM AN UPLINK";
             }
         }
@@ -139,6 +146,10 @@ public class CrateItem
             case ItemKind.Material:
                 blocked = !HasRoomForMaterial(backpack);
                 return blocked ? "BACKPACK FULL" : "TAKE";
+
+            case ItemKind.ArmorPlate:
+                blocked = PlayerItems.For(player.gameObject).PlatesFull;
+                return blocked ? "PLATES FULL" : "SLOT IT IN";
 
             case ItemKind.MeleeUpgrade:
                 blocked = player.Melee.IsMaxed(Upgrade);
@@ -204,6 +215,13 @@ public class CrateItem
                 int materials = backpack.AddMaterial(Material, Amount);
                 Amount -= materials;
                 return materials > 0;
+
+            case ItemKind.ArmorPlate:
+                if (!PlayerItems.For(player.gameObject).AddPlate())
+                    return false;
+
+                Amount = 0;
+                return true;
 
             case ItemKind.MeleeUpgrade:
                 return player.Melee.AddUpgrade(Upgrade);

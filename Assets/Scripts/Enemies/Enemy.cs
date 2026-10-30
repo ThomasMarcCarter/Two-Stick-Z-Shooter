@@ -505,6 +505,7 @@ public partial class Enemy : MonoBehaviour
 
     // Alive and locked in with the player, so it can be hurt.
     public bool IsActive => room != null && room.IsLocked && health > 0;
+    public bool IsDead => health <= 0;
 
     // Dies straight away, whether or not its room is locked. For the debug menu.
     public void Kill()

@@ -22,6 +22,8 @@ public class PlayerDodge : MonoBehaviour
     [Tooltip("Stamina a roll costs in a fight.")]
     [SerializeField] private float staminaCost = 20f;
 
+    private const float TumbleLoaderCost = 10f;
+
     private Rigidbody rb;
     private PlayerStamina stamina;
     private PlayerHealth health;
@@ -29,6 +31,7 @@ public class PlayerDodge : MonoBehaviour
     private float readyAt;
     private CollisionDetectionMode restoreMode;
     private bool holdDodge;
+    private bool refunded;
 
     public bool Rolling { get; private set; }
     public bool Invulnerable => Rolling && Time.time < startTime + invulnerableTime;
@@ -37,6 +40,8 @@ public class PlayerDodge : MonoBehaviour
 
     public event Action<PlayerDodge> Started;
     public event Action<PlayerDodge> Landed;
+
+    private float StaminaCost => staminaCost + (PlayerItems.Has(RunItem.TumbleLoader) ? TumbleLoaderCost : 0f);
 
     public static PlayerDodge For(GameObject owner)
     {
@@ -89,10 +94,11 @@ public class PlayerDodge : MonoBehaviour
             return false;
 
         if (stamina != null && stamina.InCombat && !stamina.Boosted)
-            stamina.Spend(staminaCost);
+            stamina.Spend(StaminaCost);
 
         Direction = direction.normalized;
         Rolling = true;
+        refunded = false;
         startTime = Time.time;
         restoreMode = rb.collisionDetectionMode;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -110,7 +116,7 @@ public class PlayerDodge : MonoBehaviour
     private void End(bool landed)
     {
         Rolling = false;
-        readyAt = Time.time + cooldown;
+        readyAt = refunded ? Time.time : Time.time + cooldown;
         rb.collisionDetectionMode = restoreMode;
         rb.linearVelocity = landed ? Direction * 1.5f : Vector3.zero;
 
@@ -120,6 +126,20 @@ public class PlayerDodge : MonoBehaviour
         Noise.Emit(transform.position, Noise.WalkStep, Noise.Kind.Footstep);
         Dust();
         Landed?.Invoke(this);
+    }
+
+    // Close Call: this roll's stamina back and no wait after it, once a roll.
+    public void Refund()
+    {
+        if (!Rolling || refunded)
+            return;
+
+        refunded = true;
+
+        if (stamina != null)
+            stamina.Refund(StaminaCost);
+
+        SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.5f, 1.5f);
     }
 
     // A puff of grey grit kicked up off the floor at take-off and landing.

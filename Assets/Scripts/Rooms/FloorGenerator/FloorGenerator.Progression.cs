@@ -119,6 +119,7 @@ public partial class FloorGenerator
             SpawnMeleeUpgrade(InsideRoom(room, position - side * 0.9f), room.transform, UnityEngine.Random.value);
 
         DropRoomMaterial(room, position);
+        DropDinnerBellLoot(room, position, side);
     }
 
     private void PlayRoomCleared()

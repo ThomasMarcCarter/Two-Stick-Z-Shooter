@@ -73,7 +73,10 @@ public class PlayerHealth : MonoBehaviour
         if (IsDead || GodMode || amount <= 0 || Time.time < invulnerableUntil || (!fromFloor && dodge != null && dodge.Invulnerable))
             return false;
 
-        Health = Mathf.Max(0, Health - amount);
+        if (PlayerItems.Has(RunItem.GlassJaw))
+            amount *= 2;
+
+        Health = Mathf.Max(0, Health - PlayerItems.AbsorbHit(amount));
         invulnerableUntil = Time.time + invulnerableTime;
 
         Vector3 away = transform.position - source;

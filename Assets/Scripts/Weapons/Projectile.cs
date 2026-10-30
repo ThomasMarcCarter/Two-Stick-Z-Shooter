@@ -43,6 +43,9 @@ public class Projectile : MonoBehaviour
     private Transform shooterRoot;
     private bool spent;
     private float tracerLift;
+    private bool bounced;
+    private Collider bouncedOff;
+    private bool explodes;
 
     private static readonly RaycastHit[] sweepHits = new RaycastHit[8];
 
@@ -101,6 +104,10 @@ public class Projectile : MonoBehaviour
     public void Initialize(Vector3 direction, GameObject shooter, float speedMultiplier = 1f, int bonusDamage = 0, float tracerLift = 0f)
     {
         damage += bonusDamage;
+
+        if (PlayerItems.Has(RunItem.GlassJaw))
+            damage *= 2;
+
         this.tracerLift = tracerLift;
 
         if (tracer != null)
@@ -118,6 +125,46 @@ public class Projectile : MonoBehaviour
         lastPosition = transform.position;
 
         Destroy(gameObject, lifetime);
+    }
+
+    // The last round in a magazine with the Last Word: triple damage, and it may blow up on impact.
+    public void MakeLastWord(bool withBlast)
+    {
+        damage *= 3;
+        explodes = withBlast;
+    }
+
+    // The round's done: its streak left to fade, its blast if it has one, and it's gone.
+    private void Finish()
+    {
+        LeaveTracer();
+
+        if (explodes)
+        {
+            explodes = false;
+            Blast.Explode(transform.position, FloorPickups.RoomAt(transform.position), PlayerItems.SmallBlast(4));
+        }
+
+        Destroy(gameObject);
+    }
+
+    // Ricochet Rounds: off the wall once, flat across the floor. The wall it left can't stop it again.
+    private void Bounce(Collider wall, Vector3 point, Vector3 normal)
+    {
+        normal.y = 0f;
+        Vector3 travel = rb.linearVelocity;
+
+        if (normal.sqrMagnitude < 0.001f)
+            normal = -travel;
+
+        normal.Normalize();
+        bounced = true;
+        bouncedOff = wall;
+        rb.linearVelocity = Vector3.Reflect(travel, normal);
+        Vector3 away = new Vector3(point.x, transform.position.y, point.z) + normal * 0.1f;
+        transform.position = away;
+        rb.position = away;
+        transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
     }
 
     // Fast rounds can move further in one physics step than a wall is thick, and pass through
@@ -147,10 +194,12 @@ public class Projectile : MonoBehaviour
             if (hit.GetComponentInParent<FurnitureDamage>() != null)
                 continue;
 
-            if (hit.transform.root == shooterRoot || sweepHits[i].distance >= nearestDistance)
+            bool hitsShooter = hit.transform.root == shooterRoot;
+
+            if ((hitsShooter && !bounced) || hit == bouncedOff || sweepHits[i].distance >= nearestDistance)
                 continue;
 
-            if (hit.CompareTag("Wall") || hit.GetComponent<Enemy>() != null || hit.GetComponentInParent<CardboardBox>() != null
+            if (hitsShooter || hit.CompareTag("Wall") || hit.GetComponent<Enemy>() != null || hit.GetComponentInParent<CardboardBox>() != null
                 || hit.GetComponentInParent<Prop>() != null || hit.GetComponent<TrainingDummy>() != null || hit.GetComponent<HideoutNpc>() != null)
             {
                 nearest = hit;
@@ -192,8 +241,7 @@ public class Projectile : MonoBehaviour
         if (npc != null)
             npc.Shot(point);
 
-        LeaveTracer();
-        Destroy(gameObject);
+        Finish();
     }
 
     // The first sprite enemy (or survivor) whose footprint this step crosses before `nearestDistance`, which
@@ -309,6 +357,19 @@ public class Projectile : MonoBehaviour
         if (spent)
             return;
 
+        // A bounced round coming back at whoever fired it.
+        if (bounced && other.transform.root == shooterRoot)
+        {
+            spent = true;
+            PlayerHealth shooter = other.GetComponentInParent<PlayerHealth>();
+
+            if (shooter != null)
+                shooter.TakeDamage(1, transform.position);
+
+            Finish();
+            return;
+        }
+
         if (other.TryGetComponent(out Enemy enemy))
         {
             FindHit(other, out Vector3 point, out Vector3 normal);
@@ -328,8 +389,7 @@ public class Projectile : MonoBehaviour
             spent = true;
             FindHit(other, out Vector3 dummyPoint, out Vector3 _);
             dummy.Hit(damage, dummyPoint, rb != null ? rb.linearVelocity : transform.forward);
-            LeaveTracer();
-            Destroy(gameObject);
+            Finish();
             return;
         }
 
@@ -340,8 +400,7 @@ public class Projectile : MonoBehaviour
             spent = true;
             FindHit(other, out Vector3 propPoint, out Vector3 propNormal);
             prop.Hit(propPoint, propNormal, rb != null ? rb.linearVelocity : transform.forward, EffectMaterials);
-            LeaveTracer();
-            Destroy(gameObject);
+            Finish();
             return;
         }
 
@@ -352,8 +411,7 @@ public class Projectile : MonoBehaviour
             spent = true;
             FindHit(other, out Vector3 boxPoint, out Vector3 boxNormal);
             box.Hit(boxPoint, boxNormal, rb != null ? rb.linearVelocity : transform.forward, EffectMaterials);
-            LeaveTracer();
-            Destroy(gameObject);
+            Finish();
             return;
         }
 
@@ -365,9 +423,8 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        if (other.CompareTag("Wall"))
+        if (other.CompareTag("Wall") && other != bouncedOff)
         {
-            spent = true;
             FindHit(other, out Vector3 point, out Vector3 normal);
             ImpactEffects.WallHit(point + Vector3.up * tracerLift, normal, other.transform, EffectMaterials);
 
@@ -377,8 +434,15 @@ public class Projectile : MonoBehaviour
                 : SoundFX.Clips("impact.wall", 4, i => ProceduralAudio.ImpactWall(i, false));
 
             PlayImpact("impact.wall", clips, wallImpactVolume);
-            LeaveTracer();
-            Destroy(gameObject);
+
+            if (!bounced && !explodes && rb != null && PlayerItems.Has(RunItem.RicochetRounds))
+            {
+                Bounce(other, point, normal);
+                return;
+            }
+
+            spent = true;
+            Finish();
         }
     }
 
@@ -405,8 +469,7 @@ public class Projectile : MonoBehaviour
             spent = true;
             ImpactEffects.WallHit(point + Vector3.up * tracerLift, normal, enemy.transform, EffectMaterials);
             PlayImpact("impact.shield", SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank), wallImpactVolume);
-            LeaveTracer();
-            Destroy(gameObject);
+            Finish();
             return;
         }
 
@@ -415,8 +478,11 @@ public class Projectile : MonoBehaviour
         // The enemy's own voice reacts to the hit (EnemyVoice).
         spent = true;
         enemy.TakeDamage(damage);
-        LeaveTracer();
-        Destroy(gameObject);
+
+        if (enemy.IsDead && PlayerItems.Has(RunItem.IncendiaryRounds))
+            FirePatch.Create(enemy.transform.position, FloorPickups.RoomAt(enemy.transform.position), 0.6f, 4f);
+
+        Finish();
     }
 
     private void PlayImpact(string key, AudioClip[] clips, float volume)

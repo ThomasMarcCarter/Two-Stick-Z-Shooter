@@ -60,7 +60,7 @@ public class PlayerMelee : MonoBehaviour
     public int Level(MeleeUpgrade upgrade) => levels[(int)upgrade];
     public bool IsMaxed(MeleeUpgrade upgrade) => Level(upgrade) >= MeleeUpgrades.MaxLevel(upgrade);
 
-    public int Damage => damage + Level(MeleeUpgrade.Edge);
+    public int Damage => (damage + Level(MeleeUpgrade.Edge)) * (PlayerItems.Has(RunItem.GlassJaw) ? 2 : 1);
     public int MaxTargets => maxTargets + 2 * Level(MeleeUpgrade.Sweep);
     public float Reach => reach + 0.35f * Level(MeleeUpgrade.Reach);
     public float Arc => arc + 20f * Level(MeleeUpgrade.Reach);

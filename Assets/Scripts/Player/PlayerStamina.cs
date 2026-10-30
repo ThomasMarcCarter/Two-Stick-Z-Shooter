@@ -123,6 +123,12 @@ public class PlayerStamina : MonoBehaviour
         }
     }
 
+    // Gives some back (Close Call refunding a roll).
+    public void Refund(float amount)
+    {
+        Current = Mathf.Min(maxStamina, Current + amount);
+    }
+
     // Fills the bar and stops it draining for some seconds.
     public void Boost(float seconds)
     {

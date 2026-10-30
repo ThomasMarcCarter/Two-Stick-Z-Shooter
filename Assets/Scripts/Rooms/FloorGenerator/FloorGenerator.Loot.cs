@@ -248,6 +248,8 @@ public partial class FloorGenerator
             return;
 
         SupplyCrate crate = SupplyCrate.Create("TREASURE ROOM // SUPPLY CRATE", room.transform.position, Vector3.back, room.transform);
+        SpawnPowerupCase(room, room.transform.position, room.transform.position);
+        AddPlateToCrate(crate);
 
         if (treasureWeapons != null && treasureWeapons.Length > 0)
         {
@@ -286,6 +288,8 @@ public partial class FloorGenerator
         Vector3 spot = BossCrateSpot(room, position);
         Vector3 centre = new Vector3(room.transform.position.x, 0f, room.transform.position.z);
         SupplyCrate crate = SupplyCrate.Create("BOSS CACHE // SUPPLY CRATE", spot, centre - spot, room.transform);
+        SpawnPowerupCase(room, spot, CellToWorld(MiddleCell(room)));
+        AddPlateToCrate(crate);
 
         List<AmmoType> types = HeldAmmoTypes();
 

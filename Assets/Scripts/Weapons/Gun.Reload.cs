@@ -30,6 +30,24 @@ public partial class Gun
         reloadRoutine = StartCoroutine(reloadStyle == ReloadStyle.PerShell ? ReloadShells() : Reload());
     }
 
+    // Filled from the holder's ammo at once (the Tumble Loader), cutting short any reload under way.
+    public void InstantReload()
+    {
+        if (currentAmmo >= GetMagazineSize() || Reserve <= 0)
+            return;
+
+        if (isReloading)
+        {
+            CancelReload();
+            reloadAudio.Stop();
+        }
+
+        currentAmmo += Inventory.Take(ammoType, GetMagazineSize() - currentAmmo);
+        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), transform.position, 0.6f, 1.2f);
+        ReloadNoise(false);
+        Reloaded?.Invoke(this);
+    }
+
     // The racket of reloading, for enemies within earshot.
     private void ReloadNoise(bool quiet)
     {
@@ -59,6 +77,10 @@ public partial class Gun
 
         for (int loaded = 0; loaded < needed; loaded++)
         {
+            // A Hungry Mag kill can top it up mid-reload.
+            if (currentAmmo >= GetMagazineSize())
+                break;
+
             // Checked shell by shell, so starting or stopping sneaking mid-reload takes effect
             // from the next one.
             bool quiet = Sneaking;
@@ -87,6 +109,7 @@ public partial class Gun
         ReloadProgress = 1f;
         isReloading = false;
         reloadRoutine = null;
+        Reloaded?.Invoke(this);
     }
 
     private IEnumerator Reload()
@@ -122,5 +145,6 @@ public partial class Gun
         ReloadProgress = 1f;
         isReloading = false;
         reloadRoutine = null;
+        Reloaded?.Invoke(this);
     }
 }

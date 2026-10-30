@@ -131,8 +131,9 @@ public partial class Gun : MonoBehaviour
     public ReloadStyle Reloading => reloadStyle;
 
     private float FireRate => fireRate * Product(a => a.fireRateMultiplier);
-    private float ReloadTime => reloadTime * Product(a => a.reloadTimeMultiplier);
-    private float ShellReloadTime => shellReloadTime * Product(a => a.reloadTimeMultiplier);
+    private float ReloadTime => reloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
+    private float ShellReloadTime => shellReloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
+    private static float ItemReloadTime => PlayerItems.Has(RunItem.HungryMag) ? 2f : 1f;
     private float Spread => spreadAngle * Product(a => a.spreadMultiplier);
     private float ProjectileSpeed => Product(a => a.projectileSpeedMultiplier);
     private float AccuracyMultiplier => Product(a => a.accuracyMultiplier);
@@ -225,10 +226,14 @@ public partial class Gun : MonoBehaviour
     // A gun went off (FloorGenerator: a shot from a doorway pulls the player into the room).
     public static event System.Action<Gun> Fired;
 
+    // A reload finished (PlayerItems: the Rattle Mag).
+    public static event System.Action<Gun> Reloaded;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
         Fired = null;
+        Reloaded = null;
     }
 
     // The shot every suppressed gun plays instead of its own (the FloorGenerator's Suppressed
@@ -430,6 +435,7 @@ public partial class Gun : MonoBehaviour
     private void LaunchPellets(Vector3 spawn, Vector3 direction)
     {
         int pellets = Mathf.Max(1, pelletsPerShot);
+        bool lastWord = currentAmmo == 1 && !FreeAmmo && PlayerItems.Has(RunItem.LastWord);
 
         for (int i = 0; i < pellets; i++)
         {
@@ -441,13 +447,18 @@ public partial class Gun : MonoBehaviour
                 Quaternion.LookRotation(pelletDirection)
             );
 
-            projectile.GetComponent<Projectile>().Initialize(
+            Projectile round = projectile.GetComponent<Projectile>();
+            round.Initialize(
                 pelletDirection,
                 transform.root.gameObject,
                 ProjectileSpeed * (1f + Random.Range(-pelletSpeedVariation, pelletSpeedVariation)),
                 BonusDamage,
                 muzzle.position.y - spawn.y
             );
+
+            // One blast a shot, however many pellets it holds.
+            if (lastWord)
+                round.MakeLastWord(i == 0);
         }
     }
 

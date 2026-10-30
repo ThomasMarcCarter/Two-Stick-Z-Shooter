@@ -59,6 +59,7 @@ public partial class InventoryScreen
         }
 
         RefreshMelee();
+        RefreshRunItems();
 
         storyLabel.text = Story != null && Story.Item is StoryItem story ? StoryItems.Name(story) : "";
 
@@ -68,6 +69,30 @@ public partial class InventoryScreen
         footer.text = "DRAG MODS ONTO A GUN, CONSUMABLES ONTO A QUICK SLOT\nDRAG ANYTHING OUT OF THE PANEL TO DROP IT";
 
         RefreshOverlay();
+    }
+
+    // The panel under the main one, listing the run items held and what they do.
+    private void RefreshRunItems()
+    {
+        IReadOnlyList<RunItem> held = PlayerItems.For(weapons.gameObject).Held;
+        runItemsPanel.SetActive(held.Count > 0);
+
+        if (held.Count == 0)
+            return;
+
+        const float rowHeight = 15f;
+        System.Text.StringBuilder text = new System.Text.StringBuilder("> RUN ITEMS\n");
+
+        foreach (RunItem item in held)
+            text.Append($"<color=#{ColorUtility.ToHtmlStringRGB(RunItems.Colour(item))}>{RunItems.Name(item)}</color>  <size=85%><alpha=#99>{RunItems.Describe(item)}</size><alpha=#FF>\n");
+
+        // Capped to what fits under the main panel: the text shrinks to fit a long list.
+        float height = Mathf.Min((held.Count + 1) * rowHeight + 20f, 165f);
+        RectTransform rect = runItemsPanel.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(size.x, height);
+        rect.anchoredPosition = new Vector2(0f, -size.y / 2f - 6f - height / 2f);
+        runItemsText.rectTransform.sizeDelta = new Vector2(size.x - 40f, height - 12f);
+        runItemsText.text = text.ToString();
     }
 
     private void RefreshMelee()

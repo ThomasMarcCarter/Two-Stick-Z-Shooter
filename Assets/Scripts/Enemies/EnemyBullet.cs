@@ -23,6 +23,7 @@ public class EnemyBullet : MonoBehaviour
     private Look look;
     private float diesAt;
     private PixelSprite sprite;
+    private bool passed;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
@@ -164,7 +165,15 @@ public class EnemyBullet : MonoBehaviour
             {
                 // Untouchable (a roll, or just hit): it flies on through.
                 if (player.IsInvulnerable || player.IsDead)
+                {
+                    if (!passed)
+                    {
+                        passed = true;
+                        PlayerItems.ShotPassed(player);
+                    }
+
                     continue;
+                }
 
                 player.TakeDamage(1, position - velocity.normalized);
             }

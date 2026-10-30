@@ -32,6 +32,7 @@ public class FullscreenMap : MonoBehaviour
     private readonly Dictionary<Room, List<AmmoPickup>> ammoItems = new Dictionary<Room, List<AmmoPickup>>();
     private readonly Dictionary<Room, List<ConsumablePickup>> medkits = new Dictionary<Room, List<ConsumablePickup>>();
     private readonly Dictionary<Room, List<SupplyCrate>> crates = new Dictionary<Room, List<SupplyCrate>>();
+    private readonly Dictionary<Room, List<PowerupCase>> powerups = new Dictionary<Room, List<PowerupCase>>();
     private float previousTimeScale = 1f;
     private bool dragging;
     private Vector2 lastPointer;
@@ -258,6 +259,7 @@ public class FullscreenMap : MonoBehaviour
         ammoItems.Clear();
         medkits.Clear();
         crates.Clear();
+        powerups.Clear();
 
         foreach (GunPickup pickup in FindObjectsByType<GunPickup>())
             AddItem(items, pickup);
@@ -270,6 +272,9 @@ public class FullscreenMap : MonoBehaviour
 
         foreach (SupplyCrate crate in FindObjectsByType<SupplyCrate>())
             AddItem(crates, crate);
+
+        foreach (PowerupCase powerup in FindObjectsByType<PowerupCase>())
+            AddItem(powerups, powerup);
 
         view.SetItemCounts(Counts(items), Counts(ammoItems), Counts(medkits));
     }
@@ -355,6 +360,12 @@ public class FullscreenMap : MonoBehaviour
                 text.AppendLine($"<color=#{colour}>+</color> {ConsumableInfo.Name(kit.Type)}{(kit.Amount > 1 ? " x" + kit.Amount : "")}");
                 any = true;
             }
+        }
+
+        if (powerups.TryGetValue(room, out List<PowerupCase> roomPowerups) && roomPowerups.Count > 0)
+        {
+            text.AppendLine($"<color=#{ColorUtility.ToHtmlStringRGB(UiColours.Phosphor)}>*</color> POWERUP CASE");
+            any = true;
         }
 
         if (crates.TryGetValue(room, out List<SupplyCrate> roomCrates))
