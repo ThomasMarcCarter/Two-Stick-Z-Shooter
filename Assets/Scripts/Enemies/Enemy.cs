@@ -224,7 +224,7 @@ public partial class Enemy : MonoBehaviour
         if (room == null || !room.IsLocked || health <= 0 || state == State.Chase)
             return;
 
-        if (FlatDistance(rb.position, position) > Senses.hearingRange * loudness)
+        if (FlatDistance(rb.position, position) > Senses.HearingRange * loudness)
             return;
 
         Investigate(position);
@@ -504,6 +504,10 @@ public partial class Enemy : MonoBehaviour
     }
 
     // Alive and locked in with the player, so it can be hurt.
+    // The Cold Open: a hit on a zombie that hasn't noticed the player. A bullet or swing lands it,
+    // not a blast or fire; TakeDamage alerts the zombie, so only the first of a burst counts.
+    public float OpeningHitMultiplier => state == State.Wander && PlayerItems.Has(RunItem.ColdOpen) ? 5f : 1f;
+
     public bool IsActive => room != null && room.IsLocked && health > 0;
     public bool IsDead => health <= 0;
 

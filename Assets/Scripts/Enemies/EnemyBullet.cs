@@ -24,6 +24,10 @@ public class EnemyBullet : MonoBehaviour
     private float diesAt;
     private PixelSprite sprite;
     private bool passed;
+    private bool battedBack;
+
+    private const float BatSpeed = 1.5f;
+    private const int BattedDamage = 2;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
@@ -137,6 +141,59 @@ public class EnemyBullet : MonoBehaviour
         live.Clear();
     }
 
+    // Batter Up: shots in the swing's arc are knocked at the nearest zombie (straight along the swing
+    // if there's none), and now hurt zombies rather than the player. Returns how many it hit.
+    public static int BatBack(Vector3 origin, Vector3 forward, float reach, float arc)
+    {
+        int count = 0;
+
+        foreach (EnemyBullet bullet in live)
+        {
+            if (bullet == null || bullet.battedBack)
+                continue;
+
+            Vector3 offset = bullet.transform.position - origin;
+            offset.y = 0f;
+
+            if (offset.magnitude > reach + Radius || (offset.magnitude > 0.3f && Vector3.Angle(forward, offset) > arc / 2f))
+                continue;
+
+            bullet.BatAway(forward);
+            count++;
+        }
+
+        return count;
+    }
+
+    private void BatAway(Vector3 forward)
+    {
+        Vector3 direction = forward;
+        float best = float.MaxValue;
+
+        foreach (Enemy enemy in Noise.Enemies)
+        {
+            if (enemy == null || !enemy.IsActive)
+                continue;
+
+            Vector3 to = enemy.transform.position - transform.position;
+            to.y = 0f;
+
+            if (to.sqrMagnitude < best)
+            {
+                best = to.sqrMagnitude;
+                direction = to;
+            }
+        }
+
+        direction.y = 0f;
+        velocity = direction.normalized * velocity.magnitude * BatSpeed;
+        battedBack = true;
+        diesAt = Time.time + Lifetime;
+
+        if (sprite != null)
+            Turn();
+    }
+
     private static Color Colour(Look look) => look == Look.Bile ? new Color(0.6f, 1f, 0.2f) : new Color(1f, 0.6f, 0.2f);
 
     private void FixedUpdate()
@@ -158,11 +215,21 @@ public class EnemyBullet : MonoBehaviour
         {
             Rigidbody body = hit.collider.attachedRigidbody;
 
-            if (body != null && body.GetComponent<Enemy>() != null)
-                continue;
+            if (body != null && body.TryGetComponent(out Enemy zombie))
+            {
+                if (!battedBack || !zombie.IsActive)
+                    continue;
+
+                zombie.TakeDamage(BattedDamage);
+                Splash(hit.distance > 0f ? position + velocity.normalized * hit.distance : position);
+                return;
+            }
 
             if (body != null && body.TryGetComponent(out PlayerHealth player))
             {
+                if (battedBack)
+                    continue;
+
                 // Untouchable (a roll, or just hit): it flies on through.
                 if (player.IsInvulnerable || player.IsDead)
                 {

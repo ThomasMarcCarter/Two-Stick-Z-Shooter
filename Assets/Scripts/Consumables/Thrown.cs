@@ -9,6 +9,10 @@ public class Thrown : MonoBehaviour
     private const float Gravity = 20f;
     private const float Radius = 0.12f;
     private const float GrenadeFuse = 1.8f;
+    private const float ShortFuseSize = 1.5f;
+    private const int ClusterBlasts = 3;
+    private const float ClusterSpread = 1.4f;
+    private const float ClusterGap = 0.12f;
 
     private ConsumableType type;
     private Transform thrower;
@@ -45,8 +49,7 @@ public class Thrown : MonoBehaviour
     {
         if (type == ConsumableType.Grenade && Time.time >= fuseAt)
         {
-            Blast.Explode(transform.position, FloorPickups.RoomAt(transform.position));
-            Destroy(gameObject);
+            GoOff();
             return;
         }
 
@@ -93,7 +96,7 @@ public class Thrown : MonoBehaviour
                 continue;
 
             // Grenades are lobbed over zombies rather than bouncing back off the nearest one.
-            if (type == ConsumableType.Grenade && hit.collider.GetComponent<Enemy>() != null)
+            if (type == ConsumableType.Grenade && !PlayerItems.Has(RunItem.ShortFuse) && hit.collider.GetComponent<Enemy>() != null)
                 continue;
 
             if (!found || hit.distance < nearest.distance)
@@ -114,6 +117,12 @@ public class Thrown : MonoBehaviour
             return;
         }
 
+        if (PlayerItems.Has(RunItem.ShortFuse))
+        {
+            GoOff();
+            return;
+        }
+
         // Bounces off, losing most of its speed, until it settles on the floor.
         velocity = Vector3.Reflect(velocity, normal) * 0.35f;
         transform.position += normal * 0.02f;
@@ -127,6 +136,42 @@ public class Thrown : MonoBehaviour
             Vector3 p = transform.position;
             transform.position = new Vector3(p.x, Radius, p.z);
         }
+    }
+
+    // A grenade going off: the Short Fuse makes the blast bigger, and the Cluster Pin splits it into
+    // small ones, close together in quick succession (each stays put if something solid is in its way).
+    private void GoOff()
+    {
+        Vector3 at = transform.position;
+        Transform room = FloorPickups.RoomAt(at);
+        float size = PlayerItems.Has(RunItem.ShortFuse) ? ShortFuseSize : 1f;
+
+        if (PlayerItems.Has(RunItem.ClusterPin))
+        {
+            Blast.Settings small = Sized(PlayerItems.SmallBlast(2), size * 0.8f);
+            float start = Random.value * 360f;
+
+            for (int i = 0; i < ClusterBlasts; i++)
+            {
+                Vector3 offset = Quaternion.Euler(0f, start + i * 360f / ClusterBlasts, 0f) * Vector3.forward * ClusterSpread;
+                Vector3 raised = at + Vector3.up * 0.4f;
+                Vector3 spot = Physics.Linecast(raised, raised + offset, ~0, QueryTriggerInteraction.Ignore) ? at : at + offset;
+                DelayedBlast.Start(spot, room, small, i * ClusterGap);
+            }
+        }
+        else
+        {
+            Blast.Explode(at, room, Sized(Blast.Grenade, size));
+        }
+
+        Destroy(gameObject);
+    }
+
+    private static Blast.Settings Sized(Blast.Settings blast, float size)
+    {
+        blast.Radius *= size;
+        blast.PlayerRadius *= size;
+        return blast;
     }
 
     private void Break(Vector3 point)

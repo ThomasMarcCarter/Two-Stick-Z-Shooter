@@ -249,6 +249,10 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
 
     private void Open()
     {
+        // The Junk Drawer's catch: one thing's gone from a crate when it's first opened.
+        if (!opened && items.Count > 1 && PlayerItems.Has(RunItem.JunkDrawer))
+            items.RemoveAt(UnityEngine.Random.Range(0, items.Count));
+
         opened = true;
 
         if (sprite != null)

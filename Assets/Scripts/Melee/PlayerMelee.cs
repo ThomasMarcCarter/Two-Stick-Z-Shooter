@@ -63,11 +63,12 @@ public class PlayerMelee : MonoBehaviour
     public int Damage => (damage + Level(MeleeUpgrade.Edge)) * (PlayerItems.Has(RunItem.GlassJaw) ? 2 : 1);
     public int MaxTargets => maxTargets + 2 * Level(MeleeUpgrade.Sweep);
     public float Reach => reach + 0.35f * Level(MeleeUpgrade.Reach);
-    public float Arc => arc + 20f * Level(MeleeUpgrade.Reach);
-    public float Cooldown => cooldown * Mathf.Pow(0.8f, Level(MeleeUpgrade.QuickHands));
+    public float Arc => PlayerItems.Has(RunItem.Whirlwind) ? 360f : arc + 20f * Level(MeleeUpgrade.Reach);
+    public float Cooldown => cooldown * Mathf.Pow(0.8f, Level(MeleeUpgrade.QuickHands))
+        * (PlayerItems.Has(RunItem.Bayonet) ? 1.4f : 1f) * (PlayerItems.Has(RunItem.BatterUp) ? 1.5f : 1f);
     public float Knockback => knockback * (1f + 0.5f * Level(MeleeUpgrade.Weight));
     public float Stagger => stagger * (1f + 0.5f * Level(MeleeUpgrade.Weight));
-    public float StaminaCost => staminaCost * Mathf.Pow(0.65f, Level(MeleeUpgrade.Conditioning));
+    public float StaminaCost => staminaCost * Mathf.Pow(0.65f, Level(MeleeUpgrade.Conditioning)) * (PlayerItems.Has(RunItem.Whirlwind) ? 1.5f : 1f);
 
     public int UpgradeCount
     {
@@ -138,6 +139,9 @@ public class PlayerMelee : MonoBehaviour
         int hit = HitEnemies(origin, forward) + HitDummies(origin, forward);
         HitBoxes(origin, forward);
 
+        if (PlayerItems.Has(RunItem.BatterUp) && EnemyBullet.BatBack(origin, forward, Reach, Arc) > 0)
+            SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), 0.6f, 1.3f);
+
         if (hit > 0)
         {
             SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("melee.hit", 3, ProceduralAudio.MeleeHit)), 0.6f, UnityEngine.Random.Range(0.92f, 1.08f));
@@ -197,7 +201,8 @@ public class PlayerMelee : MonoBehaviour
                 ImpactEffects.FleshHit(enemy.transform.position - direction * 0.4f, -direction, direction * 5f, enemy.transform, materials);
 
             enemy.Knock(direction * Knockback, Stagger);
-            enemy.TakeDamage(Damage, true);
+            enemy.TakeDamage(Mathf.RoundToInt(Damage * enemy.OpeningHitMultiplier), true);
+            PlayerItems.MeleeHit(enemy);
         }
 
         return count;

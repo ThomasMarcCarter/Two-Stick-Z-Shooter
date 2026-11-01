@@ -8,7 +8,8 @@ using UnityEngine;
 // boss's moves (wind-up, charge, spit, howl, dodge, dazed: IBossMoves; a sheet with a "stunned"
 // clip loops that while dazed instead, e.g. the Warden without its shield), the player's "heal" and
 // "inject" through a medkit or adrenaline (QuickBar), "climb" down a hatch's ladder, "roll" through a dodge roll and "dead"
-// once the player has died. Added by CharacterVisuals in place of a model when the sprite art is on.
+// once the player has died. A sneaking player plays "crouch" and "crouchwalk" in place of idle and walk.
+// Added by CharacterVisuals in place of a model when the sprite art is on.
 // A soft round shadow lies on the floor under every character (SpriteVisuals.shadow), and a hit
 // squashes the sprite wide and short for a moment (an enemy's or the player's Damaged).
 // The tilted camera shows an upright sprite taller than the body it stands for, so shots test
@@ -38,6 +39,9 @@ public class SpriteCharacter : MonoBehaviour
     private SpriteSheet.Clip inject;
     private SpriteSheet.Clip climb;
     private SpriteSheet.Clip roll;
+    private SpriteSheet.Clip crouch;
+    private SpriteSheet.Clip crouchWalk;
+    private PlayerMovement movement;
     private PlayerDodge dodge;
     private QuickBar quickBar;
     private PlayerMelee playerMelee;
@@ -52,6 +56,9 @@ public class SpriteCharacter : MonoBehaviour
     public SpriteFacing.Facing CurrentFacing => facing;
     public Enemy Enemy => enemy;
     public HideoutNpc Npc => npc;
+
+    // Showing a crouch clip, so GunSprite holds the gun at the crouched hands' height.
+    public bool Crouched { get; private set; }
 
     // Enemies (and hideout survivors, who can be shot but not hurt) drawn as sprites, for
     // Projectile's on-screen hit test.
@@ -125,6 +132,9 @@ public class SpriteCharacter : MonoBehaviour
         character.inject = sheet.Find("inject");
         character.climb = sheet.Find("climb");
         character.roll = sheet.Find("roll");
+        character.crouch = sheet.Find("crouch");
+        character.crouchWalk = sheet.Find("crouchwalk");
+        character.movement = body.GetComponent<PlayerMovement>();
         character.dodge = body.GetComponent<PlayerDodge>();
         character.quickBar = body.GetComponent<QuickBar>();
         character.playerMelee = body.GetComponent<PlayerMelee>();
@@ -159,6 +169,7 @@ public class SpriteCharacter : MonoBehaviour
         float dt = Time.deltaTime;
         float speed = dt > 0f ? moved.magnitude / dt : 0f;
         Squash();
+        Crouched = false;
 
         if (player != null && player.IsDead && dead != null)
         {
@@ -211,17 +222,21 @@ public class SpriteCharacter : MonoBehaviour
             return;
         }
 
-        if (speed > MovingSpeed && walk != null)
+        Crouched = movement != null && movement.IsSneaking && crouch != null && crouchWalk != null;
+        SpriteSheet.Clip moving = Crouched ? crouchWalk : walk;
+        SpriteSheet.Clip still = Crouched ? crouch : idle;
+
+        if (speed > MovingSpeed && moving != null)
         {
             stride += moved.magnitude;
-            sprite.SetFrame(walk, Mathf.FloorToInt(stride / StrideLength), facing);
+            sprite.SetFrame(moving, Mathf.FloorToInt(stride / StrideLength), facing);
             return;
         }
 
         stride = 0f;
 
-        if (idle != null)
-            sprite.SetFrame(idle, Mathf.FloorToInt(Time.time * idle.fps), facing);
+        if (still != null)
+            sprite.SetFrame(still, Mathf.FloorToInt(Time.time * still.fps), facing);
     }
 
     // A dark disc on the floor under the feet, sized to the body, under the character but over the

@@ -39,6 +39,9 @@ public class EnemySenses
     [Tooltip("After reaching where the player was last seen, how far it follows the way they were going.")]
     [Min(0f)] public float followDistance = 4f;
 
+    private const float WideBeamSight = 1.5f;
+    private const float ColdOpenHearing = 1.5f;
+
     // The settings in use. Defaults until a FloorGenerator supplies its own.
     public static EnemySenses Current { get; private set; } = new EnemySenses();
 
@@ -56,6 +59,10 @@ public class EnemySenses
 
     public float SightRangeFor(bool sneaking)
     {
-        return sneaking ? sightRange * sneakingSightMultiplier : sightRange;
+        float range = PlayerItems.Has(RunItem.WideBeam) ? sightRange * WideBeamSight : sightRange;
+        return sneaking ? range * sneakingSightMultiplier : range;
     }
+
+    // How far a noise of loudness 1 carries (the Cold Open makes it further).
+    public float HearingRange => PlayerItems.Has(RunItem.ColdOpen) ? hearingRange * ColdOpenHearing : hearingRange;
 }

@@ -128,7 +128,7 @@ public class GunSprite : MonoBehaviour
         }
 
         SpriteSheet body = character != null ? character.Sprite.Sheet : null;
-        float holdUp = body != null ? body.holdHeight / Mathf.Max(1f, body.pixelsPerUnit) : 0.6f;
+        float holdUp = body != null ? (character.Crouched ? body.crouchHoldHeight : body.holdHeight) / Mathf.Max(1f, body.pixelsPerUnit) : 0.6f;
         float reach = body != null ? body.holdReach : 0.3f;
         Vector3 feet = new Vector3(holder.position.x, 0f, holder.position.z);
         Vector3 handsWorld = feet + CameraFollow.SpriteUp * (holdUp / Mathf.Max(0.01f, CameraFollow.VerticalScale));
@@ -377,6 +377,7 @@ public class GunSprite : MonoBehaviour
         if (way.sqrMagnitude > 0.0001f)
             laser.transform.rotation = Quaternion.LookRotation(way.normalized, Vector3.up);
 
+        laser.OnGunSprite = true;
         laser.FollowBarrel = tipped;
     }
 

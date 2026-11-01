@@ -68,8 +68,8 @@ public static class ConsumableInfo
     {
         switch (type)
         {
-            case ConsumableType.Medkit: return $"HEALS {SmallHeal} // {UseTime(type):0.#}S TO USE";
-            case ConsumableType.LargeMedkit: return $"HEALS {LargeHeal} // {UseTime(type):0.#}S TO USE";
+            case ConsumableType.Medkit: return $"HEALS {Heal(type)} // {UseTime(type):0.#}S TO USE";
+            case ConsumableType.LargeMedkit: return $"HEALS {Heal(type)} // {UseTime(type):0.#}S TO USE";
             case ConsumableType.Adrenaline: return $"{AdrenalineTime:0}S OF FREE SPRINTING, +15% SPEED";
             case ConsumableType.Grenade: return "THROWN // EXPLODES AFTER A SHORT FUSE";
             case ConsumableType.Molotov: return "THROWN // BURSTS INTO A POOL OF FIRE";
@@ -82,8 +82,8 @@ public static class ConsumableInfo
     {
         switch (type)
         {
-            case ConsumableType.Medkit: return 1f;
-            case ConsumableType.LargeMedkit: return 1.6f;
+            case ConsumableType.Medkit: return 1f * MedicFactor;
+            case ConsumableType.LargeMedkit: return 1.6f * MedicFactor;
             case ConsumableType.Adrenaline: return 0.4f;
             default: return 0f;
         }
@@ -99,8 +99,11 @@ public static class ConsumableInfo
         return type == ConsumableType.Medkit || type == ConsumableType.LargeMedkit;
     }
 
+    // The Field Medic: medkits heal twice as much and take twice as long.
+    public static int MedicFactor => PlayerItems.Has(RunItem.FieldMedic) ? 2 : 1;
+
     public static int Heal(ConsumableType type)
     {
-        return type == ConsumableType.LargeMedkit ? LargeHeal : type == ConsumableType.Medkit ? SmallHeal : 0;
+        return (type == ConsumableType.LargeMedkit ? LargeHeal : type == ConsumableType.Medkit ? SmallHeal : 0) * MedicFactor;
     }
 }

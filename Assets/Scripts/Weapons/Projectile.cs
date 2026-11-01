@@ -46,6 +46,11 @@ public class Projectile : MonoBehaviour
     private bool bounced;
     private Collider bouncedOff;
     private bool explodes;
+    private Vector3 firedFrom;
+
+    // Seeker Rounds: how far a round notices a zombie and how fast it turns (degrees a second).
+    private const float SeekRange = 10f;
+    private const float SeekTurn = 300f;
 
     private static readonly RaycastHit[] sweepHits = new RaycastHit[8];
 
@@ -123,6 +128,7 @@ public class Projectile : MonoBehaviour
 
         rb.linearVelocity = direction.normalized * speed * speedMultiplier;
         lastPosition = transform.position;
+        firedFrom = transform.position;
 
         Destroy(gameObject, lifetime);
     }
@@ -167,6 +173,52 @@ public class Projectile : MonoBehaviour
         transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
     }
 
+    // Seeker Rounds: turned toward the nearest zombie ahead of it, staying level.
+    private void Seek()
+    {
+        Vector3 travel = rb.linearVelocity;
+        Vector3 toward = Vector3.zero;
+        float best = SeekRange;
+
+        foreach (Enemy enemy in Noise.Enemies)
+        {
+            if (enemy == null || !enemy.IsActive)
+                continue;
+
+            Vector3 to = enemy.transform.position - transform.position;
+            to.y = 0f;
+
+            if (to.magnitude < best && Vector3.Dot(to, travel) > 0f)
+            {
+                best = to.magnitude;
+                toward = to;
+            }
+        }
+
+        if (toward == Vector3.zero)
+            return;
+
+        rb.linearVelocity = Vector3.RotateTowards(travel, toward.normalized * travel.magnitude, SeekTurn * Mathf.Deg2Rad * Time.fixedDeltaTime, 0f);
+        transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
+    }
+
+    // The damage this round does here, after the items that change it (Point Blank by how far it's
+    // flown, Cold Open by the target). Bullets do little, whole damage, so a fraction left over is
+    // a chance of one more: a 1-damage round at x0.75 does 1 three times in four, otherwise nothing.
+    private int DamageAt(Vector3 point, float targetMultiplier)
+    {
+        float amount = damage * PlayerItems.GunDamageMultiplier * targetMultiplier;
+
+        if (PlayerItems.Has(RunItem.PointBlank))
+        {
+            float flown = Vector3.Distance(new Vector3(firedFrom.x, 0f, firedFrom.z), new Vector3(point.x, 0f, point.z));
+            amount *= flown <= 4f ? 2f : flown > 8f ? 0.5f : 1f;
+        }
+
+        int whole = Mathf.FloorToInt(amount);
+        return whole + (Random.value < amount - whole ? 1 : 0);
+    }
+
     // Fast rounds can move further in one physics step than a wall is thick, and pass through
     // without touching it. So before each step, look along the stretch about to be covered and
     // take the hit there if something's in the way.
@@ -176,6 +228,9 @@ public class Projectile : MonoBehaviour
 
         if (rb == null || spent)
             return;
+
+        if (PlayerItems.Has(RunItem.SeekerRounds))
+            Seek();
 
         Vector3 step = rb.linearVelocity * Time.fixedDeltaTime;
         float distance = step.magnitude;
@@ -388,7 +443,7 @@ public class Projectile : MonoBehaviour
         {
             spent = true;
             FindHit(other, out Vector3 dummyPoint, out Vector3 _);
-            dummy.Hit(damage, dummyPoint, rb != null ? rb.linearVelocity : transform.forward);
+            dummy.Hit(DamageAt(dummyPoint, 1f), dummyPoint, rb != null ? rb.linearVelocity : transform.forward);
             Finish();
             return;
         }
@@ -477,7 +532,11 @@ public class Projectile : MonoBehaviour
 
         // The enemy's own voice reacts to the hit (EnemyVoice).
         spent = true;
-        enemy.TakeDamage(damage);
+        int dealt = DamageAt(point, enemy.OpeningHitMultiplier);
+
+        // TakeDamage always does at least 1, so a round that rolled nothing doesn't call it.
+        if (dealt > 0)
+            enemy.TakeDamage(dealt);
 
         if (enemy.IsDead && PlayerItems.Has(RunItem.IncendiaryRounds))
             FirePatch.Create(enemy.transform.position, FloorPickups.RoomAt(enemy.transform.position), 0.6f, 4f);

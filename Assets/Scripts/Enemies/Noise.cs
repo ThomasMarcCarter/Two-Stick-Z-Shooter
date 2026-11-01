@@ -27,6 +27,9 @@ public static class Noise
     public static float Reload => EnemySenses.Current.reload;
     public static float QuietReload => EnemySenses.Current.quietReload;
 
+    // Every enemy that's listening: all of them on the floor.
+    public static IReadOnlyList<Enemy> Enemies => listeners;
+
     private static readonly List<Enemy> listeners = new List<Enemy>();
 
     // Statics outlive Play sessions with domain reload off.
@@ -54,7 +57,7 @@ public static class Noise
 
         if (NoiseDebug.Enabled)
         {
-            float radius = EnemySenses.Current.hearingRange * loudness;
+            float radius = EnemySenses.Current.HearingRange * loudness;
             NoiseDebug.Show(position, radius, kind, $"{Describe(kind, loudness)} {radius:0.#}");
         }
 

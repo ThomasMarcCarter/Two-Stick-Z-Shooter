@@ -18,6 +18,7 @@ public class PlayerItems : MonoBehaviour
     private const float LandingPush = 9f;
     private const float LandingStun = 0.5f;
     private const float CorpseDelay = 1f;
+    private const int BloodletterKills = 5;
 
     // Where a roll's fires go: each lights once the player is this far along, this far behind them.
     private const int FuelFires = 3;
@@ -32,6 +33,7 @@ public class PlayerItems : MonoBehaviour
     private PlayerWeapon weapon;
     private Vector3 rollStart;
     private int rollFires;
+    private int meleeKills;
 
     public static PlayerItems Current => current;
     public IReadOnlyList<RunItem> Held => held;
@@ -91,6 +93,9 @@ public class PlayerItems : MonoBehaviour
                 floor.RingDinnerBell();
         }
 
+        if (item == RunItem.WideBeam)
+            WidenFlashlight();
+
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.6f, 0.7f);
         Changed?.Invoke();
         return true;
@@ -138,6 +143,68 @@ public class PlayerItems : MonoBehaviour
             current.dodge.Refund();
     }
 
+    // What the held items make of a gun's damage (Projectile).
+    public static float GunDamageMultiplier
+    {
+        get
+        {
+            float multiplier = 1f;
+
+            if (Has(RunItem.SeekerRounds))
+                multiplier *= 0.75f;
+
+            if (Has(RunItem.OiledBolt))
+                multiplier *= 0.85f;
+
+            if (Has(RunItem.Bloodletter))
+                multiplier *= 0.75f;
+
+            return multiplier;
+        }
+    }
+
+    // A swing landed on a zombie: the Bayonet loads a round, and the Bloodletter counts the kills.
+    public static void MeleeHit(Enemy enemy)
+    {
+        if (current != null)
+            current.OnMeleeHit(enemy);
+    }
+
+    private void OnMeleeHit(Enemy enemy)
+    {
+        if (Holds(RunItem.Bayonet))
+            LoadFreeRound();
+
+        if (!Holds(RunItem.Bloodletter) || !enemy.IsDead || ++meleeKills % BloodletterKills != 0)
+            return;
+
+        if (TryGetComponent(out PlayerHealth health))
+            health.Heal(1);
+
+        SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("medkit", 1, i => ProceduralAudio.MedkitPickup())), 0.5f, 1.2f);
+    }
+
+    private void LoadFreeRound()
+    {
+        if (weapon == null || weapon.Active.Gun == null)
+            return;
+
+        Gun gun = weapon.Active.Gun;
+        gun.SetCurrentAmmo(gun.GetCurrentAmmo() + 1);
+    }
+
+    private void WidenFlashlight()
+    {
+        foreach (Light light in GetComponentsInChildren<Light>(true))
+        {
+            if (light.name != "Flashlight")
+                continue;
+
+            light.spotAngle = Mathf.Min(light.spotAngle * 2f, 170f);
+            light.innerSpotAngle = Mathf.Min(light.innerSpotAngle * 2f, light.spotAngle);
+        }
+    }
+
     // The blast from a Last Word round or a Corpse Bloat: smaller than a grenade's.
     public static Blast.Settings SmallBlast(int maxDamage)
     {
@@ -156,11 +223,8 @@ public class PlayerItems : MonoBehaviour
 
     private void OnEnemyKilled(Enemy dead, bool boss, Transform room)
     {
-        if (Holds(RunItem.HungryMag) && weapon != null && weapon.Active.Gun != null)
-        {
-            Gun gun = weapon.Active.Gun;
-            gun.SetCurrentAmmo(Mathf.Min(gun.GetMagazineSize(), gun.GetCurrentAmmo() + 1));
-        }
+        if (Holds(RunItem.HungryMag))
+            LoadFreeRound();
 
         if (Holds(RunItem.CorpseBloat) && !boss)
             DelayedBlast.Start(dead.transform.position, room, SmallBlast(3), CorpseDelay);

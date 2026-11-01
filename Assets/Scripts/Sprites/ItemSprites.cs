@@ -14,7 +14,12 @@ public static class ItemSprites
 
     public static Vector2Int Melee(MeleeUpgrade upgrade) => new Vector2Int((int)upgrade, 4);
 
-    public static Vector2Int RunItem(RunItem item) => new Vector2Int((int)item % 10, 6 + (int)item / 10);
+    // The first 13 fill rows 6 and 7 up to the plate and case frames; the rest start on row 8.
+    public static Vector2Int RunItem(RunItem item)
+    {
+        int index = (int)item;
+        return index < 13 ? new Vector2Int(index % 10, 6 + index / 10) : new Vector2Int((index - 13) % 10, 8 + (index - 13) / 10);
+    }
 
     public static readonly Vector2Int ArmorPlate = new Vector2Int(3, 7);
     public static readonly Vector2Int PowerupCase = new Vector2Int(4, 7);

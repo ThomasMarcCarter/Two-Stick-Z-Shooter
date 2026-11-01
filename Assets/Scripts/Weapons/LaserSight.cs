@@ -6,10 +6,14 @@ using UnityEngine;
 // shows the aim in the dark. A child of the muzzle, so it holsters with the gun. A gun sprite
 // moves it to the lens of the laser drawn under its barrel each frame (so it runs after GunSprite),
 // and while the gun is tipped (reloading, a melee bash) has it follow the barrel, not the cursor.
+// With the cursor close to the lens the beam runs along the barrel, easing onto the cursor further
+// out, as a line from the lens to a nearby cursor would point a different way from the gun.
 [DefaultExecutionOrder(270)]
 public class LaserSight : MonoBehaviour
 {
     private const float Range = 25f;
+    private const float BarrelWithin = 1f;   // metres from the lens to the cursor: along the barrel
+    private const float CursorBeyond = 3f;   // metres: all the way onto the cursor
     private static readonly Color BeamColour = new Color(1f, 0.08f, 0.08f) * 2.5f;
     private static Material material;
 
@@ -19,6 +23,9 @@ public class LaserSight : MonoBehaviour
 
     // The beam goes this transform's way (set by GunSprite) instead of toward the cursor.
     public bool FollowBarrel { get; set; }
+
+    // Set by a gun sprite: this transform points along the drawn barrel, ahead of the body turning.
+    public bool OnGunSprite { get; set; }
 
     public static LaserSight Create(Transform gun, Transform muzzle)
     {
@@ -74,7 +81,7 @@ public class LaserSight : MonoBehaviour
     {
         Vector3 start = transform.position;
         Vector3 probe = new Vector3(start.x, Gun.ShotHeight, start.z);
-        Vector3 direction = FollowBarrel ? transform.forward : gun.forward;
+        Vector3 direction = FollowBarrel || OnGunSprite ? transform.forward : gun.forward;
         direction.y = 0f;
 
         if (direction.sqrMagnitude < 0.0001f)
@@ -89,7 +96,7 @@ public class LaserSight : MonoBehaviour
             toAim.y = 0f;
 
             if (toAim.sqrMagnitude > 0.01f && Vector3.Dot(toAim.normalized, direction) > 0.5f)
-                direction = toAim.normalized;
+                direction = Vector3.Slerp(direction, toAim.normalized, Mathf.InverseLerp(BarrelWithin, CursorBeyond, toAim.magnitude));
         }
 
         Vector3 end = start + direction * Range;

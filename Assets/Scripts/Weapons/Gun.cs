@@ -130,13 +130,16 @@ public partial class Gun : MonoBehaviour
     public FireMode BaseFireMode => fireMode;
     public ReloadStyle Reloading => reloadStyle;
 
-    private float FireRate => fireRate * Product(a => a.fireRateMultiplier);
+    private const float TwinFeedAngle = 1.5f;   // how far each of the Twin Feed's two bullets leans off the aim
+
+    private static bool HairTrigger => PlayerItems.Has(RunItem.HairTrigger);
+    private float FireRate => fireRate * Product(a => a.fireRateMultiplier) * (HairTrigger ? 1.4f : 1f);
     private float ReloadTime => reloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
     private float ShellReloadTime => shellReloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
     private static float ItemReloadTime => PlayerItems.Has(RunItem.HungryMag) ? 2f : 1f;
-    private float Spread => spreadAngle * Product(a => a.spreadMultiplier);
+    private float Spread => spreadAngle * Product(a => a.spreadMultiplier) * (HairTrigger ? 2f : 1f);
     private float ProjectileSpeed => Product(a => a.projectileSpeedMultiplier);
-    private float AccuracyMultiplier => Product(a => a.accuracyMultiplier);
+    private float AccuracyMultiplier => Product(a => a.accuracyMultiplier) * (HairTrigger ? 2.5f : 1f);
 
     private float Bloom => Mathf.Max(0f, bloomAtShot - bloomRecovery * (Time.time - lastShotTime));
 
@@ -387,11 +390,20 @@ public partial class Gun : MonoBehaviour
 
         bloomAtShot = Mathf.Min(maxBloom, Bloom + bloomPerShot);
         lastShotTime = Time.time;
-        LaunchPellets(spawn, direction);
+
+        // The Twin Feed's two bullets, or one if that's all that's left in the magazine.
+        bool freeShot = FreeAmmo || HolderInGodMode;
+        int shots = PlayerItems.Has(RunItem.TwinFeed) && (freeShot || currentAmmo >= 2) ? 2 : 1;
+
+        for (int shot = 0; shot < shots; shot++)
+        {
+            float lean = shots > 1 ? (shot == 0 ? -TwinFeedAngle : TwinFeedAngle) : 0f;
+            LaunchPellets(spawn, Quaternion.AngleAxis(lean, Vector3.up) * direction, shots, shot == 0);
+        }
 
         // One shell per shot, however many pellets it holds (none in the hideout, or in god mode).
-        if (!FreeAmmo && !HolderInGodMode)
-            currentAmmo--;
+        if (!freeShot)
+            currentAmmo -= shots;
 
         if (muzzleFlash != null && !HidesFlash)
             muzzleFlash.Fire();
@@ -432,10 +444,10 @@ public partial class Gun : MonoBehaviour
 
     // A projectile per pellet, spread across the cone (PelletAngle), each at a slightly random
     // speed.
-    private void LaunchPellets(Vector3 spawn, Vector3 direction)
+    private void LaunchPellets(Vector3 spawn, Vector3 direction, int roundsThisShot, bool firstOfShot)
     {
         int pellets = Mathf.Max(1, pelletsPerShot);
-        bool lastWord = currentAmmo == 1 && !FreeAmmo && PlayerItems.Has(RunItem.LastWord);
+        bool lastWord = currentAmmo <= roundsThisShot && !FreeAmmo && PlayerItems.Has(RunItem.LastWord);
 
         for (int i = 0; i < pellets; i++)
         {
@@ -458,7 +470,7 @@ public partial class Gun : MonoBehaviour
 
             // One blast a shot, however many pellets it holds.
             if (lastWord)
-                round.MakeLastWord(i == 0);
+                round.MakeLastWord(i == 0 && firstOfShot);
         }
     }
 
@@ -479,7 +491,8 @@ public partial class Gun : MonoBehaviour
             shotAudio.PlayOneShot(shotAudio.clip, Mathf.Clamp01(Mathf.Lerp(0.25f, 1f, loudness)));
         }
 
-        Noise.Emit(transform.position, Noise.Gunshot * loudness, Noise.Kind.Gunshot);
+        if (!PlayerItems.Has(RunItem.OiledBolt))
+            Noise.Emit(transform.position, Noise.Gunshot * loudness, Noise.Kind.Gunshot);
     }
 
     // Where shots start: the muzzle, unless the barrel is poking through a wall or into an

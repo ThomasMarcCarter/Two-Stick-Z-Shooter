@@ -120,6 +120,7 @@ public partial class FloorGenerator
 
         DropRoomMaterial(room, position);
         DropDinnerBellLoot(room, position, side);
+        DropJunk(room, position, side);
     }
 
     private void PlayRoomCleared()

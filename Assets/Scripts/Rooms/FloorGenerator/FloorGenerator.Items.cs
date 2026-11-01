@@ -114,6 +114,17 @@ public partial class FloorGenerator
         }
     }
 
+    // The Junk Drawer's throwable from a cleared combat room.
+    private void DropJunk(Room room, Vector3 position, Vector3 side)
+    {
+        if (!PlayerItems.Has(RunItem.JunkDrawer) || room.Type != RoomType.Normal)
+            return;
+
+        ConsumableType[] junk = { ConsumableType.Grenade, ConsumableType.Molotov, ConsumableType.Bottle };
+        Vector3 spot = position + Vector3.Cross(side, Vector3.up) * 1.4f;
+        ConsumablePickup.Spawn(junk[UnityEngine.Random.Range(0, junk.Length)], 1, InsideRoom(room, spot), room.transform, ammoMaterial);
+    }
+
     // The Dinner Bell's extra loot from a cleared room: a supply and a material.
     private void DropDinnerBellLoot(Room room, Vector3 position, Vector3 side)
     {

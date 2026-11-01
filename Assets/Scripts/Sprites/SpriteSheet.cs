@@ -41,6 +41,8 @@ public class SpriteSheet : ScriptableObject
     public float bodyHeight = 1.75f;
     [Tooltip("Pixels above the pivot where a held gun's grip sits (the hands' height).")]
     public float holdHeight = 12f;
+    [Tooltip("The hands' height in the crouch clips, for a sheet that has them.")]
+    public float crouchHoldHeight = 10f;
     [Tooltip("How far from the middle of the body a held gun's grip is, in metres.")]
     public float holdReach = 0.3f;
 
