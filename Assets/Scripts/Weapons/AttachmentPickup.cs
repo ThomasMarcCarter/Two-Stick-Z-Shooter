@@ -265,12 +265,14 @@ public class AttachmentPickup : MonoBehaviour, FloorPickups.IPickup
         if (take == Take.Store)
         {
             player.Backpack.AddAttachment(Attachment);
+            PickupPop.Fly(gameObject, PickupPop.Target.QuickBar);
             SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("inventory-lift", 2, i => ProceduralAudio.BackpackRustle(300 + i))), 0.35f, 1.1f);
             Destroy(gameObject);
             return;
         }
 
         WeaponAttachment replaced = target.Gun.Attach(Attachment);
+        PickupPop.Fly(gameObject, PickupPop.Target.Weapon);
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.6f, Random.Range(0.95f, 1.05f));
 
         // The old one goes down where this one was.

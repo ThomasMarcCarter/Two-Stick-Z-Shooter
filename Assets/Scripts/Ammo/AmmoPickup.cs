@@ -245,7 +245,11 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
     // Interact: everything that fits, starting new stacks as needed.
     private void TakeAll()
     {
-        Amount -= playerAmmo.Add(Type, Amount, true);
+        int added = playerAmmo.Add(Type, Amount, true);
+        Amount -= added;
+
+        if (added > 0)
+            PickupPop.Fly(gameObject, PickupPop.Target.Weapon);
 
         if (Amount <= 0)
             Destroy(gameObject);
@@ -271,7 +275,11 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
         if (inventory.TopUpRoom(Type) <= 0)
             return;
 
-        Amount -= inventory.Add(Type, Amount, false);
+        int topped = inventory.Add(Type, Amount, false);
+        Amount -= topped;
+
+        if (topped > 0)
+            PickupPop.Fly(gameObject, PickupPop.Target.Weapon);
 
         if (Amount <= 0)
             Destroy(gameObject);

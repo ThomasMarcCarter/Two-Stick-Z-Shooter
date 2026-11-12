@@ -217,6 +217,7 @@ public class ConsumablePickup : MonoBehaviour, FloorPickups.IPickup
             return;
 
         Amount -= added;
+        PickupPop.Fly(gameObject, PickupPop.Target.QuickBar);
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("consumable-pickup", 2, i => ProceduralAudio.BackpackRustle(700 + i))), 0.45f, 1.2f);
 
         if (Amount <= 0)

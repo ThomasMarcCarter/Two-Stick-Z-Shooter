@@ -59,6 +59,7 @@ public class ArmorPlatePickup : MonoBehaviour
         if (distance <= Reach && !GameFlow.InputBlocked && items.AddPlate())
         {
             taken = true;
+            PickupPop.Fly(gameObject, PickupPop.Target.Vitals);
             Destroy(gameObject);
             return;
         }

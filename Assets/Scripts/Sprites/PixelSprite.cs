@@ -141,6 +141,9 @@ public class PixelSprite : MonoBehaviour
         {
             material = new Material(source) { name = texture.name + " (glow sprite)" };
             material.SetTexture("_BaseMap", texture);
+            // Both faces: a mirrored sprite (SpriteEffect flips half its explosions) shows its
+            // back to the camera, and URP Unlit culls back faces by default, so it vanished.
+            material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
             glowMaterials[texture] = material;
         }
 

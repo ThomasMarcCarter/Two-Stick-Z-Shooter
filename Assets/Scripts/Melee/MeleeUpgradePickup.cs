@@ -203,6 +203,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
             return;
 
         used = true;
+        PickupPop.Fly(gameObject, PickupPop.Target.Weapon);
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.55f, 0.85f);
         Destroy(gameObject);
     }

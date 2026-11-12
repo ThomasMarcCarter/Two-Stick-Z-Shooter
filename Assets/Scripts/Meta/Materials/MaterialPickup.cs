@@ -236,6 +236,7 @@ public class MaterialPickup : MonoBehaviour
             return false;
 
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("material-pickup", 3, ProceduralAudio.AmmoPickup)), 0.45f, 1.25f);
+        PickupPop.Fly(gameObject, PickupPop.Target.QuickBar);
         Amount -= added;
 
         if (Amount > 0)
