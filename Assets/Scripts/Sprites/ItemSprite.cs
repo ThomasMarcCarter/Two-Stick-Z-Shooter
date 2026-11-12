@@ -98,7 +98,43 @@ public class ItemSprite : MonoBehaviour
             return null;
 
         Transform frame = root.transform;
-        Bounds bounds = default;
+
+        if (!LocalBounds(root, out Bounds bounds))
+            return null;
+
+        Vector3 size = Vector3.Scale(bounds.size, frame.lossyScale);
+        Transform middle = new GameObject("Sprite Anchor").transform;
+        middle.SetParent(frame, false);
+        middle.localPosition = bounds.center;
+
+        bool flat = entry.Sheet == ClutterSprites.Sheet.Flat;
+        ItemSprite item = Attach(root, sheet, flat ? PixelSprite.Mode.Flat : PixelSprite.Mode.Upright);
+
+        if (item == null)
+            return null;
+
+        float fit = entry.FitHeight ? size.y : Mathf.Max(size.x, size.z);
+        item.sprite.Scale = Mathf.Max(0.05f, fit / (entry.ContentPixels / Mathf.Max(1f, sheet.pixelsPerUnit)));
+        item.sprite.Follow = middle;
+        // Beside the prop, not under it: a prop stretched unevenly and then turned or knocked over
+        // shears its children, which no scale on the sprite can undo. OnDestroy takes it along.
+        item.sprite.transform.SetParent(root.transform.parent, true);
+        item.sprite.Renderer.shadowCastingMode = entry.CastsShadow
+            ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+        item.anchor = middle;
+        item.uprightHalf = size.y / 2f;
+        item.lyingHalf = Mathf.Min(size.x, size.z) / 2f;
+        item.tippable = entry.Sheet == ClutterSprites.Sheet.Small;
+        item.standingFrame = entry.Frame;
+        item.SetFrame(entry.Frame);
+        return item;
+    }
+
+    // A prop's mesh bounds in its own frame (so one spawned lying down measures as it stands).
+    public static bool LocalBounds(GameObject root, out Bounds bounds)
+    {
+        Transform frame = root.transform;
+        bounds = default;
         bool any = false;
 
         foreach (MeshFilter part in root.GetComponentsInChildren<MeshFilter>())
@@ -124,32 +160,26 @@ public class ItemSprite : MonoBehaviour
             }
         }
 
-        if (!any)
-            return null;
+        return any;
+    }
 
-        Vector3 size = Vector3.Scale(bounds.size, frame.lossyScale);
-        Transform middle = new GameObject("Sprite Anchor").transform;
-        middle.SetParent(frame, false);
-        middle.localPosition = bounds.center;
+    // A prop's sprite lives beside it (ApplyProp), so it goes and hides with the prop by hand.
+    private void OnDestroy()
+    {
+        if (sprite != null && sprite.transform.parent != transform)
+            Destroy(sprite.gameObject);
+    }
 
-        bool flat = entry.Sheet == ClutterSprites.Sheet.Flat;
-        ItemSprite item = Attach(root, sheet, flat ? PixelSprite.Mode.Flat : PixelSprite.Mode.Upright);
+    private void OnDisable()
+    {
+        if (sprite != null && sprite.transform.parent != transform)
+            sprite.gameObject.SetActive(false);
+    }
 
-        if (item == null)
-            return null;
-
-        float fit = entry.FitHeight ? size.y : Mathf.Max(size.x, size.z);
-        item.sprite.Scale = Mathf.Max(0.05f, fit / (entry.ContentPixels / Mathf.Max(1f, sheet.pixelsPerUnit)));
-        item.sprite.Follow = middle;
-        item.sprite.Renderer.shadowCastingMode = entry.CastsShadow
-            ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
-        item.anchor = middle;
-        item.uprightHalf = size.y / 2f;
-        item.lyingHalf = Mathf.Min(size.x, size.z) / 2f;
-        item.tippable = entry.Sheet == ClutterSprites.Sheet.Small;
-        item.standingFrame = entry.Frame;
-        item.SetFrame(entry.Frame);
-        return item;
+    private void OnEnable()
+    {
+        if (sprite != null && sprite.transform.parent != transform)
+            sprite.gameObject.SetActive(true);
     }
 
     private static ItemSprite Attach(GameObject root, SpriteSheet sheet, PixelSprite.Mode mode)

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LabTable_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 7661261f9f9c79244851c6e8591e4aee, type: 3}
-  frameWidth: 52
-  frameHeight: 62
-  pivot: {x: 26, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 44
+  frameHeight: 50
+  pivot: {x: 22, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

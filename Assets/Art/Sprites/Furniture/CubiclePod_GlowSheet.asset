@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CubiclePod_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: d6aeff75aa40f4243a8ca2004918187f, type: 3}
-  frameWidth: 82
-  frameHeight: 77
-  pivot: {x: 41, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 66
+  frameHeight: 62
+  pivot: {x: 33, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

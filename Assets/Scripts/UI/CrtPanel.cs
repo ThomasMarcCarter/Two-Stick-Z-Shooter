@@ -99,6 +99,45 @@ public static class CrtPanel
 
     // ---------- General builders (any layout: menus, settings, HUD notices) ----------
 
+    // A fully opaque colour that looks like `colour` at `strength` over `under`: UI drawn over a
+    // moving backdrop reads better solid than see-through.
+    public static Color Solid(Color under, Color colour, float strength)
+    {
+        Color solid = Color.Lerp(under, colour, strength);
+        solid.a = 1f;
+        return solid;
+    }
+
+    // A full-screen shade, darkest at the left edge and gone by `reach` (0-1) of the screen's
+    // width, so a menu kept on the left reads over whatever's behind it without a box round it.
+    public static RawImage MakeSideShade(Transform parent, Color colour, float reach)
+    {
+        RectTransform rect = MakeRect(parent, "Side Shade", Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+
+        const int width = 256;
+        Texture2D texture = new Texture2D(width, 1, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            name = "Side Shade",
+        };
+
+        for (int x = 0; x < width; x++)
+        {
+            float t = Mathf.Clamp01(x / (width - 1f) / Mathf.Max(0.01f, reach));
+            texture.SetPixel(x, 0, new Color(colour.r, colour.g, colour.b, colour.a * (1f - t * t * (3f - 2f * t))));
+        }
+
+        texture.Apply();
+        RawImage image = rect.gameObject.AddComponent<RawImage>();
+        image.texture = texture;
+        image.raycastTarget = false;
+        return image;
+    }
+
     // An empty child of `parent` on its layer, anchored at `anchor` with its pivot at `pivot`.
     public static RectTransform MakeRect(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
     {

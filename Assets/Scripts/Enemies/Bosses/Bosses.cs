@@ -242,6 +242,7 @@ public static class Bosses
                 break;
         }
 
+        boss.DisplayName = Name(kind);
         BossHealthBar.Track(boss, Name(kind), Tint(kind));
     }
 

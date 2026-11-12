@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: FireBarrelSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 722c069d029f9b441829f3acaa7dc237, type: 3}
-  frameWidth: 16
-  frameHeight: 31
-  pivot: {x: 8, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 14
+  frameHeight: 26
+  pivot: {x: 7, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

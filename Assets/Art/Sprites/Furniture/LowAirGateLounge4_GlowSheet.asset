@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowAirGateLounge4_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 7b27f731760770142beea94aed5d2060, type: 3}
-  frameWidth: 82
-  frameHeight: 85
-  pivot: {x: 41, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 68
+  frameHeight: 69
+  pivot: {x: 34, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

@@ -101,6 +101,7 @@ public partial class SettingsMenu
         }
 
         AddOption(ref y, "CRT EFFECT", () => GameSettings.Crt.ToString().ToUpperInvariant(), GameSettings.StepCrt);
+        AddOption(ref y, "SCREEN SHAKE", () => GameSettings.ShakeNames[GameSettings.Shake], GameSettings.StepShake);
 
         y -= rowHeight * 0.5f;
         optionsResetCell = AddWideButton(ref y, "[ RESET TO DEFAULTS ]");

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowAirSecurityCheck3Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: d25aa06aaf97383479999da680147c2f, type: 3}
-  frameWidth: 66
-  frameHeight: 69
-  pivot: {x: 33, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 54
+  frameHeight: 56
+  pivot: {x: 27, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

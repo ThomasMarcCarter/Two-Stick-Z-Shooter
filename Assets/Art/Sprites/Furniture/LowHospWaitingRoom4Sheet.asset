@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowHospWaitingRoom4Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 92293f840f6f90440a56caedca6d03e6, type: 3}
-  frameWidth: 82
-  frameHeight: 85
-  pivot: {x: 41, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 68
+  frameHeight: 69
+  pivot: {x: 34, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SupplyCrate_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 8ac618881e489de4089a92e118a4efad, type: 3}
-  frameWidth: 32
-  frameHeight: 49
-  pivot: {x: 16, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 26
+  frameHeight: 40
+  pivot: {x: 13, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

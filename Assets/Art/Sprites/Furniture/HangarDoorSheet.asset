@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: HangarDoorSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 2e7103ff4fab91e47b469bfa977d0422, type: 3}
-  frameWidth: 124
-  frameHeight: 127
-  pivot: {x: 62, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 100
+  frameHeight: 103
+  pivot: {x: 50, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

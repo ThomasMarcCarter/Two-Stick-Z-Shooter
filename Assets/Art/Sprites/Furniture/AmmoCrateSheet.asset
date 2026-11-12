@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: AmmoCrateSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 1a8e0ce3077e8ad4298c57f03316c439, type: 3}
-  frameWidth: 28
-  frameHeight: 32
-  pivot: {x: 14, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 22
+  frameHeight: 27
+  pivot: {x: 11, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

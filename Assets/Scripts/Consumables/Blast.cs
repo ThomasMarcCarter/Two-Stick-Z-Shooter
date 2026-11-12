@@ -89,7 +89,8 @@ public class Blast : MonoBehaviour
             if (collider.TryGetComponent(out PlayerHealth player))
             {
                 if (done.Add(player) && distance <= settings.PlayerRadius && !Blocked(centre, target, collider))
-                    player.TakeDamage(distance < settings.PlayerRadius * 0.5f ? settings.PlayerDamage : settings.PlayerDamageOuter, centre);
+                    player.TakeDamage(distance < settings.PlayerRadius * 0.5f ? settings.PlayerDamage : settings.PlayerDamageOuter, centre,
+                        false, settings.Acid ? "A BLOATER BURST" : "AN EXPLOSION");
 
                 continue;
             }

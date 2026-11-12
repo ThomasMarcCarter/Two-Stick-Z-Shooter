@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CounterSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 08c165050aa87094f9a17904b4a52ea4, type: 3}
-  frameWidth: 52
-  frameHeight: 62
-  pivot: {x: 26, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 44
+  frameHeight: 51
+  pivot: {x: 22, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

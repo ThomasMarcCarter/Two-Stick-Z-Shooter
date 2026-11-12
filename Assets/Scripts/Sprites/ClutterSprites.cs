@@ -1,8 +1,8 @@
 using UnityEngine;
 
 // Which clutter sprite stands in for each clutter prefab (by name: the art packs' boxes, trash
-// and litter), and how to size it to the prop (Tools/Sprites/clutter.py draws each item filling
-// its frame's width or height). Boxes and big trash stand upright and cast shadows; small trash
+// and litter), and how big it's drawn (Tools/Sprites/clutter.py: at 16 px/m, so many pixels wide
+// or tall; the prop is sized to match, FitToArt). Boxes and big trash stand upright and cast shadows; small trash
 // stands upright without, and shows its knocked-over frame (row 1) when the prop is lying down;
 // litter, sheets, planks and tyres lie flat on the floor. Each zone's own clutter ("Zone_...")
 // is looked up in ZoneClutter.
@@ -23,7 +23,41 @@ public static class ClutterSprites
         if (visuals == null || prop == null || !TryFind(name, out Entry entry))
             return;
 
-        ItemSprite.ApplyProp(prop, visuals.For(entry.Sheet), entry);
+        SpriteSheet sheet = visuals.For(entry.Sheet);
+        FitToArt(prop, sheet, entry);
+        ItemSprite.ApplyProp(prop, sheet, entry);
+    }
+
+    // The art is drawn at the world's pixel size (16 px/m), each item as big as it should be, so
+    // the prop is sized to its art (not the art to the prop): the sprite then shows unscaled, and
+    // the collider matches what's drawn. Its lowest point stays where it was.
+    private static void FitToArt(GameObject prop, SpriteSheet sheet, Entry entry)
+    {
+        if (sheet == null || !ItemSprite.LocalBounds(prop, out Bounds bounds))
+            return;
+
+        Vector3 size = Vector3.Scale(bounds.size, prop.transform.lossyScale);
+        float fit = entry.FitHeight ? size.y : Mathf.Max(size.x, size.z);
+
+        if (fit < 0.001f)
+            return;
+
+        float bottom = Lowest(prop);
+        prop.transform.localScale *= entry.ContentPixels / Mathf.Max(1f, sheet.pixelsPerUnit) / fit;
+        prop.transform.position += Vector3.up * (bottom - Lowest(prop));
+    }
+
+    private static float Lowest(GameObject prop)
+    {
+        float lowest = prop.transform.position.y;
+
+        foreach (Renderer part in prop.GetComponentsInChildren<Renderer>())
+        {
+            if (part is MeshRenderer)
+                lowest = Mathf.Min(lowest, part.bounds.min.y);
+        }
+
+        return lowest;
     }
 
     public enum Sheet { Boxes, Small, Flat }
@@ -37,31 +71,13 @@ public static class ClutterSprites
         public bool CastsShadow;
     }
 
-    // How much smaller than the art pack makes it a prop is placed with the sprite art: the pack's
-    // bottles and drinks cups are huge next to the (smaller) character sprites.
-    public static float SizeFactor(string prefabName)
-    {
-        string name = prefabName.Replace("(Clone)", "").Trim();
-
-        if (name.StartsWith("GlassBottle") || name.StartsWith("Shampoo") || name.StartsWith("Soap") || name.StartsWith("WaterBottle"))
-            return 0.3f;
-
-        if (name.StartsWith("Coffee_Cup") || name.StartsWith("Soda_Cup"))
-            return 0.35f;
-
-        // Trash bags: the pack's are 1.8 m across; about 0.8 m.
-        if (name.StartsWith("TrashBag"))
-            return 0.45f;
-
-        // The gas can, drawn as an oil drum: about 0.9 m tall.
-        if (name.StartsWith("GasCan"))
-            return 0.7f;
-
-        return 1f;
-    }
-
     // The small trash frames' drawn heights (or widths, for the brick and fry box).
-    private static readonly float[] SmallContent = { 14, 7, 14, 9, 12, 14, 14, 13, 10, 14, 14, 14, 15, 10 };
+    private static readonly float[] SmallContent = { 4, 3, 5, 3, 3, 4, 5, 6, 4, 7, 4, 4, 4, 4 };
+
+    // The flat litter frames' drawn widths, and the boxes' and big trash's (width, or height).
+    private static readonly float[] FlatContent = { 20, 14, 18, 5, 10, 12, 12, 8, 4, 14, 20, 24, 11, 4 };
+    private static readonly float[] BoxContent = { 13, 14, 14, 16, 14, 16 };
+    private static readonly float[] LargeContent = { 22, 5, 12, 10, 14 };
 
     public static bool TryFind(string prefabName, out Entry entry)
     {
@@ -77,7 +93,7 @@ public static class ClutterSprites
 
         if (flat >= 0)
         {
-            entry = new Entry { Sheet = Sheet.Flat, Frame = new Vector2Int(flat, 0), ContentPixels = 30 };
+            entry = new Entry { Sheet = Sheet.Flat, Frame = new Vector2Int(flat, 0), ContentPixels = FlatContent[flat] };
             return true;
         }
 
@@ -86,7 +102,7 @@ public static class ClutterSprites
         {
             int column = name.Contains("Open_L") ? 5 : name.Contains("Open") ? 4 : name.Contains("Tall") ? 2
                 : name.Contains("Long") ? 3 : name.Contains("Closed_L") || name == "CardboardBox_2" ? 1 : 0;
-            entry = new Entry { Sheet = Sheet.Boxes, Frame = new Vector2Int(column, 0), FitHeight = column == 2, ContentPixels = 30, CastsShadow = true };
+            entry = new Entry { Sheet = Sheet.Boxes, Frame = new Vector2Int(column, 0), FitHeight = column == 2, ContentPixels = BoxContent[column], CastsShadow = true };
             return true;
         }
 
@@ -95,7 +111,7 @@ public static class ClutterSprites
 
         if (large >= 0)
         {
-            entry = new Entry { Sheet = Sheet.Boxes, Frame = new Vector2Int(large, 1), FitHeight = large == 1 || large == 4, ContentPixels = 30, CastsShadow = true };
+            entry = new Entry { Sheet = Sheet.Boxes, Frame = new Vector2Int(large, 1), FitHeight = large == 1 || large == 4, ContentPixels = LargeContent[large], CastsShadow = true };
             return true;
         }
 

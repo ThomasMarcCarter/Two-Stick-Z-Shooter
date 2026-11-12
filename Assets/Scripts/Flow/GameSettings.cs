@@ -20,6 +20,12 @@ public static class GameSettings
     public static bool VSync { get; private set; }
     public static int FrameCap { get; private set; }      // 0 = unlimited
     public static CrtLevel Crt { get; private set; }
+    public static int Shake { get; private set; }         // index into ShakeLevels
+
+    // Screen shake and gun kick are scaled by this (0 = off).
+    public static float ShakeScale => ShakeLevels[Mathf.Clamp(Shake, 0, ShakeLevels.Length - 1)];
+    public static readonly float[] ShakeLevels = { 0f, 0.5f, 1f };
+    public static readonly string[] ShakeNames = { "OFF", "LOW", "FULL" };
 
     // Music volume after the master volume (for the music when there's no mixer to do it).
     public static float MusicLevel => MasterVolume * MusicVolume;
@@ -56,6 +62,7 @@ public static class GameSettings
         VSync = PlayerPrefs.GetInt(Prefix + "vsync", 1) == 1;
         FrameCap = PlayerPrefs.GetInt(Prefix + "frameCap", 0);
         Crt = (CrtLevel)PlayerPrefs.GetInt(Prefix + "crt", (int)CrtLevel.Full);
+        Shake = Mathf.Clamp(PlayerPrefs.GetInt(Prefix + "shake", ShakeLevels.Length - 1), 0, ShakeLevels.Length - 1);
 
         if (Resolution.x <= 0 || Resolution.y <= 0)
             Resolution = new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height);
@@ -74,6 +81,7 @@ public static class GameSettings
         PlayerPrefs.SetInt(Prefix + "vsync", VSync ? 1 : 0);
         PlayerPrefs.SetInt(Prefix + "frameCap", FrameCap);
         PlayerPrefs.SetInt(Prefix + "crt", (int)Crt);
+        PlayerPrefs.SetInt(Prefix + "shake", Shake);
         PlayerPrefs.Save();
     }
 
@@ -155,9 +163,15 @@ public static class GameSettings
         Commit();
     }
 
+    public static void StepShake(int direction)
+    {
+        Shake = Wrap(Shake + direction, ShakeLevels.Length);
+        Commit();
+    }
+
     public static void ResetToDefaults()
     {
-        foreach (string key in new[] { "master", "effects", "music", "displayMode", "width", "height", "vsync", "frameCap", "crt" })
+        foreach (string key in new[] { "master", "effects", "music", "displayMode", "width", "height", "vsync", "frameCap", "crt", "shake" })
             PlayerPrefs.DeleteKey(Prefix + key);
 
         Load();

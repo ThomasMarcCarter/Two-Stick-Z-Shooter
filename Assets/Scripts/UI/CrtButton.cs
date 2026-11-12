@@ -39,6 +39,16 @@ public class CrtButton : MonoBehaviour
         SetHighlighted(false);
     }
 
+    // Makes the button solid: its colours as they'd look over `under`, at full opacity.
+    public void MakeOpaque(Color under)
+    {
+        colour = CrtPanel.Solid(under, colour, colour.a);
+        hoverColour = CrtPanel.Solid(under, hoverColour, hoverColour.a);
+        labelColour = CrtPanel.Solid(under, labelColour, labelColour.a);
+        labelHoverColour.a = 1f;
+        SetHighlighted(false);
+    }
+
     public bool IsPointerOver()
     {
         return RectTransformUtility.RectangleContainsScreenPoint(background.rectTransform, GameInput.Pointer, uiCamera);

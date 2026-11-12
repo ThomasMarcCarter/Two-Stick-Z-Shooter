@@ -16,7 +16,7 @@ MonoBehaviour:
   frameWidth: 24
   frameHeight: 32
   pivot: {x: 12, y: 1}
-  pixelsPerUnit: 28
+  pixelsPerUnit: 16
   clips: []
   bodyRadius: 0.25
   hitRadius: 0

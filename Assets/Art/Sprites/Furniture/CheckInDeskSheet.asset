@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CheckInDeskSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 5d7e237a160865940b73813f811c90b7, type: 3}
-  frameWidth: 50
-  frameHeight: 58
-  pivot: {x: 25, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 40
+  frameHeight: 47
+  pivot: {x: 20, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: RugSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 8b59bcfc5f0fb1045910cadcd6b893de, type: 3}
-  frameWidth: 80
-  frameHeight: 52
-  pivot: {x: 40, y: 26}
-  pixelsPerUnit: 20
+  frameWidth: 64
+  frameHeight: 41
+  pivot: {x: 32, y: 20.5}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

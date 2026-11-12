@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowHospReception4_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 2d69e5f5b664bf84cabd52f2947d03d4, type: 3}
-  frameWidth: 86
-  frameHeight: 89
-  pivot: {x: 43, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 70
+  frameHeight: 72
+  pivot: {x: 35, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

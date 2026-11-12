@@ -80,6 +80,10 @@ public partial class Enemy : MonoBehaviour
             MeleeHit?.Invoke(this);
     }
 
+    // The way the last bullet or swing that hit it was travelling (flat), so its body falls that
+    // way (Corpse). Zero when nothing has hit it yet, or the blow had no direction (a blast).
+    public Vector3 LastHitDirection { get; set; }
+
     // Caught sight of the player, having not been chasing them (for the screamer).
     public event Action<Enemy> SpottedPlayer;
 
@@ -140,6 +144,15 @@ public partial class Enemy : MonoBehaviour
     private int strikesDone;
 
     public EnemyKind Kind { get; private set; } = EnemyKind.Walker;
+
+    // What to call it (the death recap's KILLED BY): a boss's name when one is set, else its kind.
+    public string DisplayName
+    {
+        get => displayName ?? EnemyKinds.Name(Kind);
+        set => displayName = value;
+    }
+
+    private string displayName;
     public Room Room => room;
     public Transform Target => target;
     public bool IsChasing => state == State.Chase;
@@ -525,6 +538,10 @@ public partial class Enemy : MonoBehaviour
     private void Die()
     {
         Died?.Invoke(this);
+
+        // A beat of hit-stop and a jolt on the kill; longer for a boss going down.
+        HitStop.Freeze(Heavy ? 0.3f : 0.035f);
+        CameraFollow.Shake(Heavy ? 0.5f : 0.06f);
 
         if (SpriteBody)
             Corpse.Leave(this);

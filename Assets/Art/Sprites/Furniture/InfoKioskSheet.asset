@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: InfoKioskSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: b9f039e98f7a58c40b7d91fc64be217a, type: 3}
-  frameWidth: 20
-  frameHeight: 45
-  pivot: {x: 10, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 18
+  frameHeight: 37
+  pivot: {x: 9, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

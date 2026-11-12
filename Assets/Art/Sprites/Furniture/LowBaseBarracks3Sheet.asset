@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowBaseBarracks3Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: f2c69dcdef8a55d49912097b35febe0d, type: 3}
-  frameWidth: 62
-  frameHeight: 69
-  pivot: {x: 31, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 52
+  frameHeight: 56
+  pivot: {x: 26, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

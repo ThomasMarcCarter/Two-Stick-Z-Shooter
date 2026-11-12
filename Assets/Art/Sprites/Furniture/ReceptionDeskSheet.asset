@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: ReceptionDeskSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: c077ba432859b71498b72df92f958831, type: 3}
-  frameWidth: 54
-  frameHeight: 62
-  pivot: {x: 27, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 44
+  frameHeight: 50
+  pivot: {x: 22, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

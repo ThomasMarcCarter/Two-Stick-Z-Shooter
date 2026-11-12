@@ -419,7 +419,7 @@ public class Projectile : MonoBehaviour
             PlayerHealth shooter = other.GetComponentInParent<PlayerHealth>();
 
             if (shooter != null)
-                shooter.TakeDamage(1, transform.position);
+                shooter.TakeDamage(1, transform.position, false, "THEIR OWN RICOCHET");
 
             Finish();
             return;
@@ -536,7 +536,10 @@ public class Projectile : MonoBehaviour
 
         // TakeDamage always does at least 1, so a round that rolled nothing doesn't call it.
         if (dealt > 0)
+        {
+            enemy.LastHitDirection = new Vector3(travel.x, 0f, travel.z).normalized;
             enemy.TakeDamage(dealt);
+        }
 
         if (enemy.IsDead && PlayerItems.Has(RunItem.IncendiaryRounds))
             FirePatch.Create(enemy.transform.position, FloorPickups.RoomAt(enemy.transform.position), 0.6f, 4f);

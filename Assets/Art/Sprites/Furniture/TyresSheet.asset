@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: TyresSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 3e88123c07b443845a802368485e6e5b, type: 3}
-  frameWidth: 24
-  frameHeight: 28
-  pivot: {x: 12, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 20
+  frameHeight: 24
+  pivot: {x: 10, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

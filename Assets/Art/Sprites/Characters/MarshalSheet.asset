@@ -16,7 +16,7 @@ MonoBehaviour:
   frameWidth: 48
   frameHeight: 48
   pivot: {x: 24, y: 3}
-  pixelsPerUnit: 18
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0
@@ -50,8 +50,8 @@ MonoBehaviour:
     directional: 0
   bodyRadius: 0.58
   hitRadius: 0.68
-  bodyHeight: 2.3
-  holdHeight: 15
+  bodyHeight: 2.06
+  holdHeight: 8
   holdReach: 0.3
   muzzle: {x: 15, y: 10}
   footprint: {x: 1, y: 1, z: 1}

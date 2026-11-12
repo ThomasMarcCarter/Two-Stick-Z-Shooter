@@ -188,10 +188,6 @@ public partial class FloorGenerator
         item.name = prefab.name;
         item.transform.localScale = Vector3.one * RandomRange(trashScale.x, trashScale.y);
 
-        // With the sprite art, the pack's oversized bottles and cups come down to size.
-        if (SpriteVisuals.Current != null)
-            item.transform.localScale *= ClutterSprites.SizeFactor(prefab.name);
-
         SettleProp(item, parent);
         return item;
     }

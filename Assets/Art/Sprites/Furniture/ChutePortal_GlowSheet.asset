@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: ChutePortal_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 10ee9de17edaacf4e9d9719e5317e1c5, type: 3}
-  frameWidth: 56
-  frameHeight: 84
-  pivot: {x: 28, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 46
+  frameHeight: 68
+  pivot: {x: 23, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

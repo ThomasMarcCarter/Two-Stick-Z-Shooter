@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LooseCableSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 4d4640e18f6118d42975cef155f96991, type: 3}
-  frameWidth: 34
-  frameHeight: 35
-  pivot: {x: 17, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 28
+  frameHeight: 29
+  pivot: {x: 14, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

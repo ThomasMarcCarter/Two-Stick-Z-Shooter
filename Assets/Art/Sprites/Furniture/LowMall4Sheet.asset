@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowMall4Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: dc83c6a83d454b544bf97b6aea563ba2, type: 3}
-  frameWidth: 84
-  frameHeight: 89
-  pivot: {x: 42, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 68
+  frameHeight: 72
+  pivot: {x: 34, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

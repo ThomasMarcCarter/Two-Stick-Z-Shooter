@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: BeltHatchSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 9673c14a84abe6545b9d0dc3b895d408, type: 3}
-  frameWidth: 54
-  frameHeight: 63
-  pivot: {x: 27, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 44
+  frameHeight: 52
+  pivot: {x: 22, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

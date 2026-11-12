@@ -15,8 +15,8 @@ MonoBehaviour:
   texture: {fileID: 2800000, guid: 239cd89882c242ed91e4030372ddae20, type: 3}
   frameWidth: 16
   frameHeight: 8
-  pivot: {x: 1, y: 4}
-  pixelsPerUnit: 28
+  pivot: {x: 1, y: 4.5}
+  pixelsPerUnit: 16
   clips: []
   bodyRadius: 0.25
   hitRadius: 0

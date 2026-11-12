@@ -101,7 +101,7 @@ public static class Lobbed
             if (part.attachedRigidbody != null && part.attachedRigidbody.TryGetComponent(out PlayerHealth player))
             {
                 float distance = Bosses.FlatDistance(player.transform.position, point);
-                player.TakeDamage(distance < radius * 0.4f ? centreDamage : damage, point);
+                player.TakeDamage(distance < radius * 0.4f ? centreDamage : damage, point, false, "A LOBBED GLOB");
             }
             else if (part.attachedRigidbody == null || part.attachedRigidbody.GetComponent<Enemy>() == null)
             {

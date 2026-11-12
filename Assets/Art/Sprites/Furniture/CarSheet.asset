@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: CarSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 9954952ea3a0be74ba96b7f30afaa260, type: 3}
-  frameWidth: 88
-  frameHeight: 83
-  pivot: {x: 44, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 72
+  frameHeight: 67
+  pivot: {x: 36, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

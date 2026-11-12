@@ -147,6 +147,7 @@ public class PlayerMelee : MonoBehaviour
             SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("melee.hit", 3, ProceduralAudio.MeleeHit)), 0.6f, UnityEngine.Random.Range(0.92f, 1.08f));
             Noise.Emit(origin, hitLoudness, Noise.Kind.Melee);
             CameraFollow.Shake(0.05f + 0.02f * Mathf.Min(hit, 4));
+            HitStop.Freeze(0.05f);
         }
     }
 
@@ -201,6 +202,7 @@ public class PlayerMelee : MonoBehaviour
                 ImpactEffects.FleshHit(enemy.transform.position - direction * 0.4f, -direction, direction * 5f, enemy.transform, materials);
 
             enemy.Knock(direction * Knockback, Stagger);
+            enemy.LastHitDirection = new Vector3(direction.x, 0f, direction.z).normalized;
             enemy.TakeDamage(Mathf.RoundToInt(Damage * enemy.OpeningHitMultiplier), true);
             PlayerItems.MeleeHit(enemy);
         }

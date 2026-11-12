@@ -8,6 +8,8 @@ using UnityEngine;
 // to look at. Parented to the room, so a new floor clears them. Left by Enemy when it dies.
 // First the body topples (2026-10-27): its last standing frame tips over about its feet toward
 // where the corpse's head will lie, then the corpse frame drops in with a small squash.
+// Knocked back (2026-11-12): the body slides a little the way the killing bullet or swing was
+// going while it falls, stopping short of anything solid in the way.
 public class Corpse : MonoBehaviour
 {
     private const float Lifetime = 4f;
@@ -16,6 +18,8 @@ public class Corpse : MonoBehaviour
     private const float FallTime = 0.22f;
     private const float FallAngle = 82f;
     private const float LandTime = 0.12f;
+    private const float SlideDistance = 0.9f;
+    private const float SlideTime = 0.3f;
 
     private PixelSprite sprite;
     private float sinkAt;
@@ -23,6 +27,8 @@ public class Corpse : MonoBehaviour
     private float fallSign;
     private float fellAt;
     private float landedAt = -1f;
+    private Vector3 slideFrom;
+    private Vector3 slide;
 
     public static void Leave(Enemy enemy)
     {
@@ -54,10 +60,44 @@ public class Corpse : MonoBehaviour
         corpse.fallSign = left ? 1f : -1f;
         corpse.fellAt = Time.time;
         corpse.sprite.Renderer.enabled = false;
+        corpse.slideFrom = root.transform.position;
+        corpse.slide = SlideFor(enemy);
+    }
+
+    // How far the body is thrown along the killing blow: less for heavy bodies, and never into a
+    // wall or anything else solid.
+    private static Vector3 SlideFor(Enemy enemy)
+    {
+        Vector3 direction = enemy.LastHitDirection;
+
+        if (direction.sqrMagnitude < 0.01f)
+            return Vector3.zero;
+
+        float distance = SlideDistance * (enemy.Heavy ? 0.3f : 1f);
+        Vector3 from = enemy.transform.position;
+        from.y = 0.4f;
+
+        if (Physics.Raycast(from, direction, out RaycastHit hit, distance + 0.35f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            distance = Mathf.Max(0f, hit.distance - 0.35f);
+
+        return direction * distance;
+    }
+
+    // Easing out along the slide, the falling body with it.
+    private void Slide()
+    {
+        float t = Mathf.Clamp01((Time.time - fellAt) / SlideTime);
+        transform.position = slideFrom + slide * (1f - (1f - t) * (1f - t));
+
+        if (falling != null)
+            falling.Position = transform.position;
     }
 
     private void Update()
     {
+        if (slide != Vector3.zero)
+            Slide();
+
         if (falling != null)
         {
             Fall();

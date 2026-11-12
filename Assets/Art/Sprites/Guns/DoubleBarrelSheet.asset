@@ -15,8 +15,8 @@ MonoBehaviour:
   texture: {fileID: 2800000, guid: 1919b672cf3a6e844bee18dcd695e069, type: 3}
   frameWidth: 32
   frameHeight: 16
-  pivot: {x: 9, y: 10}
-  pixelsPerUnit: 28
+  pivot: {x: 9, y: 10.5}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0
@@ -27,4 +27,4 @@ MonoBehaviour:
   bodyHeight: 1.75
   holdHeight: 12
   holdReach: 0.3
-  muzzle: {x: 31, y: 10}
+  muzzle: {x: 20, y: 10.5}

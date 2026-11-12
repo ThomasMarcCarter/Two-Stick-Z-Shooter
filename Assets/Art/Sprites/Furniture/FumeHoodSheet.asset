@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: FumeHoodSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 08964cd89fd9cbe4f8e2476e31525312, type: 3}
-  frameWidth: 32
-  frameHeight: 58
-  pivot: {x: 16, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 28
+  frameHeight: 47
+  pivot: {x: 14, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

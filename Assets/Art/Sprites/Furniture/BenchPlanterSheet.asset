@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: BenchPlanterSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: fb2b664e12c62bc48ae002a6b400a8f2, type: 3}
-  frameWidth: 50
-  frameHeight: 63
-  pivot: {x: 25, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 42
+  frameHeight: 52
+  pivot: {x: 21, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

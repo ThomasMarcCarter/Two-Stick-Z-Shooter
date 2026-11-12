@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: StationGenerator_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: f21ffe3dc3c319a48a191f9ad99e6888, type: 3}
-  frameWidth: 54
-  frameHeight: 66
-  pivot: {x: 27, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 44
+  frameHeight: 53
+  pivot: {x: 22, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

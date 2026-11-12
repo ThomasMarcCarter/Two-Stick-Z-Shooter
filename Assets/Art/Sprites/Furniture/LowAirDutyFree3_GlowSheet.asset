@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowAirDutyFree3_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: dfa3698ea947c5c4088d79d07b0b0292, type: 3}
-  frameWidth: 66
-  frameHeight: 70
-  pivot: {x: 33, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 54
+  frameHeight: 57
+  pivot: {x: 27, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

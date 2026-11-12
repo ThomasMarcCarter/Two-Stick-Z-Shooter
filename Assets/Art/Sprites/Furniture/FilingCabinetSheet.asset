@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: FilingCabinetSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 506899587c816304e9bb32a7153a9989, type: 3}
-  frameWidth: 22
-  frameHeight: 33
-  pivot: {x: 11, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 18
+  frameHeight: 27
+  pivot: {x: 9, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowMallFoodCourt3Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 67f4e977b62d7514584843f09c583a08, type: 3}
-  frameWidth: 66
-  frameHeight: 72
-  pivot: {x: 33, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 54
+  frameHeight: 58
+  pivot: {x: 27, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

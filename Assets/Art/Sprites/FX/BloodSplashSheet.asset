@@ -16,7 +16,7 @@ MonoBehaviour:
   frameWidth: 24
   frameHeight: 24
   pivot: {x: 5, y: 12}
-  pixelsPerUnit: 20
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

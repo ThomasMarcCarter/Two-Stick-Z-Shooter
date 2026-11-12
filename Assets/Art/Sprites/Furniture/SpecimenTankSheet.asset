@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SpecimenTankSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 4c20e3d423190184a8463a4eb409876c, type: 3}
-  frameWidth: 20
-  frameHeight: 46
-  pivot: {x: 10, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 18
+  frameHeight: 37
+  pivot: {x: 9, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

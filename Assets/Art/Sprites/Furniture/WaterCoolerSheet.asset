@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: WaterCoolerSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: e6b4b4931000c08428decaec494d8753, type: 3}
-  frameWidth: 14
-  frameHeight: 30
-  pivot: {x: 7, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 12
+  frameHeight: 25
+  pivot: {x: 6, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

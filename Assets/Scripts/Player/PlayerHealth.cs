@@ -68,7 +68,8 @@ public class PlayerHealth : MonoBehaviour
 
     // Returns false if the hit didn't land (dead, or still invulnerable from the last one).
     // fromFloor: acid or fire underfoot, which a dodge roll's untouchable start doesn't avoid.
-    public bool TakeDamage(int amount, Vector3 source, bool fromFloor = false)
+    // cause: what did it, for the death recap; left out, it's the enemy nearest the source.
+    public bool TakeDamage(int amount, Vector3 source, bool fromFloor = false, string cause = null)
     {
         if (IsDead || GodMode || amount <= 0 || Time.time < invulnerableUntil || (!fromFloor && dodge != null && dodge.Invulnerable))
             return false;
@@ -90,10 +91,44 @@ public class PlayerHealth : MonoBehaviour
 
         Damaged?.Invoke(this);
 
+        if (Health > 0)
+        {
+            HitStop.Freeze(0.08f);
+            CameraFollow.Shake(0.15f);
+        }
+
         if (Health == 0)
+        {
+            KilledBy = cause ?? NearestEnemyName(source) ?? "UNKNOWN";
             Die();
+        }
 
         return true;
+    }
+
+    // What dealt the killing blow, for the death recap (DeathScreen).
+    public string KilledBy { get; private set; }
+
+    // The living enemy closest to where a hit came from (it swung or charged from there), if any
+    // is near.
+    private static string NearestEnemyName(Vector3 source)
+    {
+        Enemy nearest = null;
+        float best = 3f * 3f;
+
+        foreach (Enemy enemy in FindObjectsByType<Enemy>())
+        {
+            Vector3 offset = enemy.transform.position - source;
+            offset.y = 0f;
+
+            if (!enemy.IsDead && offset.sqrMagnitude < best)
+            {
+                best = offset.sqrMagnitude;
+                nearest = enemy;
+            }
+        }
+
+        return nearest != null ? nearest.DisplayName : null;
     }
 
     // Debug: takes health off straight away, ignoring the invulnerability window, without
@@ -101,7 +136,7 @@ public class PlayerHealth : MonoBehaviour
     public void ForceDamage(int amount)
     {
         invulnerableUntil = 0f;
-        TakeDamage(amount, transform.position);
+        TakeDamage(amount, transform.position, false, "DEBUG MENU");
     }
 
     // The renderers that blink while invulnerable: the capsule, or the model that replaced it.

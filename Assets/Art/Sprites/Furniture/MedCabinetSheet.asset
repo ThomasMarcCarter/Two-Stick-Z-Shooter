@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: MedCabinetSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 437fdfa07fe8dde4f8084ddf05ee1b3b, type: 3}
-  frameWidth: 28
-  frameHeight: 42
-  pivot: {x: 14, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 24
+  frameHeight: 35
+  pivot: {x: 12, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

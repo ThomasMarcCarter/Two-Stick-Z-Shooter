@@ -45,7 +45,7 @@ public class RunItemsHud : MaskableGraphic
     private void Update()
     {
         if (group != null)
-            group.alpha = InventoryScreen.IsOpen ? 0f : 1f;
+            group.alpha = InventoryScreen.IsOpen || MainMenu.IsOpen || DeathScreen.IsShowing ? 0f : 1f;
     }
 
     protected override void OnPopulateMesh(VertexHelper vh)

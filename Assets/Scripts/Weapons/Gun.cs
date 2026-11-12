@@ -218,7 +218,7 @@ public partial class Gun : MonoBehaviour
     // and hold their guns lower (GunSprite puts the muzzle at this height).
     public static float AimHeight => SpriteVisuals.Current != null ? SpriteAimHeight : ModelAimHeight;
     public const float ModelAimHeight = 1.13f;
-    public const float SpriteAimHeight = 0.75f;
+    public const float SpriteAimHeight = 0.5f;
     private const float SuppressedVolume = 0.8f;
 
     // The name shown for a gun prefab: its asset name upper-cased, with words split where a
@@ -338,6 +338,10 @@ public partial class Gun : MonoBehaviour
             {
                 dryClickedThisPull = true;
                 DryClick();
+
+                // Then it reloads by itself, if there's anything to reload with.
+                if (Reserve > 0)
+                    TryReload();
             }
 
             return;
@@ -414,8 +418,24 @@ public partial class Gun : MonoBehaviour
         ShellCasing.Eject(port, direction, ammoType == AmmoType.ShotgunShell);
 
         PlayShot();
+        KickCamera(direction);
         nextFireTime = Time.time + (1f / FireRate);
         Fired?.Invoke(this);
+    }
+
+    // The player's camera jolts back from the shot: slow, heavy guns (rifle, revolver, shotguns)
+    // kick hard, fast ones a little each round.
+    private void KickCamera(Vector3 direction)
+    {
+        if (transform.root.GetComponent<PlayerWeapon>() == null)
+            return;
+
+        float kick = Mathf.Clamp(0.35f / Mathf.Max(0.1f, fireRate), 0.025f, 0.2f);
+
+        if (pelletsPerShot > 1)
+            kick = Mathf.Max(kick, 0.2f);
+
+        CameraFollow.Kick(-direction, kick);
     }
 
     // From where the round starts, so it flies through the point under the crosshair (the gun is

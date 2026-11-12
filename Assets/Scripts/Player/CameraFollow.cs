@@ -73,13 +73,32 @@ public class CameraFollow : MonoBehaviour
 
     private Camera cam;
     private static float shake;
+
+    // A floor point to look at instead of following the player (the main menu's camera feed),
+    // or null. Not kept inside a room.
+    public static Vector3? Focus { get; set; }
+    private static Vector3 kick;
     private Vector3 shakeOffset;
+
+    // How fast a shot's kick springs back, per second.
+    private const float KickReturn = 18f;
+
+    // Arriving on a floor (FloorTransition): the view starts wider and eases in to normal.
+    private static float zoomFrom = 1f;
+    private static float zoomTime = 1f;
+    private static float zoomLeft;
+    private float baseSize;
 
     // Statics outlive Play sessions with domain reload off.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetSession()
     {
         shake = 0f;
+        kick = Vector3.zero;
+        Focus = null;
+        zoomFrom = 1f;
+        zoomTime = 1f;
+        zoomLeft = 0f;
         VerticalScale = 1f;
         Foreshortening = 1f;
         SpriteUp = Vector3.up;
@@ -92,12 +111,38 @@ public class CameraFollow : MonoBehaviour
     // Jolts the camera about, in world units, dying away over a moment. Stronger shakes win.
     public static void Shake(float amount)
     {
-        shake = Mathf.Max(shake, amount);
+        shake = Mathf.Max(shake, amount * GameSettings.ShakeScale);
+    }
+
+    // Nudges the camera a little way along a direction (a gun's recoil pushes it back from the
+    // shot), springing back over a moment. Kicks add up, to a limit.
+    public static void Kick(Vector3 direction, float amount)
+    {
+        direction.y = 0f;
+        kick = Vector3.ClampMagnitude(kick + direction.normalized * amount * GameSettings.ShakeScale, 0.4f);
+    }
+
+    // Starts the view `from` times wider, easing in to normal over `seconds` (real time).
+    public static void ZoomIn(float from, float seconds)
+    {
+        zoomFrom = Mathf.Max(1f, from);
+        zoomTime = zoomLeft = Mathf.Max(0.01f, seconds);
     }
 
     private void Awake()
     {
         cam = GetComponent<Camera>();
+        baseSize = cam != null ? cam.orthographicSize : 0f;
+    }
+
+    private void ApplyZoom()
+    {
+        if (cam == null || baseSize <= 0f)
+            return;
+
+        zoomLeft = Mathf.Max(0f, zoomLeft - Time.unscaledDeltaTime);
+        float left = zoomLeft / zoomTime;
+        cam.orthographicSize = baseSize * Mathf.Lerp(1f, zoomFrom, left * left);
     }
 
     private void LateUpdate()
@@ -105,6 +150,7 @@ public class CameraFollow : MonoBehaviour
         // Set every frame, so the tilt and projection can be tried out live in the Inspector.
         transform.rotation = Quaternion.Euler(90f - tilt, 0f, 0f);
         ApplyProjection();
+        ApplyZoom();
 
         // The shake is taken off before following, so it never drags the camera anywhere.
         transform.position -= shakeOffset;
@@ -116,8 +162,9 @@ public class CameraFollow : MonoBehaviour
         );
 
         shake = Mathf.MoveTowards(shake, 0f, shakeDecay * Time.deltaTime * Mathf.Max(0.3f, shake));
+        kick = Vector3.Lerp(kick, Vector3.zero, 1f - Mathf.Exp(-KickReturn * Time.unscaledDeltaTime));
         Vector2 jolt = Random.insideUnitCircle * shake;
-        shakeOffset = new Vector3(jolt.x, 0f, jolt.y);
+        shakeOffset = new Vector3(jolt.x, 0f, jolt.y) + kick;
         transform.position += shakeOffset;
         UpdateViewInfo();
     }
@@ -172,9 +219,7 @@ public class CameraFollow : MonoBehaviour
         // Look-ahead comes from where the cursor is relative to the camera, not to the player.
         // The world point under the cursor moves whenever the camera moves, so basing it on
         // that fed the camera's own motion back into itself and dragged the aim around.
-        Vector3 lookAhead = GetCursorOffset();
-
-        Vector3 focus = ClampToRoom(target.position + lookAhead * mouseLookAhead);
+        Vector3 focus = Focus ?? ClampToRoom(target.position + GetCursorOffset() * mouseLookAhead);
         focus.y = 0f;
 
         // The camera sits at its height, back from the floor point it looks at by the tilt.

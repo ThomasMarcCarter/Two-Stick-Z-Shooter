@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: BoardedDoorSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 9dfebf2774c0ef344b753f01cddf597c, type: 3}
-  frameWidth: 42
-  frameHeight: 56
-  pivot: {x: 21, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 36
+  frameHeight: 46
+  pivot: {x: 18, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

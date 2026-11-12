@@ -242,7 +242,7 @@ public class EnemyBullet : MonoBehaviour
                     continue;
                 }
 
-                player.TakeDamage(1, position - velocity.normalized);
+                player.TakeDamage(1, position - velocity.normalized, false, "ENEMY FIRE");
             }
 
             Splash(hit.distance > 0f ? position + velocity.normalized * hit.distance : position);

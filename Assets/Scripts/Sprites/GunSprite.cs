@@ -23,16 +23,16 @@ public class GunSprite : MonoBehaviour
     private const float MeleeArc = 150f;   // degrees the gun sweeps through in a melee swing
     private const float FloorClearance = 0.05f;  // lowest the gun's quad may reach, in metres
     private const float AttachmentGap = 0.01f;   // metres an attachment sits in front of the gun
-    private const float LaserSetBack = 2f;       // gun pixels the laser's front sits behind the muzzle
+    private const float LaserSetBack = 1f;       // gun pixels the laser's front sits behind the muzzle
     private const int LaserFrame = 1;
     // Mag frames hang from this point of their frame (its top middle).
-    private static readonly Vector2 MagTop = new Vector2(8.5f, 8f);
+    private static readonly Vector2 MagTop = new Vector2(9f, 8f);
     // The drawn slots, in the order parts sit along the barrel (a muzzle part on a barrel part).
     private static readonly AttachmentSlot[] DrawnSlots = { AttachmentSlot.Barrel, AttachmentSlot.Muzzle, AttachmentSlot.Magazine };
-    // The laser's front on the barrel line is 5 px right of and 2 px above its sheet's pivot (the
-    // sheet's one pivot suits the can), and its lens is at (-0.5, -2.5) from that front.
-    private static readonly Vector2 LaserFront = new Vector2(5f, 2f);
-    private static readonly Vector2 LensOffset = new Vector2(-0.5f, -2.5f);
+    // The laser's front on the barrel line is 3 px right of its sheet's pivot (the sheet's one
+    // pivot suits the can), and its lens is at (-0.5, -1.5) from that front.
+    private static readonly Vector2 LaserFront = new Vector2(3f, 0f);
+    private static readonly Vector2 LensOffset = new Vector2(-0.5f, -1.5f);
 
     private Gun gun;
     private SpriteSheet sheet;
@@ -292,11 +292,11 @@ public class GunSprite : MonoBehaviour
 
         switch (attachment != null ? attachment.name : null)
         {
-            case "Suppressor": length = 8f; return 0;
+            case "Suppressor": length = 5f; return 0;
             case "Laser Sight": return LaserFrame;
-            case "Choke": length = 3f; return 2;
-            case "Long Barrel": length = 7f; return 3;
-            case "Match Barrel": length = 5f; return 4;
+            case "Choke": length = 2f; return 2;
+            case "Long Barrel": length = 4f; return 3;
+            case "Match Barrel": length = 3f; return 4;
             case "Extended Mag": return 5;
             case "Drum Mag": return 6;
             case "Quick Mag": return 7;

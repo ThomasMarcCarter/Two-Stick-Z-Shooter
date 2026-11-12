@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: EscalatorBarrierSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: b2f45d10aad8fe8478fa982fb9f73ef5, type: 3}
-  frameWidth: 134
-  frameHeight: 80
-  pivot: {x: 67, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 108
+  frameHeight: 65
+  pivot: {x: 54, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

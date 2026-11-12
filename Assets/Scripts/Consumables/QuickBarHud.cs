@@ -115,7 +115,7 @@ public class QuickBarHud : MaskableGraphic
         if (!Application.isPlaying || bar == null)
             return;
 
-        group.alpha = InventoryScreen.IsOpen ? 0f : 1f;
+        group.alpha = InventoryScreen.IsOpen || MainMenu.IsOpen || DeathScreen.IsShowing ? 0f : 1f;
 
         for (int i = 0; i < QuickBar.SlotCount; i++)
         {

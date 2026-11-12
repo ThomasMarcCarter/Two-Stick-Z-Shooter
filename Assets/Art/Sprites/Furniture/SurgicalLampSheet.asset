@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SurgicalLampSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 0b3b356b58220d1478c3c202dfa62b10, type: 3}
-  frameWidth: 22
-  frameHeight: 46
-  pivot: {x: 11, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 20
+  frameHeight: 38
+  pivot: {x: 10, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

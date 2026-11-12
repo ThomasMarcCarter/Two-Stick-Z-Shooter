@@ -10,8 +10,9 @@ using UnityEngine.UI;
 // wipe one; wiping asks to be pressed a second time to confirm. The profile in use is shown under
 // the title.
 // Built in code when the game starts; it sits on the Canvas below the Pause Menu, so the shared
-// settings screen draws on top of it.
-public class MainMenu : MonoBehaviour
+// settings screen draws on top of it. Behind it runs a camera feed of the floor (MainMenu.Feed.cs);
+// the game isn't paused under it.
+public partial class MainMenu : MonoBehaviour
 {
     public static bool IsOpen { get; private set; }
 
@@ -25,16 +26,20 @@ public class MainMenu : MonoBehaviour
     [Header("Text")]
     [Tooltip("Leave empty to use the product name from Player Settings.")]
     [SerializeField] private string title = "";
-    [SerializeField] private string subtitle = "> TERMINAL READY // AWAITING OPERATOR";
 
     [Header("Look")]
     [SerializeField] private Vector2 buttonSize = new Vector2(340f, 42f);
+
+    // The menu is a column down the left of the screen (over the feed's side shade): the group's
+    // left edge sits this far in from the screen's.
+    private const float LeftMargin = 90f;
+    private const float GroupWidth = 700f;
+    private float ButtonX => -GroupWidth * 0.5f + buttonSize.x * 0.5f;
 
     private GameObject backdrop;
     private GameObject panel;
     private GameObject mainPage;
     private GameObject profilePage;
-    private TMP_Text subtitleText;
     private TMP_Text profileLine;
     private TMP_Text notice;
     private CrtMenu menu;
@@ -83,8 +88,7 @@ public class MainMenu : MonoBehaviour
         if (!IsOpen)
             return;
 
-        // A blinking cursor on the subtitle.
-        subtitleText.text = subtitle + (Mathf.Repeat(Time.unscaledTime * 1.6f, 1f) < 0.5f ? "_" : " ");
+        UpdateFeed();
 
         if (settings != null && settings.IsOpen)
         {
@@ -129,12 +133,14 @@ public class MainMenu : MonoBehaviour
     private void Open()
     {
         IsOpen = true;
+        // Not paused: the floor behind is only a backdrop (MainMenu.Feed.cs), never played.
         previousTimeScale = Time.timeScale == 0f ? 1f : Time.timeScale;
-        Time.timeScale = 0f;
+        Time.timeScale = 1f;
 
         notice.text = "";
         backdrop.SetActive(true);
         panel.SetActive(true);
+        ShowFeed();
         ShowMain();
     }
 
@@ -146,6 +152,7 @@ public class MainMenu : MonoBehaviour
         IsOpen = false;
         Time.timeScale = previousTimeScale;
         backdrop.SetActive(false);
+        HideFeed();
 
         // In the editor, clicking frees the cursor; hide it again for the crosshair.
         Cursor.visible = false;
@@ -276,7 +283,7 @@ public class MainMenu : MonoBehaviour
 
     private void Build()
     {
-        // Full-screen, opaque: hides the HUD and the floor behind it.
+        // Full-screen, dimming the camera feed of the floor behind it (BuildFeed).
         backdrop = new GameObject("Backdrop", typeof(RectTransform));
         backdrop.layer = gameObject.layer;
         backdrop.transform.SetParent(transform, false);
@@ -287,16 +294,19 @@ public class MainMenu : MonoBehaviour
         Image fill = backdrop.AddComponent<Image>();
         fill.color = UiColours.MenuBackground;
         fill.raycastTarget = false;
+        BuildFeed(fill);
 
         panel = MakeGroup("Panel", backdrop.transform);
+        RectTransform panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = panelRect.anchorMax = new Vector2(0f, 0.5f);
+        panelRect.anchoredPosition = new Vector2(LeftMargin + GroupWidth * 0.5f, 0f);
         mainPage = MakeGroup("Main", panel.transform);
         profilePage = MakeGroup("Profiles", panel.transform);
 
-        Color dim = UiColours.WithAlpha(UiColours.Phosphor, 0.55f);
+        Color dim = CrtPanel.Solid(UiColours.MenuBackground, UiColours.Phosphor, 0.6f);
         string heading = string.IsNullOrEmpty(title) ? Application.productName : title;
 
         MakeText("Title", panel.transform, heading.ToUpperInvariant(), 54, new Vector2(0f, 175f), new Vector2(700f, 70f), UiColours.Phosphor, 14f);
-        subtitleText = MakeText("Subtitle", panel.transform, subtitle, 15, new Vector2(0f, 122f), new Vector2(700f, 24f), dim, 6f);
         profileLine = MakeText("Profile", mainPage.transform, "", 13, new Vector2(0f, 90f), new Vector2(700f, 22f), dim, 4f);
 
         // No quit button where the platform doesn't allow one (consoles).
@@ -306,7 +316,7 @@ public class MainMenu : MonoBehaviour
         CrtButton[] buttons = new CrtButton[labels.Length];
 
         for (int i = 0; i < labels.Length; i++)
-            buttons[i] = MakeButton(labels[i], mainPage.transform, new Vector2(0f, 40f - i * (buttonSize.y + 14f)), buttonSize);
+            buttons[i] = MakeButton(labels[i], mainPage.transform, new Vector2(ButtonX, 40f - i * (buttonSize.y + 14f)), buttonSize);
 
         menu = new CrtMenu(buttons);
 
@@ -327,16 +337,14 @@ public class MainMenu : MonoBehaviour
             rows[i] = profileButtons[i];
         }
 
-        rows[count] = MakeButton("[ BACK ]", profilePage.transform, new Vector2(0f, 40f - count * (buttonSize.y + 14f)), buttonSize);
+        rows[count] = MakeButton("[ BACK ]", profilePage.transform, new Vector2(ButtonX, 40f - count * (buttonSize.y + 14f)), buttonSize);
         profileMenu = new CrtMenu(new[] { rows, wipeButtons }, 0, 0);
         profilePage.SetActive(false);
 
         notice = MakeText("Notice", panel.transform, "", 13, new Vector2(0f, -195f), new Vector2(700f, 22f), dim, 4f);
-        MakeText("Version", panel.transform, $"BUILD {Application.version}", 11, new Vector2(0f, -240f), new Vector2(700f, 18f),
-            UiColours.WithAlpha(UiColours.Phosphor, 0.3f), 4f);
     }
 
-    // A centred 700 x 520 area to lay things out in.
+    // A 700 x 520 area to lay things out in (centred in its parent; the outer one is moved left).
     private GameObject MakeGroup(string name, Transform parent)
     {
         GameObject go = new GameObject(name, typeof(RectTransform));
@@ -344,20 +352,21 @@ public class MainMenu : MonoBehaviour
         go.transform.SetParent(parent, false);
         RectTransform rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(700f, 520f);
+        rect.sizeDelta = new Vector2(GroupWidth, 520f);
         return go;
     }
 
     private TMP_Text MakeText(string name, Transform parent, string text, float size, Vector2 position, Vector2 boxSize, Color colour, float spacing)
     {
         RectTransform rect = CrtPanel.MakeRect(parent, name, Centre, Centre, position, boxSize);
-        return CrtPanel.MakeLabel(rect, TMP_Settings.defaultFontAsset, text, size, colour, spacing, TextAlignmentOptions.Center);
+        return CrtPanel.MakeLabel(rect, TMP_Settings.defaultFontAsset, text, size, colour, spacing, TextAlignmentOptions.Left);
     }
 
     private CrtButton MakeButton(string text, Transform parent, Vector2 position, Vector2 size)
     {
         RectTransform rect = CrtPanel.MakeRect(parent, string.IsNullOrEmpty(text) ? "Button" : text, Centre, Centre, position, size);
-        CrtButton button = CrtPanel.MakeButton(rect, TMP_Settings.defaultFontAsset, 17f, 8f, TextAlignmentOptions.Center, 0f);
+        CrtButton button = CrtPanel.MakeButton(rect, TMP_Settings.defaultFontAsset, 17f, 8f, TextAlignmentOptions.Left, 18f, 0.14f, 0.45f);
+        button.MakeOpaque(UiColours.MenuBackground);
         button.Label.lineSpacing = 0f;
         button.Label.text = text;
         return button;

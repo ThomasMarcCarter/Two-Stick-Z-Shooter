@@ -2017,6 +2017,7 @@ MonoBehaviour:
   segmentGap: 5
   lowHealth: 2
   hitFlashTime: 0.25
+  plateHeight: 9
 --- !u!222 &402371144
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2314,7 +2315,7 @@ MonoBehaviour:
   delay: 1.4
   slowMotion: 0.4
   fadeTime: 0.6
-  backdropAlpha: 0.6
+  backdropAlpha: 0.8
 --- !u!1 &465031288
 GameObject:
   m_ObjectHideFlags: 0
@@ -5293,6 +5294,8 @@ MonoBehaviour:
   fadeTime: 0.35
   barTime: 1.2
   holdTime: 0.25
+  lingerTime: 1.4
+  arrivalZoom: 1.3
   flavourLines:
   - CHECKING MAGS...
   - COUNTING SHELLS...

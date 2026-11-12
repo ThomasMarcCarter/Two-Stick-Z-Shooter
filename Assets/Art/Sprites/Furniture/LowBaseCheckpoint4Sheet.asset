@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LowBaseCheckpoint4Sheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 2fb701b695aedd84c8b1d3db0b0d4268, type: 3}
-  frameWidth: 100
-  frameHeight: 92
-  pivot: {x: 50, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 82
+  frameHeight: 74
+  pivot: {x: 41, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

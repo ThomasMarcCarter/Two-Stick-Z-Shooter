@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: DeskChairSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 6a07b6bfd5626f84f85f361fffcb84cf, type: 3}
-  frameWidth: 16
-  frameHeight: 29
-  pivot: {x: 8, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 14
+  frameHeight: 24
+  pivot: {x: 7, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

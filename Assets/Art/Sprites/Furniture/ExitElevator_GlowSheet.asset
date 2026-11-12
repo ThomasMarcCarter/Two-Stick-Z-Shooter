@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: ExitElevator_GlowSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 83a9ab9733afbbf41951f99ac8a09364, type: 3}
-  frameWidth: 64
-  frameHeight: 93
-  pivot: {x: 32, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 52
+  frameHeight: 75
+  pivot: {x: 26, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0

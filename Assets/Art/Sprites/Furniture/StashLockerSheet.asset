@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: StashLockerSheet
   m_EditorClassIdentifier: Assembly-CSharp::SpriteSheet
   texture: {fileID: 2800000, guid: 540cff3e2bf94d54882c47b333097941, type: 3}
-  frameWidth: 20
-  frameHeight: 45
-  pivot: {x: 10, y: 1}
-  pixelsPerUnit: 20
+  frameWidth: 16
+  frameHeight: 37
+  pivot: {x: 8, y: 1}
+  pixelsPerUnit: 16
   clips:
   - name: idle
     row: 0
