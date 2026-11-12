@@ -444,6 +444,8 @@ public partial class FloorGenerator : MonoBehaviour
         if (RunFlow.ConsumeHideoutRequest())
             FloorNumber = 0;
 
+        RoomCulling.Attach(this);
+
         tutorialRun = FloorNumber == 1 && !MetaProgress.TutorialDone;
 
         // The player's capsule is 2 tall around its middle; the model stands on the floor.
