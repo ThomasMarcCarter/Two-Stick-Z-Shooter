@@ -14,7 +14,8 @@ using UnityEngine;
 // how many are left, how many the player already carries), bought with scrap straight into the
 // pack. The truck bay uses it as the zone map: a drawn CRT map of the region with a marker per
 // zone (whose goal it holds, how far along it is, open or locked; StationScreen.ZoneMap.cs); once
-// the truck runs, picking an open zone drives there (TruckBay).
+// the truck runs, picking an open zone drives there (TruckBay). The intel desk has an extra
+// ACHIEVEMENTS row that opens its own page of cards (StationScreen.Achievements.cs).
 public partial class StationScreen : MonoBehaviour
 {
     private static readonly Color Phosphor = UiColours.Phosphor;
@@ -40,7 +41,6 @@ public partial class StationScreen : MonoBehaviour
     private TMP_Text scrapText;
     private TMP_Text materialsText;
     private TMP_Text statsText;
-    private TMP_Text achievementsText;   // the intel desk's list of achievements under its upgrade rows
     private TMP_Text status;
     private readonly List<CrtButton> rows = new List<CrtButton>();
     private CrtButton closeButton;
@@ -75,7 +75,10 @@ public partial class StationScreen : MonoBehaviour
         IsOpen = false;
 
         if (instance != null)
+        {
             instance.panel.SetActive(false);
+            instance.HideAchievements();
+        }
     }
 
     private void Show(HideoutStation shown)
@@ -84,6 +87,7 @@ public partial class StationScreen : MonoBehaviour
         trading = station == HideoutStation.TradePost;
         garage = station == HideoutStation.TruckBay;
         upgrades = Stations.Upgrades(station);
+        HideAchievements();
         PlayerHealth player = FindAnyObjectByType<PlayerHealth>();
         backpack = player != null ? Backpack.For(player.gameObject) : null;
         BuildRows();
@@ -121,6 +125,12 @@ public partial class StationScreen : MonoBehaviour
         if (Time.frameCount == openedFrame)
             return;
 
+        if (showingAchievements)
+        {
+            UpdateAchievements();
+            return;
+        }
+
         if (GameInput.Cancel.WasPressedThisFrame() || GameInput.Pause.WasPressedThisFrame())
         {
             Close();
@@ -154,6 +164,12 @@ public partial class StationScreen : MonoBehaviour
             return;
         }
 
+        if (chosen >= upgrades.Length)
+        {
+            ShowAchievements();
+            return;
+        }
+
         MetaUpgrade upgrade = upgrades[chosen];
         string blocked = MetaProgress.BlockedReason(upgrade);
 
@@ -172,12 +188,14 @@ public partial class StationScreen : MonoBehaviour
         Refresh();
     }
 
-    private int RowCount => garage ? Zones.All.Length : trading ? TraderStock.Offers.Length : upgrades.Length;
+    // The intel desk's upgrades are followed by its ACHIEVEMENTS row.
+    private int RowCount => garage ? Zones.All.Length : trading ? TraderStock.Offers.Length
+        : upgrades.Length + (station == HideoutStation.IntelDesk ? 1 : 0);
 
     // Upgrade rows have three lines (next level, current level, cost); the trader's have two, or
     // three in two narrower columns when the trader's stock is big (the
     // trade goods brought home widen it).
-    private Vector2 RowSize => TwoColumns ? new Vector2((RowWidth - 10f) / 2f, 72f) : new Vector2(RowWidth, trading ? 62f : 80f);
+    private Vector2 RowSize => TwoColumns ? new Vector2((RowWidth - 10f) / 2f, 72f) : new Vector2(RowWidth, trading ? 62f : 84f);
 
     private const int MaxSingleColumnRows = 5;
 
@@ -227,7 +245,6 @@ public partial class StationScreen : MonoBehaviour
     private void Refresh()
     {
         scrapText.text = $"SCRAP  {MetaProgress.Scrap}";
-        achievementsText.text = station == HideoutStation.IntelDesk ? AchievementsBlock() : "";
         materialsText.text = trading ? "" : BankedMaterials();
         statsText.text = $"RUNS {MetaProgress.Runs}   //   WINS {MetaProgress.Victories}   //   DEEPEST FLOOR {MetaProgress.BestFloor}   //   KILLS {MetaProgress.Kills}";
 
@@ -257,55 +274,50 @@ public partial class StationScreen : MonoBehaviour
             string next = cost < 0 ? "<alpha=#66>MAXED" : $"NEXT: {MetaUpgrades.Describe(upgrade, level + 1)}";
 
             // The descriptions all start in the right-hand column, so a long one can't run into
-            // the next (the name column is too narrow for them).
+            // the next (the name column is too narrow for them). Under the name, a tag says at a
+            // glance whether it can be built now.
             rows[i].Label.text =
                 $"<pos=1%>{MetaUpgrades.Name(upgrade)}<pos=20%>{pips}<pos=30%><size=80%>{next}</size>\n"
-                + $"<size=70%><pos=30%>{now}</size>\n"
-                + $"<size=70%><alpha=#FF><pos=30%>{CostLine(upgrade, level + 1, cost)}</size>";
-        }
-    }
-
-    // One line per achievement: name, n/goal (or DONE), and what it unlocks. Earned ones are lit.
-    private static string AchievementsBlock()
-    {
-        string text = $"<alpha=#99>ACHIEVEMENTS // THEY UNLOCK NEW ITEMS, GUNS AND ROOMS<alpha=#FF>";
-
-        foreach (Achievement a in Achievements.All)
-        {
-            bool done = MetaProgress.IsAchieved(a);
-            int goal = Achievements.Goal(a);
-            int have = Mathf.Min(goal, MetaProgress.StatValue(Achievements.StatFor(a)));
-            string progress = done ? "DONE" : $"{have}/{goal}";
-            string colour = done ? UiColours.AmberHex : "#FFFFFF55";
-            string fade = done ? "#FF" : "#88";
-            text += $"\n<color={colour}><pos=1%>{Achievements.Name(a)}<pos=22%>{progress}</color><pos=32%><alpha={fade}>{Achievements.UnlocksText(a)}<alpha=#FF>";
+                + $"<size=75%><pos=1%>{ReadyTag(upgrade, level + 1, cost)}<pos=30%>{now}</size>\n"
+                + $"<size=80%><alpha=#FF><pos=30%>{CostLine(upgrade, level + 1, cost)}</size>";
         }
 
-        return text;
+        if (RowCount > upgrades.Length)
+            rows[upgrades.Length].Label.text = AchievementsRowText();
     }
 
-    // "40 SCRAP + 3 PARTS + 2 WIRING", short items in red, then any generator requirement.
+    // "HAVE/NEED  SCRAP 85/40   PARTS 2/3   WIRING 5/2": what's in the stash against what the
+    // level takes, each item phosphor when there's enough and red when short. (Not the
+    // materials' own colours: fuel's red and gunpowder's amber read as "short" / highlighted.)
     private static string CostLine(MetaUpgrade upgrade, int level, int scrap)
     {
         if (scrap < 0)
             return "";
 
-        string Item(bool enough, string text) => enough ? text : $"<color={UiColours.DangerHex}>{text}</color>";
-        string line = Item(MetaProgress.Scrap >= scrap, $"{scrap} SCRAP");
+        string Item(string name, int have, int need) =>
+            $"<color={(have >= need ? UiColours.PhosphorHex : UiColours.DangerHex)}>{name} {have}/{need}</color>";
+        string line = "<alpha=#88>HAVE/NEED<alpha=#FF>  " + Item("SCRAP", MetaProgress.Scrap, scrap);
 
         foreach (MaterialCost material in MetaUpgrades.MaterialCosts(upgrade, level))
-        {
-            bool enough = MetaProgress.MaterialCount(material.Type) >= material.Amount;
-            string text = $"{material.Amount} {Materials.Name(material.Type)}";
-            line += " + " + (enough ? $"<color={Materials.Hex(material.Type)}>{text}</color>" : Item(false, text));
-        }
+            line += "   " + Item(Materials.Name(material.Type), MetaProgress.MaterialCount(material.Type), material.Amount);
+
+        return line;
+    }
+
+    // Under the upgrade's name: READY TO BUILD (amber), NEEDS POWER LVn / MISSING ITEMS (red), or MAXED.
+    private static string ReadyTag(MetaUpgrade upgrade, int level, int scrap)
+    {
+        if (scrap < 0)
+            return "<alpha=#66>MAXED<alpha=#FF>";
 
         int generator = MetaUpgrades.GeneratorNeeded(upgrade, level);
 
         if (MetaProgress.Level(MetaUpgrade.Generator) < generator)
-            line += $"   <color={UiColours.DangerHex}>// NEEDS POWER LV{generator}</color>";
+            return $"<color={UiColours.DangerHex}>NEEDS POWER LV{generator}</color>";
 
-        return line;
+        return MetaProgress.BlockedReason(upgrade) == null
+            ? $"<color={UiColours.AmberHex}>READY TO BUILD</color>"
+            : $"<color={UiColours.DangerHex}>MISSING ITEMS</color>";
     }
 
     // "MEDKIT    20 SCRAP    2 LEFT" over what it does and how many are in the pack. In two
@@ -371,14 +383,36 @@ public partial class StationScreen : MonoBehaviour
         return text;
     }
 
-    private static string BankedMaterials()
+    // "IN STASH:   PARTS 4   WIRING 0 ...": materials this station's next levels use are lit,
+    // the rest (and any at 0) dimmed, so the eye goes to what matters here.
+    private string BankedMaterials()
     {
-        string text = "<alpha=#99>BANKED:<alpha=#FF>";
+        string text = "<alpha=#99>IN STASH:<alpha=#FF>";
 
         foreach (MaterialType type in Materials.All)
-            text += $"   <color={Materials.Hex(type)}>{Materials.Name(type)} {MetaProgress.MaterialCount(type)}</color>";
+        {
+            int have = MetaProgress.MaterialCount(type);
+            string alpha = have > 0 && NeededHere(type) ? "#FF" : "#55";
+            text += $"   <alpha={alpha}>{Materials.Name(type)} {have}";
+        }
 
-        return text;
+        return text + "<alpha=#FF>";
+    }
+
+    // True if any of this station's upgrades takes the material for its next level.
+    private bool NeededHere(MaterialType type)
+    {
+        foreach (MetaUpgrade upgrade in upgrades)
+        {
+            if (MetaProgress.NextCost(upgrade) < 0)
+                continue;
+
+            foreach (MaterialCost material in MetaUpgrades.MaterialCosts(upgrade, MetaProgress.Level(upgrade) + 1))
+                if (material.Type == type)
+                    return true;
+        }
+
+        return false;
     }
 
     // ---------- Building ----------
@@ -409,17 +443,14 @@ public partial class StationScreen : MonoBehaviour
         title = MakeText("Title", "", 26, new Vector2(0f, -38f), 1f, new Vector2(inner, 36f), Phosphor, 10f, TextAlignmentOptions.Left);
         scrapText = MakeText("Scrap", "", 22, new Vector2(0f, -38f), 1f, new Vector2(inner, 36f), UiColours.Amber, 6f, TextAlignmentOptions.Right);
         subtitle = MakeText("Subtitle", "", 13, new Vector2(0f, -68f), 1f, new Vector2(inner, 20f), dim, 4f, TextAlignmentOptions.Left);
-        materialsText = MakeText("Materials", "", 13, new Vector2(0f, -94f), 1f, new Vector2(inner, 20f), Phosphor, 3f, TextAlignmentOptions.Left);
+        materialsText = MakeText("Materials", "", 16, new Vector2(0f, -96f), 1f, new Vector2(inner, 24f), Phosphor, 3f, TextAlignmentOptions.Left);
 
         closeButton = MakeButton("Close", new Vector2(260f, 40f), TextAlignmentOptions.Center);
         closeButton.Label.text = "[ CLOSE ]";
         statsText = MakeText("Stats", "", 11, new Vector2(0f, 52f), 0f, new Vector2(inner, 18f), dim, 4f, TextAlignmentOptions.Center);
-        achievementsText = MakeText("Achievements", "", 12, new Vector2(0f, -200f), 1f, new Vector2(inner, AchievementsHeight), Phosphor, 2f, TextAlignmentOptions.TopLeft);
         status = MakeText("Status", "", 12, new Vector2(0f, 28f), 0f, new Vector2(inner, 20f), dim, 4f, TextAlignmentOptions.Center);
+        BuildAchievementsPage(root);
     }
-
-    // The achievements block: a heading and 12 lines.
-    private static readonly float AchievementsHeight = 20f * (Achievements.All.Length + 1);
 
     // One row per upgrade of the station shown, then the close button under them.
     private void BuildRows()
@@ -438,7 +469,7 @@ public partial class StationScreen : MonoBehaviour
 
         // From the panel's top edge to the first row's top edge, under the banked materials.
         // Two columns fill the left one first.
-        const float top = 109f;
+        const float top = 114f;
         float step = RowSize.y + 10f;
         int perColumn = TwoColumns ? (count + 1) / 2 : Mathf.Max(1, count);
 
@@ -456,13 +487,8 @@ public partial class StationScreen : MonoBehaviour
             }
         }
 
-        // The intel desk lists its achievements under the rows.
-        bool intel = station == HideoutStation.IntelDesk;
         float rowsEnd = top + Mathf.Min(count, perColumn) * step;
-        achievementsText.gameObject.SetActive(intel);
-        achievementsText.rectTransform.anchoredPosition = new Vector2(0f, -rowsEnd - 6f - AchievementsHeight / 2f);
-
-        float closeY = rowsEnd + (intel ? AchievementsHeight + 12f : 0f) + 35f;
+        float closeY = rowsEnd + 35f;
         closeButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -closeY);
         panel.GetComponent<RectTransform>().sizeDelta = new Vector2(PanelWidth, closeY + 40f + 90f);
 

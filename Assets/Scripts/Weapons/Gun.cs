@@ -367,7 +367,7 @@ public partial class Gun : MonoBehaviour
         if (camera == null)
             return false;
 
-        Ray ray = camera.ScreenPointToRay(GameInput.Pointer);
+        Ray ray = camera.ScreenPointToRay(GameInput.AimPointer);
         Plane aimPlane = new Plane(Vector3.up, Vector3.up * AimHeight);
 
         if (!aimPlane.Raycast(ray, out float distance))

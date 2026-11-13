@@ -5160,7 +5160,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
   settings: {fileID: 0}
   title: Two-Stick Z Shooter
-  subtitle: '> TERMINAL READY // AWAITING OPERATOR'
   buttonSize: {x: 340, y: 42}
 --- !u!1 &976720705
 GameObject:

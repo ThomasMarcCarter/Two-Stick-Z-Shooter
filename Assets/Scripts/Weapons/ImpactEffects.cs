@@ -21,6 +21,7 @@ public static partial class ImpactEffects
     private static ParticleSystem sparks;
     private static ParticleSystem blood;
     private static ParticleSystem debris;
+    private static ParticleSystem dust;
     private static Material markMaterial;
     private static Mesh quad;
     private static readonly Queue<GameObject> wallMarks = new Queue<GameObject>();
@@ -40,6 +41,7 @@ public static partial class ImpactEffects
         sparks = null;
         blood = null;
         debris = null;
+        dust = null;
         markMaterial = null;
         haveKnown = false;
         wallMarks.Clear();
@@ -93,6 +95,38 @@ public static partial class ImpactEffects
             debris = MakeSystem("Impact Debris", materials.Blood, 3f, false);
 
         Burst(debris, point, normal, count, 1.5f, 4f, 0.35f, 0.7f, 0.05f, 0.11f, 65f, a, b);
+    }
+
+    // Small waves of dust rolling out along the floor in a ring (a dodge roll's body hitting the
+    // floor), carried a little the way `forward` points; soft round puffs that hug the ground,
+    // slow, swell a touch and fade. Always the soft dot, never the square pixel particle.
+    public static void DustSplash(Vector3 point, Vector3 forward, Color a, Color b, Materials materials)
+    {
+        Ensure(materials);
+
+        if (dust == null)
+        {
+            dust = MakeSystem("Impact Dust", materials.Blood, -0.05f, false);
+            ParticleSystem.SizeOverLifetimeModule grow = dust.sizeOverLifetime;
+            grow.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.7f), new Keyframe(1f, 1.4f)));
+        }
+
+        forward.y = 0f;
+        forward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.zero;
+        ParticleSystem.EmitParams emit = new ParticleSystem.EmitParams();
+        const int count = 18;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 dir = Quaternion.Euler(0f, i * 360f / count + Random.Range(-8f, 8f), 0f) * Vector3.forward;
+
+            emit.position = point + dir * Random.Range(0.08f, 0.18f);
+            emit.velocity = (dir * Random.Range(0.7f, 1.2f) + forward * 0.6f) + Vector3.up * Random.Range(0.02f, 0.12f);
+            emit.startLifetime = Random.Range(0.3f, 0.5f);
+            emit.startSize = Random.Range(0.05f, 0.1f);
+            emit.startColor = Color.Lerp(a, b, Random.value);
+            dust.Emit(emit, 1);
+        }
     }
 
     // The materials an impact needs, carried by the bullet that made it. Sparks use their own,

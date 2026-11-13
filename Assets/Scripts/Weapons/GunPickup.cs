@@ -123,7 +123,7 @@ public class GunPickup : MonoBehaviour
 
         if (sheet != null)
         {
-            ItemSprite item = ItemSprite.Apply(gameObject, sheet, Vector2Int.zero, onFloor, onFloor ? 0f : Mathf.Max(0f, target.y - 0.3f), frameOnFloor: onFloor);
+            ItemSprite item = ItemSprite.Apply(gameObject, sheet, GunSprite.LooseFrame, onFloor, onFloor ? 0f : Mathf.Max(0f, target.y - 0.3f), frameOnFloor: onFloor);
             PickupAttachments.Apply(item, sheet, attachments);
         }
     }

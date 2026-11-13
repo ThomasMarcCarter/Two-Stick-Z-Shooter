@@ -37,6 +37,9 @@ public class InputDriver : MonoBehaviour
         GameInput.PointerMovedThisFrame = (pointer - lastPointer).sqrMagnitude > 0.25f;
         GameInput.Pointer = pointer;
         lastPointer = pointer;
+
+        if (!GameFlow.InputBlocked)
+            GameInput.AimPointer = pointer;
     }
 
     private void DetectDevice()

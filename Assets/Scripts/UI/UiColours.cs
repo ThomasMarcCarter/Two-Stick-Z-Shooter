@@ -19,6 +19,7 @@ public static class UiColours
     // The main menu's solid backdrop, hiding the paused game.
     public static readonly Color MenuBackground = new Color(0f, 0.025f, 0.012f, 1f);
 
+    public const string PhosphorHex = "#59FF8C";
     public const string AmberHex = "#FFD95A";
     public const string DangerHex = "#FF6655";
 

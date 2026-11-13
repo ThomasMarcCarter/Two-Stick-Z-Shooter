@@ -18,6 +18,11 @@ using UnityEngine;
 [DefaultExecutionOrder(260)]
 public class GunSprite : MonoBehaviour
 {
+    // Gun sheet frames (Tools/Sprites/guns.py): row 0 is the gun in the holder's hand (held),
+    // row 1 the gun alone (floor pickups and the UI's item pictures).
+    public static readonly Vector2Int HeldFrame = new Vector2Int(0, 0);
+    public static readonly Vector2Int LooseFrame = new Vector2Int(0, 1);
+
     private const float DepthGap = 0.15f;  // metres in front of / behind the holder's body
     private const float ReloadTip = 40f;   // degrees the gun tips up mid-reload
     private const float MeleeArc = 150f;   // degrees the gun sweeps through in a melee swing
@@ -70,6 +75,7 @@ public class GunSprite : MonoBehaviour
 
         gunSprite.sprite = PixelSprite.Create("Gun Sprite", gun.transform, sheet, PixelSprite.Mode.Facing, layers);
         gunSprite.sprite.Standing = true;
+        gunSprite.sprite.SetFrame(HeldFrame.x, HeldFrame.y, false);
         gunSprite.sprite.Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Vector2 barrel = sheet.muzzle - sheet.pivot;
         gunSprite.drawnAngle = Mathf.Atan2(barrel.y, barrel.x) * Mathf.Rad2Deg;
@@ -133,7 +139,7 @@ public class GunSprite : MonoBehaviour
         Vector3 feet = new Vector3(holder.position.x, 0f, holder.position.z);
         Vector3 handsWorld = feet + CameraFollow.SpriteUp * (holdUp / Mathf.Max(0.01f, CameraFollow.VerticalScale));
         Vector2 hands = camera.WorldToScreenPoint(handsWorld);
-        Vector2 toCursor = GameInput.Pointer - hands;
+        Vector2 toCursor = GameInput.AimPointer - hands;
 
         if (toCursor.sqrMagnitude > 4f)
             aim = toCursor.normalized;

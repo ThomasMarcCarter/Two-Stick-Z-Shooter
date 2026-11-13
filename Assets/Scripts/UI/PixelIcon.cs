@@ -71,7 +71,7 @@ public static class PixelIcon
     public static bool DrawGun(VertexHelper vh, string gunName, Rect area, Color ink)
     {
         SpriteSheet sheet = SpriteVisuals.Current != null ? SpriteVisuals.Current.ForGun(gunName) : null;
-        return Draw(vh, sheet, new Vector2Int(0, 1), area, ink, new Vector2(22f, 9f));   // the longest gun's drawn size
+        return Draw(vh, sheet, GunSprite.LooseFrame, area, ink, new Vector2(22f, 9f));   // the longest gun's drawn size
     }
 
     public static bool DrawItem(VertexHelper vh, Vector2Int frame, Rect area, Color ink)

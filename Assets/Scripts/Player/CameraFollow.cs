@@ -267,7 +267,7 @@ public class CameraFollow : MonoBehaviour
     {
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
 
-        Ray cursorRay = cam.ScreenPointToRay(GameInput.Pointer);
+        Ray cursorRay = cam.ScreenPointToRay(GameInput.AimPointer);
         Ray centreRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         if (!groundPlane.Raycast(cursorRay, out float cursorDistance)

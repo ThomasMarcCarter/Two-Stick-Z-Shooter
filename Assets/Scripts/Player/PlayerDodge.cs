@@ -7,7 +7,7 @@ using UnityEngine;
 // the floor still burn: PlayerHealth.TakeDamage's fromFloor). Walls stop it. There's a short wait before the next
 // roll, and in a fight each roll costs some stamina (free out of combat, like sprinting); it still
 // works while winded, as a last resort. No shooting, swinging or item use mid-roll, but a reload
-// carries on. Dust puffs up at take-off and landing, and landing makes about as much noise as a footstep, and a roll breaks sneaking.
+// carries on. Dust puffs up at take-off and landing (plus small waves of dust rolling out where the body hits the floor, a quarter of the way in), and landing makes about as much noise as a footstep, and a roll breaks sneaking.
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerDodge : MonoBehaviour
 {
@@ -32,6 +32,10 @@ public class PlayerDodge : MonoBehaviour
     private CollisionDetectionMode restoreMode;
     private bool holdDodge;
     private bool refunded;
+    private bool splashed;
+
+    // The roll clip's second frame of four (shoulder down) is where the body meets the floor.
+    private const float HitFloorAt = 0.25f;
 
     public bool Rolling { get; private set; }
     public bool Invulnerable => Rolling && Time.time < startTime + invulnerableTime;
@@ -63,6 +67,9 @@ public class PlayerDodge : MonoBehaviour
             End(false);
             return;
         }
+
+        if (Rolling && !splashed && Progress >= HitFloorAt)
+            Splash();
 
         if (Rolling && Time.time >= startTime + rollTime)
             End(true);
@@ -99,6 +106,7 @@ public class PlayerDodge : MonoBehaviour
         Direction = direction.normalized;
         Rolling = true;
         refunded = false;
+        splashed = false;
         startTime = Time.time;
         restoreMode = rb.collisionDetectionMode;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -140,6 +148,16 @@ public class PlayerDodge : MonoBehaviour
             stamina.Refund(StaminaCost);
 
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.5f, 1.5f);
+    }
+
+    // Small waves of dust rolling out from where the body hits the floor mid-roll.
+    private void Splash()
+    {
+        splashed = true;
+
+        if (ImpactEffects.TryGetMaterials(out ImpactEffects.Materials materials))
+            ImpactEffects.DustSplash(new Vector3(transform.position.x, 0.04f, transform.position.z), Direction,
+                new Color(0.45f, 0.42f, 0.38f, 0.55f), new Color(0.62f, 0.6f, 0.55f, 0.35f), materials);
     }
 
     // A puff of grey grit kicked up off the floor at take-off and landing.

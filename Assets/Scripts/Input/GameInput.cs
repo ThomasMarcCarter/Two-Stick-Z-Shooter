@@ -78,6 +78,11 @@ public static partial class GameInput
     public static Vector2 Pointer { get; internal set; }
     public static bool PointerMovedThisFrame { get; internal set; }
 
+    // The Pointer as the player's aim sees it: frozen where it was while gameplay input is
+    // blocked (paused, menus, inventory), so the gun, flashlight and camera don't follow a menu
+    // cursor. Menus and the crosshair use Pointer.
+    public static Vector2 AimPointer { get; internal set; }
+
     // Lets a screen (e.g. the map) park the controller's pointer somewhere while it's open.
     public static Func<Vector2?> GamepadPointerOverride { get; set; }
 
@@ -103,6 +108,7 @@ public static partial class GameInput
 
         ActiveDevice = InputDeviceKind.KeyboardMouse;
         Pointer = default;
+        AimPointer = default;
         PointerMovedThisFrame = false;
         GamepadPointerOverride = null;
         BindingsChanged = null;
