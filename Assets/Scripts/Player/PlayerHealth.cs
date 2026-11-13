@@ -156,6 +156,29 @@ public class PlayerHealth : MonoBehaviour
         Healed?.Invoke(this);
     }
 
+    // A cost the player pays directly (the Overclock): no plates, i-frames or knockback, never below `floor`.
+    public void Drain(int amount, int floor = 1)
+    {
+        if (IsDead || Health <= floor)
+            return;
+
+        Health = Mathf.Max(floor, Health - amount);
+        Damaged?.Invoke(this);
+    }
+
+    // Lowers max health (the cursed items' price), never below `floor`; health is clamped to it.
+    public void RemoveMaxHealth(int amount, int floor = 2)
+    {
+        int lost = Mathf.Min(amount, maxHealth - floor);
+
+        if (lost <= 0)
+            return;
+
+        maxHealth -= lost;
+        Health = Mathf.Min(Health, maxHealth);
+        Healed?.Invoke(this);
+    }
+
     // Returns how much health was actually restored (none if dead or already full).
     public int Heal(int amount)
     {

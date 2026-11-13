@@ -190,6 +190,18 @@ public partial class FloorGenerator
 
         if (entry.kind == LootTable.ItemKind.Weapon)
         {
+            // Locked guns: re-roll the entry once, then skip it.
+            if (!Unlocks.IsWeaponUnlocked(entry.weapon))
+            {
+                entry = ZoneLootTable.Pick(point.Kind, FloorNumber, (float)rng.NextDouble());
+
+                if (entry == null || (entry.kind == LootTable.ItemKind.Weapon && !Unlocks.IsWeaponUnlocked(entry.weapon)))
+                    return null;
+
+                if (entry.kind != LootTable.ItemKind.Weapon)
+                    return SpawnLootItem(room, point, entry);
+            }
+
             Gun gun = entry.weapon.GetComponent<Gun>();
 
             if (gun == null || pickupPrefab == null)
@@ -249,11 +261,22 @@ public partial class FloorGenerator
 
         SupplyCrate crate = SupplyCrate.Create("TREASURE ROOM // SUPPLY CRATE", room.transform.position, Vector3.back, room.transform);
         SpawnPowerupCase(room, room.transform.position, room.transform.position);
+        AddTreasureLoot(crate, true);
+    }
+
+    // What a treasure crate holds: a plate (with the Plate Carrier), a gun if `withWeapon`,
+    // attachments, melee upgrades, supplies and materials. The secret room's crate has no gun.
+    private void AddTreasureLoot(SupplyCrate crate, bool withWeapon)
+    {
         AddPlateToCrate(crate);
 
-        if (treasureWeapons != null && treasureWeapons.Length > 0)
+        if (withWeapon && treasureWeapons != null && treasureWeapons.Length > 0)
         {
             GameObject weapon = treasureWeapons[rng.Next(treasureWeapons.Length)];
+            if (!Unlocks.IsWeaponUnlocked(weapon))
+                weapon = treasureWeapons[rng.Next(treasureWeapons.Length)];   // re-roll once
+            if (!Unlocks.IsWeaponUnlocked(weapon))
+                weapon = null;
             Gun gun = weapon != null ? weapon.GetComponent<Gun>() : null;
 
             if (gun != null)

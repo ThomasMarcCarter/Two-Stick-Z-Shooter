@@ -47,6 +47,8 @@ public static partial class MetaProgress
         public int loop;                    // New Game+ loops started (0: the first playthrough)
         public int loopEvacs;               // evacs when the current loop began
         public int tutorialDone;            // 1 once the hideout's been reached (the training floor comes first)
+        public int[] stats = new int[0];    // lifetime counters, by Stat
+        public int[] achieved = new int[0]; // 1 per earned Achievement
     }
 
     // What the main menu shows for a profile without switching to it.
@@ -97,9 +99,14 @@ public static partial class MetaProgress
         data = null;
         runActive = false;
         ScrapSentHome = 0;
+        ScrapSpentOnRun = 0;
         BonusScrap = 0;
         profile = 0;
         Changed = null;
+        AchievementEarned = null;
+        statsDirty = false;
+        Application.quitting -= Flush;
+        Application.quitting += Flush;
     }
 
     private static SaveData Data
@@ -288,6 +295,7 @@ public static partial class MetaProgress
     {
         runActive = true;
         ScrapSentHome = 0;
+        ScrapSpentOnRun = 0;
         BonusScrap = 0;
     }
 
@@ -307,10 +315,24 @@ public static partial class MetaProgress
     // Scrap this run has already sent home from uplinks (banked).
     public static int ScrapSentHome { get; private set; }
 
-    // Scrap earned on this run so far that hasn't been sent home yet: lost if the player dies.
+    // Carried scrap this run has spent in shops (gone for good, not banked).
+    public static int ScrapSpentOnRun { get; private set; }
+
+    // Scrap earned on this run so far that hasn't been sent home or spent yet: lost if the player dies.
     public static int CarriedScrap(int floorsCleared, int kills)
     {
-        return runActive ? Mathf.Max(0, ScrapFor(false, floorsCleared, kills) - ScrapSentHome) : 0;
+        return runActive ? Mathf.Max(0, ScrapFor(false, floorsCleared, kills) - ScrapSentHome - ScrapSpentOnRun) : 0;
+    }
+
+    // Pays for something from the carried scrap. False (nothing spent) if there isn't enough.
+    public static bool SpendCarriedScrap(int amount, int floorsCleared, int kills)
+    {
+        if (amount < 0 || CarriedScrap(floorsCleared, kills) < amount)
+            return false;
+
+        ScrapSpentOnRun += amount;
+        Changed?.Invoke();
+        return true;
     }
 
     // An uplink sends the carried scrap home: banked for good. Returns how much went.
@@ -338,7 +360,7 @@ public static partial class MetaProgress
             return 0;
 
         runActive = false;
-        int earned = victory ? Mathf.Max(0, ScrapFor(true, floorsCleared, kills) - ScrapSentHome) : 0;
+        int earned = victory ? Mathf.Max(0, ScrapFor(true, floorsCleared, kills) - ScrapSentHome - ScrapSpentOnRun) : 0;
         Data.scrap += earned;
         Data.totalScrap += earned;
         Data.runs++;
@@ -348,7 +370,7 @@ public static partial class MetaProgress
         if (victory)
             Data.victories++;
 
-        Save();
+        Save();   // also writes any counters AddStat left unsaved
         Changed?.Invoke();
         return earned;
     }

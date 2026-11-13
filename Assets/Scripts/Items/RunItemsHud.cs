@@ -48,6 +48,9 @@ public class RunItemsHud : MaskableGraphic
             group.alpha = InventoryScreen.IsOpen || MainMenu.IsOpen || DeathScreen.IsShowing ? 0f : 1f;
     }
 
+    // Cursed items show red, the rest phosphor.
+    public static Color TintFor(RunItem item) => RunItems.IsCursed(item) ? RunItems.Colour(item) : UiColours.Phosphor;
+
     protected override void OnPopulateMesh(VertexHelper vh)
     {
         vh.Clear();
@@ -62,8 +65,10 @@ public class RunItemsHud : MaskableGraphic
             FillRect(vh, slot, Fade(UiColours.Phosphor, 0.08f));
             OutlineRect(vh, slot, 1f, Fade(UiColours.Phosphor, 0.45f));
 
-            if (!PixelIcon.DrawItem(vh, ItemSprites.RunItem(items.Held[i]), inner, UiColours.Phosphor))
-                OutlineRect(vh, new Rect(inner.xMin + 4f, inner.yMin + 2f, inner.width - 8f, inner.height - 4f), 1f, UiColours.Phosphor);
+            Color tint = TintFor(items.Held[i]);
+
+            if (!PixelIcon.DrawItem(vh, ItemSprites.RunItem(items.Held[i]), inner, tint))
+                OutlineRect(vh, new Rect(inner.xMin + 4f, inner.yMin + 2f, inner.width - 8f, inner.height - 4f), 1f, tint);
         }
     }
 }

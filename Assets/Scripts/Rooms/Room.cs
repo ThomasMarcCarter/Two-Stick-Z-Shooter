@@ -7,7 +7,11 @@ public enum RoomType
     Start,
     Normal,
     Treasure,
-    Boss
+    Boss,
+    Shop,
+    Cursed,
+    Blood,
+    Secret
 }
 
 // A door between two rooms, seen from one side: which of this room's cells it leaves from,
@@ -30,7 +34,8 @@ public struct RoomEdge
 
 // One room on the floor, covering one or more grid cells (RoomShape). Built at
 // runtime by FloorGenerator. When the player steps clear of the doors into an uncleared room,
-// the doors lock until every enemy in it is dead.
+// the doors lock until every enemy in it is dead (the special rooms, Shop/Cursed/Blood/Secret, hold
+// no enemies, so they never lock).
 public class Room : MonoBehaviour
 {
     [Tooltip("How far past the door the player must be before it locks behind them.")]
@@ -45,6 +50,9 @@ public class Room : MonoBehaviour
     // On the maps from the start (the Recon upgrade) without having been entered; it still
     // shows as unexplored until it is.
     public bool Scouted { get; set; }
+
+    // A secret room still behind its cracked wall: off every map until the wall is blown open.
+    public bool Hidden { get; set; }
     public bool IsLocked { get; private set; }
     public bool IsCleared { get; private set; }
 

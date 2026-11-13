@@ -15,6 +15,8 @@ public partial class DebugMenu
         Add("TELEPORT: BOSS ROOM", () => TeleportTo(RoomType.Boss), true);
         Add("TELEPORT: TREASURE ROOM", () => TeleportTo(RoomType.Treasure), true);
         Add("TELEPORT: SPAWN", () => TeleportTo(RoomType.Start), true);
+        Add("TELEPORT: SHOP", () => TeleportTo(RoomType.Shop), true);
+        Add("TELEPORT: SECRET", () => { CrackedWall.OpenAll(); TeleportTo(RoomType.Secret); }, true);
         Add("REVEAL MAP", RevealMap, false);
         Add("SKIP TO NEXT FLOOR", SkipFloor, true);
         Add("GO TO THE SUPPLY ROOM", () => floor.DebugEnterSupplyRoom(), true);
@@ -25,6 +27,7 @@ public partial class DebugMenu
         Add("KILL ENEMIES IN ROOM", KillInRoom, false);
         Add("KILL ALL ENEMIES ON FLOOR", KillOnFloor, false);
         Add("SPAWN ONE OF EACH ZOMBIE", SpawnEnemyKinds, true);
+        Add("SPAWN ELITES", SpawnElites, true);
         Add(() => "SHOW DETECTION RADII: " + (NoiseDebug.Enabled ? "ON" : "OFF"), () => NoiseDebug.SetEnabled(!NoiseDebug.Enabled), false);
 
         Section(0, "HIDEOUT");
@@ -38,6 +41,8 @@ public partial class DebugMenu
         Add("SURVIVOR ON NEXT FLOOR", FloorGenerator.ForceSurvivorOnNextFloor, false);
         Add(() => $"NEXT RUN'S ZONE: {Zones.Name(MetaProgress.ChosenZone)}", MetaProgress.ChooseNextZone, false);
         Add("UNLOCK ALL ZONES", MetaProgress.UnlockAllZones, false);
+        Add("UNLOCK ALL ACHIEVEMENTS", () => MetaProgress.SetAllAchieved(true), false);
+        Add("LOCK ALL ACHIEVEMENTS", () => MetaProgress.SetAllAchieved(false), false);
         Add(() => "ROOM CULLING: " + (RoomCulling.Enabled ? "ON" : "OFF"), () => RoomCulling.Enabled = !RoomCulling.Enabled, false);
         Add(() => $"START NEW GAME+ (LOOP {MetaProgress.Loop}, ENEMIES x{MetaProgress.Toughness:0.##})", MetaProgress.DebugStartNewGamePlus, true);
 
@@ -159,6 +164,13 @@ public partial class DebugMenu
         Vector3 ahead = player.position + player.forward * 4f;
         ahead.y = 0f;
         floor.SpawnEnemyKinds(ahead, player.right);
+    }
+
+    private void SpawnElites()
+    {
+        Vector3 ahead = player.position + player.forward * 4f;
+        ahead.y = 0f;
+        floor.SpawnElites(ahead, player.right);
     }
 
     private void GiveConsumables()

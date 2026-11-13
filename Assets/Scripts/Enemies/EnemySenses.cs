@@ -40,6 +40,7 @@ public class EnemySenses
     [Min(0f)] public float followDistance = 4f;
 
     private const float WideBeamSight = 1.5f;
+    private const float LightsOutSight = 4f;
     private const float ColdOpenHearing = 1.5f;
 
     // The settings in use. Defaults until a FloorGenerator supplies its own.
@@ -60,7 +61,8 @@ public class EnemySenses
     public float SightRangeFor(bool sneaking)
     {
         float range = PlayerItems.Has(RunItem.WideBeam) ? sightRange * WideBeamSight : sightRange;
-        return sneaking ? range * sneakingSightMultiplier : range;
+        range = sneaking ? range * sneakingSightMultiplier : range;
+        return PlayerItems.Has(RunItem.LightsOut) ? Mathf.Min(range, LightsOutSight) : range;
     }
 
     // How far a noise of loudness 1 carries (the Cold Open makes it further).

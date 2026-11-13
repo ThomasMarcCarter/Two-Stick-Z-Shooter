@@ -33,7 +33,24 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
     }
 
     public AmmoType Type { get; private set; }
-    public int Amount { get; private set; }
+    private int amount;
+    private bool halved;
+
+    // Hollow Points halves it (once, the first time it's looked at).
+    public int Amount
+    {
+        get
+        {
+            if (!halved && PlayerItems.Has(RunItem.HollowPoints))
+            {
+                halved = true;
+                amount = PlayerItems.HalvedAmmo(amount);
+            }
+
+            return amount;
+        }
+        private set => amount = value;
+    }
     public bool IsCrate => crate;
 
     private Transform visual;

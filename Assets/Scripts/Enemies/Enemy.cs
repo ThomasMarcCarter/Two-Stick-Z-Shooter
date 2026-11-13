@@ -324,7 +324,7 @@ public partial class Enemy : MonoBehaviour
         if (SpriteBody)
         {
             flashBlock ??= new MaterialPropertyBlock();
-            flashBlock.SetColor("_BaseColor", Color.white);
+            flashBlock.SetColor("_BaseColor", SpriteTint);
             flashBlock.SetColor("_EmissionColor", emission * SpriteGlow);
             SetBlood(flashBlock);
 
@@ -490,13 +490,20 @@ public partial class Enemy : MonoBehaviour
 
     // ---------- Health ----------
 
-    public void TakeDamage(int amount, bool melee = false)
+    // How the killing blow landed, for the achievements (read by FloorGenerator when it hears of the death).
+    public bool KilledByMelee { get; private set; }
+    public bool KilledByBlast { get; private set; }
+    public bool KilledUnaware { get; private set; }
+
+    // blast: a blast the player caused (not a zombie burst), which doesn't count as an unaware hit.
+    public void TakeDamage(int amount, bool melee = false, bool blast = false)
     {
         // Can't be hurt until the player is locked in with it, so a room can't be cleared
         // by shooting through an open door.
         if (health <= 0 || room == null || !room.IsLocked)
             return;
 
+        bool unaware = state == State.Wander && !blast;
         health -= Mathf.Max(1, Mathf.RoundToInt(amount * DamageMultiplier));
         Flash();
 
@@ -506,6 +513,9 @@ public partial class Enemy : MonoBehaviour
 
         if (health <= 0)
         {
+            KilledByMelee = melee;
+            KilledByBlast = blast;
+            KilledUnaware = unaware;
             Die();
             return;
         }
@@ -538,6 +548,9 @@ public partial class Enemy : MonoBehaviour
     private void Die()
     {
         Died?.Invoke(this);
+
+        if (Elite != EliteKind.None)
+            OnEliteDied();
 
         // A beat of hit-stop and a jolt on the kill; longer for a boss going down.
         HitStop.Freeze(Heavy ? 0.3f : 0.035f);

@@ -133,10 +133,10 @@ public partial class Gun : MonoBehaviour
     private const float TwinFeedAngle = 1.5f;   // how far each of the Twin Feed's two bullets leans off the aim
 
     private static bool HairTrigger => PlayerItems.Has(RunItem.HairTrigger);
-    private float FireRate => fireRate * Product(a => a.fireRateMultiplier) * (HairTrigger ? 1.4f : 1f);
+    private float FireRate => fireRate * Product(a => a.fireRateMultiplier) * (HairTrigger ? 1.4f : 1f) * PlayerItems.OverclockFactor;
     private float ReloadTime => reloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
     private float ShellReloadTime => shellReloadTime * Product(a => a.reloadTimeMultiplier) * ItemReloadTime;
-    private static float ItemReloadTime => PlayerItems.Has(RunItem.HungryMag) ? 2f : 1f;
+    private static float ItemReloadTime => (PlayerItems.Has(RunItem.HungryMag) ? 2f : 1f) / PlayerItems.OverclockFactor;
     private float Spread => spreadAngle * Product(a => a.spreadMultiplier) * (HairTrigger ? 2f : 1f);
     private float ProjectileSpeed => Product(a => a.projectileSpeedMultiplier);
     private float AccuracyMultiplier => Product(a => a.accuracyMultiplier) * (HairTrigger ? 2.5f : 1f);
@@ -253,12 +253,10 @@ public partial class Gun : MonoBehaviour
         SuppressedShot = null;
     }
 
-    public static string DisplayName(GameObject weapon)
-    {
-        if (weapon == null)
-            return "";
+    public static string DisplayName(GameObject weapon) => weapon == null ? "" : DisplayName(weapon.name);
 
-        string name = weapon.name;
+    public static string DisplayName(string name)
+    {
         System.Text.StringBuilder text = new System.Text.StringBuilder(name.Length + 4);
 
         for (int i = 0; i < name.Length; i++)

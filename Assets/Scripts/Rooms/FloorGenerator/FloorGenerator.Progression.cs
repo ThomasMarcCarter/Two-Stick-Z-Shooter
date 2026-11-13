@@ -104,13 +104,22 @@ public partial class FloorGenerator
         toCentre.y = 0f;
         position += Vector3.ClampMagnitude(toCentre, 1f);
 
+        Vector3 side = Vector3.Cross(Vector3.up, toCentre.sqrMagnitude > 0.01f ? toCentre.normalized : Vector3.forward);
+        RollRoomDrops(room, position, side);
+
+        // Bad Omen: the whole roll again, a little further along.
+        if (PlayerItems.Has(RunItem.BadOmen))
+            RollRoomDrops(room, position + side * 2.6f, -side);
+    }
+
+    // One roll of a cleared room's drops.
+    private void RollRoomDrops(Room room, Vector3 position, Vector3 side)
+    {
         if (UnityEngine.Random.value < Drops.medkitChance)
         {
             bool large = UnityEngine.Random.value < Drops.largeMedkitChance;
             ConsumablePickup.Spawn(large ? ConsumableType.LargeMedkit : ConsumableType.Medkit, 1, InsideRoom(room, position), room.transform, ammoMaterial);
         }
-
-        Vector3 side = Vector3.Cross(Vector3.up, toCentre.sqrMagnitude > 0.01f ? toCentre.normalized : Vector3.forward);
 
         if (UnityEngine.Random.value < Drops.supplyChance && Drops.PickSupply(FloorNumber, UnityEngine.Random.value) is ConsumableType supply)
             ConsumablePickup.Spawn(supply, 1, InsideRoom(room, position + side * 0.9f), room.transform, ammoMaterial);
@@ -162,8 +171,13 @@ public partial class FloorGenerator
     private void AdvanceFloor()
     {
         FloorNumber++;
+        MetaProgress.Flush();
         ClearLooseObjects();
         Generate();
+        PlayerItems.FloorArrived();
+
+        if (!IsTutorial)
+            MetaProgress.AddStat(Stat.DeepestFloor, FloorNumber);
 
         if (cameraFollow != null)
             cameraFollow.SnapToTarget();

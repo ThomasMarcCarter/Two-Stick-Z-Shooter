@@ -249,6 +249,10 @@ public partial class FloorGenerator
         PlayerHealth health = player.GetComponent<PlayerHealth>();
         // The rest of the run's scrap comes home with the bonus; the screen shows the run's total.
         int scrap = MetaProgress.EndRun(true, TotalFloors, FloorNumber, EnemiesKilled) + MetaProgress.ScrapSentHome;
+        MetaProgress.AddStat(Stat.Wins);
+
+        if (PlayerItems.Current != null && System.Linq.Enumerable.Any(PlayerItems.Current.Held, RunItems.IsCursed))
+            MetaProgress.AddStat(Stat.CursedWins);
 
         // The flight log: the evac frequency. The radio's complete and the chopper's coming: up to
         // the roof for the ending instead of the victory screen.

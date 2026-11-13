@@ -142,7 +142,7 @@ public static class TraderStock
             {
                 foreach (GameObject gun in guns)
                 {
-                    if (gun != null && gun.GetComponent<Gun>() != null)
+                    if (gun != null && gun.GetComponent<Gun>() != null && Unlocks.IsWeaponUnlocked(gun))
                         armoury.Add(gun);
                 }
             }

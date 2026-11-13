@@ -11,6 +11,15 @@ public partial class FloorGenerator
     private readonly HashSet<RunItem> floorOffers = new HashSet<RunItem>();
     private int offersFloor = -1;
 
+    private void ResetFloorOffers()
+    {
+        if (offersFloor == FloorNumber)
+            return;
+
+        offersFloor = FloorNumber;
+        floorOffers.Clear();
+    }
+
     // A case of run items the player doesn't hold and no other case on this floor has offered, near
     // a crate (clear of `avoid`, the boss room's hatch). The training floor has none.
     private void SpawnPowerupCase(Room room, Vector3 near, Vector3 avoid)
@@ -18,19 +27,24 @@ public partial class FloorGenerator
         if (IsTutorial)
             return;
 
-        if (offersFloor != FloorNumber)
-        {
-            offersFloor = FloorNumber;
-            floorOffers.Clear();
-        }
+        ResetFloorOffers();
 
         List<RunItem> pool = new List<RunItem>();
+        List<RunItem> lockedToo = new List<RunItem>();
 
-        foreach (RunItem item in RunItems.All)
+        foreach (RunItem item in RunItems.Normal)
         {
-            if (!PlayerItems.Has(item) && !floorOffers.Contains(item))
+            if (PlayerItems.Has(item) || floorOffers.Contains(item))
+                continue;
+
+            lockedToo.Add(item);
+
+            if (Unlocks.IsUnlocked(item))
                 pool.Add(item);
         }
+
+        if (pool.Count == 0)
+            pool = lockedToo;   // never an empty case
 
         List<RunItem> offers = new List<RunItem>();
 
@@ -85,6 +99,27 @@ public partial class FloorGenerator
     public void SpawnArmorPlate(Vector3 position)
     {
         ArmorPlatePickup.Spawn(position, TryGetRoom(position, out Room room) ? room.transform : transform);
+    }
+
+    // Bad Omen taken mid-floor: each combat room not yet entered gets an extra elite.
+    public void RingBadOmen()
+    {
+        if (IsTutorial)
+            return;
+
+        foreach (Room room in Rooms)
+        {
+            if (room.Type != RoomType.Normal || room.Visited || room.IsCleared)
+                continue;
+
+            List<Vector3> placed = new List<Vector3>();
+
+            foreach (Enemy enemy in room.Enemies)
+                placed.Add(enemy.transform.position);
+
+            if (TryFindSpawnPoint(room, DoorwayPositions(room), placed, out Vector3 position))
+                SpawnNormalEnemy(room, position, PickEnemyKind(UnityEngine.Random.value, new Dictionary<EnemyKind, int>())).SetElite(Elites.Random());
+        }
     }
 
     // Taken mid-floor: the combat rooms not yet entered get their extra zombies now (later floors

@@ -196,7 +196,43 @@ public static class MapSymbols
             case RoomType.Boss:
                 DrawBoss(vh, position, size * 0.9f, hostile);
                 break;
+            case RoomType.Shop:
+                DrawShop(vh, position, size, phosphor);
+                break;
+            case RoomType.Cursed:
+            case RoomType.Blood:
+                DrawCursed(vh, position, size, hostile, type == RoomType.Blood);
+                break;
+            case RoomType.Secret:
+                OutlineRect(vh, new Rect(position.x - size * 0.2f, position.y - size * 0.4f, size * 0.4f, size * 0.8f), 1f, phosphor);
+                break;
         }
+    }
+
+    // Shop: a coin (a ring with a bar through it).
+    private static void DrawShop(VertexHelper vh, Vector2 position, float size, Color colour)
+    {
+        Ring(vh, position, size * 0.45f, 1.5f, colour);
+        FillRect(vh, new Rect(position.x - size * 0.06f, position.y - size * 0.3f, size * 0.12f, size * 0.6f), colour);
+    }
+
+    // Cursed: an inverted triangle in the hostile colour; the blood bank's is filled.
+    private static void DrawCursed(VertexHelper vh, Vector2 position, float size, Color colour, bool filled)
+    {
+        float half = size * 0.45f;
+        Vector2 a = position + new Vector2(-half, half * 0.8f);
+        Vector2 b = position + new Vector2(half, half * 0.8f);
+        Vector2 c = position + new Vector2(0f, -half);
+
+        if (filled)
+        {
+            Triangle(vh, a, b, c, colour);
+            return;
+        }
+
+        Line(vh, a, b, 1.5f, colour);
+        Line(vh, b, c, 1.5f, colour);
+        Line(vh, c, a, 1.5f, colour);
     }
 
     // A hideout station's icon: a dark badge ringed in phosphor with a glyph in the station's

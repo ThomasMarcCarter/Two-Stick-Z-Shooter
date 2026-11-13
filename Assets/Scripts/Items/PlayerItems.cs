@@ -19,6 +19,7 @@ public class PlayerItems : MonoBehaviour
     private const float LandingStun = 0.5f;
     private const float CorpseDelay = 1f;
     private const int BloodletterKills = 5;
+    private const int LeechKills = 10;
 
     // Where a roll's fires go: each lights once the player is this far along, this far behind them.
     private const int FuelFires = 3;
@@ -34,6 +35,7 @@ public class PlayerItems : MonoBehaviour
     private Vector3 rollStart;
     private int rollFires;
     private int meleeKills;
+    private int leechKills;
 
     public static PlayerItems Current => current;
     public IReadOnlyList<RunItem> Held => held;
@@ -93,8 +95,22 @@ public class PlayerItems : MonoBehaviour
                 floor.RingDinnerBell();
         }
 
+        if (item == RunItem.BadOmen)
+        {
+            FloorGenerator omenFloor = FindAnyObjectByType<FloorGenerator>();
+
+            if (omenFloor != null)
+                omenFloor.RingBadOmen();
+        }
+
         if (item == RunItem.WideBeam)
             WidenFlashlight();
+
+        if (item == RunItem.LightsOut)
+            SwitchOffFlashlight();
+
+        if (item == RunItem.BloodPact && TryGetComponent(out PlayerHealth pact))
+            pact.RemoveMaxHealth(2);
 
         SoundFX.Play2D(SoundFX.Pick(SoundFX.Clips("attachment-fit", 3, ProceduralAudio.AttachmentFit)), 0.6f, 0.7f);
         Changed?.Invoke();
@@ -139,7 +155,15 @@ public class PlayerItems : MonoBehaviour
     // A zombie's shot passed through the player.
     public static void ShotPassed(PlayerHealth player)
     {
-        if (Has(RunItem.CloseCall) && current.dodge.Invulnerable)
+        if (current == null || !current.dodge.Invulnerable)
+            return;
+
+        FloorGenerator floor = FindAnyObjectByType<FloorGenerator>();   // rare event, so the lookup is fine
+
+        if (floor == null || !floor.IsTutorial)
+            MetaProgress.AddStat(Stat.CloseCalls);
+
+        if (Has(RunItem.CloseCall))
             current.dodge.Refund();
     }
 
@@ -159,8 +183,26 @@ public class PlayerItems : MonoBehaviour
             if (Has(RunItem.Bloodletter))
                 multiplier *= 0.75f;
 
+            if (Has(RunItem.BloodPact))
+                multiplier *= BloodPactDamage;
+
             return multiplier;
         }
+    }
+
+    public const float BloodPactDamage = 2.5f;
+
+    // The Overclock's speed-up to moving, firing and reloading.
+    public static float OverclockFactor => Has(RunItem.Overclock) ? 1.3f : 1f;
+
+    // The Hollow Points' halving of an ammo pickup, rounded up, at least 1.
+    public static int HalvedAmmo(int amount) => amount <= 0 ? amount : Mathf.Max(1, Mathf.CeilToInt(amount / 2f));
+
+    // A new floor was built around the player: the Overclock bleeds them, down to 1 health.
+    public static void FloorArrived()
+    {
+        if (Has(RunItem.Overclock) && current.TryGetComponent(out PlayerHealth health))
+            health.Drain(1);
     }
 
     // A swing landed on a zombie: the Bayonet loads a round, and the Bloodletter counts the kills.
@@ -205,6 +247,15 @@ public class PlayerItems : MonoBehaviour
         }
     }
 
+    private void SwitchOffFlashlight()
+    {
+        foreach (Light light in GetComponentsInChildren<Light>(true))
+        {
+            if (light.name == "Flashlight")
+                light.enabled = false;
+        }
+    }
+
     // The blast from a Last Word round or a Corpse Bloat: smaller than a grenade's.
     public static Blast.Settings SmallBlast(int maxDamage)
     {
@@ -225,6 +276,9 @@ public class PlayerItems : MonoBehaviour
     {
         if (Holds(RunItem.HungryMag))
             LoadFreeRound();
+
+        if (Holds(RunItem.Leech) && ++leechKills % LeechKills == 0 && TryGetComponent(out PlayerHealth leech))
+            leech.Heal(1);
 
         if (Holds(RunItem.CorpseBloat) && !boss)
             DelayedBlast.Start(dead.transform.position, room, SmallBlast(3), CorpseDelay);

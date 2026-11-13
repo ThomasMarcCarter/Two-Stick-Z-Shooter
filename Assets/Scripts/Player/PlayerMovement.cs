@@ -87,7 +87,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (stamina != null && stamina.Boosted)
             multiplier *= boostMultiplier;
-        Vector3 targetVelocity = movement * moveSpeed * multiplier;
+        Vector3 targetVelocity = movement * moveSpeed * multiplier * PlayerItems.OverclockFactor;
 
         float currentAcceleration = movement.magnitude > 0
             ? acceleration * (sprinting ? sprintAcceleration : 1f)

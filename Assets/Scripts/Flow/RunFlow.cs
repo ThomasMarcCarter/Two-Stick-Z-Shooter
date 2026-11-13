@@ -34,6 +34,7 @@ public static class RunFlow
     // Reloads the game scene into the hideout.
     public static void ExitToHideout()
     {
+        MetaProgress.Flush();
         MainMenu.SkipOnNextLoad = true;
         enterHideoutOnLoad = true;
         Load(SceneManager.GetActiveScene().name);

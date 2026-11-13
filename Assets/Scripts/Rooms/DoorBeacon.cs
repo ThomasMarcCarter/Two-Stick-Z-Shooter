@@ -7,13 +7,23 @@ using UnityEngine;
 // doorway's frame (just for looks: no colliders).
 public class DoorBeacon : MonoBehaviour
 {
-    private static readonly Color Amber = new Color(1f, 0.55f, 0.08f);
+    private static readonly Color DefaultColour = new Color(1f, 0.55f, 0.08f);
     private const float Rate = 0.9f;   // flashes per second, each side
 
     private Renderer[] left;
     private Renderer[] right;
     private Light glow;
     private float offset;
+    private Color Amber = DefaultColour;
+
+    // Recolours the lamps and the spilled light (the cursed room's doorways go red).
+    public void Tint(Color colour)
+    {
+        Amber = colour;
+
+        if (glow != null)
+            glow.color = colour;
+    }
 
     // `posts` are the two frame posts' centres (world), at the top of the wall; `inward` points
     // into the room.
@@ -32,7 +42,7 @@ public class DoorBeacon : MonoBehaviour
         beacon.glow.transform.SetParent(root.transform, false);
         beacon.glow.transform.position = new Vector3(root.transform.position.x, topHeight * 0.8f, root.transform.position.z) + inward * 0.6f;
         beacon.glow.type = LightType.Point;
-        beacon.glow.color = Amber;
+        beacon.glow.color = DefaultColour;
         beacon.glow.range = 3.2f;
         beacon.glow.shadows = LightShadows.None;
 
@@ -95,7 +105,7 @@ public class DoorBeacon : MonoBehaviour
         return Mathf.Clamp01(Mathf.Min(t / 0.05f, (0.42f - t) / 0.05f));
     }
 
-    private static void SetLit(Renderer[] parts, float on)
+    private void SetLit(Renderer[] parts, float on)
     {
         foreach (Renderer part in parts)
             ConsumableModel.Tint(part, Color.Lerp(Amber * 0.25f, Amber, on), Amber * Mathf.Lerp(0.15f, 5f, on));

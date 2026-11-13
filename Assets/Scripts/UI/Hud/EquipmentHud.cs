@@ -108,6 +108,8 @@ public partial class EquipmentHud : MaskableGraphic
             RunItemsHud runItems = RunItemsHud.Create(transform.parent, weapons, margin + new Vector2(width + 20f, 96f));
             runItems.transform.SetSiblingIndex(transform.GetSiblingIndex() + 2);
         }
+
+        UnlockCard.Resume();
     }
 
     private void Update()

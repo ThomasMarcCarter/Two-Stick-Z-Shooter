@@ -247,6 +247,10 @@ public partial class FloorGenerator
             case RoomType.Start: return "SPAWN";
             case RoomType.Treasure: return "TREASURE";
             case RoomType.Boss: return "BOSS";
+            case RoomType.Shop: return "SHOP";
+            case RoomType.Cursed: return "CURSED";
+            case RoomType.Blood: return "BLOOD BANK";
+            case RoomType.Secret: return "SECRET";
             default: return "COMBAT";
         }
     }
@@ -261,7 +265,11 @@ public partial class FloorGenerator
         {
             case RoomType.Start: return mall ? RoomTheme.Entrance : hospital ? RoomTheme.Reception : airport ? RoomTheme.CheckIn : RoomTheme.Checkpoint;
             case RoomType.Treasure: return mall ? RoomTheme.SecurityOffice : hospital ? RoomTheme.Pharmacy : airport ? RoomTheme.DutyFree : RoomTheme.Armoury;
-            case RoomType.Boss: return RoomTheme.None;
+            case RoomType.Boss:
+            case RoomType.Shop:
+            case RoomType.Cursed:
+            case RoomType.Blood:
+            case RoomType.Secret: return RoomTheme.None;
         }
 
         if (rng.NextDouble() < roomThemeChance)

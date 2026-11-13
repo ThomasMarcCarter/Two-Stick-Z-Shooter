@@ -40,6 +40,7 @@ public partial class StationScreen : MonoBehaviour
     private TMP_Text scrapText;
     private TMP_Text materialsText;
     private TMP_Text statsText;
+    private TMP_Text achievementsText;   // the intel desk's list of achievements under its upgrade rows
     private TMP_Text status;
     private readonly List<CrtButton> rows = new List<CrtButton>();
     private CrtButton closeButton;
@@ -226,6 +227,7 @@ public partial class StationScreen : MonoBehaviour
     private void Refresh()
     {
         scrapText.text = $"SCRAP  {MetaProgress.Scrap}";
+        achievementsText.text = station == HideoutStation.IntelDesk ? AchievementsBlock() : "";
         materialsText.text = trading ? "" : BankedMaterials();
         statsText.text = $"RUNS {MetaProgress.Runs}   //   WINS {MetaProgress.Victories}   //   DEEPEST FLOOR {MetaProgress.BestFloor}   //   KILLS {MetaProgress.Kills}";
 
@@ -261,6 +263,25 @@ public partial class StationScreen : MonoBehaviour
                 + $"<size=70%><pos=30%>{now}</size>\n"
                 + $"<size=70%><alpha=#FF><pos=30%>{CostLine(upgrade, level + 1, cost)}</size>";
         }
+    }
+
+    // One line per achievement: name, n/goal (or DONE), and what it unlocks. Earned ones are lit.
+    private static string AchievementsBlock()
+    {
+        string text = $"<alpha=#99>ACHIEVEMENTS // THEY UNLOCK NEW ITEMS, GUNS AND ROOMS<alpha=#FF>";
+
+        foreach (Achievement a in Achievements.All)
+        {
+            bool done = MetaProgress.IsAchieved(a);
+            int goal = Achievements.Goal(a);
+            int have = Mathf.Min(goal, MetaProgress.StatValue(Achievements.StatFor(a)));
+            string progress = done ? "DONE" : $"{have}/{goal}";
+            string colour = done ? UiColours.AmberHex : "#FFFFFF55";
+            string fade = done ? "#FF" : "#88";
+            text += $"\n<color={colour}><pos=1%>{Achievements.Name(a)}<pos=22%>{progress}</color><pos=32%><alpha={fade}>{Achievements.UnlocksText(a)}<alpha=#FF>";
+        }
+
+        return text;
     }
 
     // "40 SCRAP + 3 PARTS + 2 WIRING", short items in red, then any generator requirement.
@@ -393,8 +414,12 @@ public partial class StationScreen : MonoBehaviour
         closeButton = MakeButton("Close", new Vector2(260f, 40f), TextAlignmentOptions.Center);
         closeButton.Label.text = "[ CLOSE ]";
         statsText = MakeText("Stats", "", 11, new Vector2(0f, 52f), 0f, new Vector2(inner, 18f), dim, 4f, TextAlignmentOptions.Center);
+        achievementsText = MakeText("Achievements", "", 12, new Vector2(0f, -200f), 1f, new Vector2(inner, AchievementsHeight), Phosphor, 2f, TextAlignmentOptions.TopLeft);
         status = MakeText("Status", "", 12, new Vector2(0f, 28f), 0f, new Vector2(inner, 20f), dim, 4f, TextAlignmentOptions.Center);
     }
+
+    // The achievements block: a heading and 12 lines.
+    private static readonly float AchievementsHeight = 20f * (Achievements.All.Length + 1);
 
     // One row per upgrade of the station shown, then the close button under them.
     private void BuildRows()
@@ -431,7 +456,13 @@ public partial class StationScreen : MonoBehaviour
             }
         }
 
-        float closeY = top + Mathf.Min(count, perColumn) * step + 35f;
+        // The intel desk lists its achievements under the rows.
+        bool intel = station == HideoutStation.IntelDesk;
+        float rowsEnd = top + Mathf.Min(count, perColumn) * step;
+        achievementsText.gameObject.SetActive(intel);
+        achievementsText.rectTransform.anchoredPosition = new Vector2(0f, -rowsEnd - 6f - AchievementsHeight / 2f);
+
+        float closeY = rowsEnd + (intel ? AchievementsHeight + 12f : 0f) + 35f;
         closeButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -closeY);
         panel.GetComponent<RectTransform>().sizeDelta = new Vector2(PanelWidth, closeY + 40f + 90f);
 

@@ -55,6 +55,7 @@ public class Projectile : MonoBehaviour
     private static readonly RaycastHit[] sweepHits = new RaycastHit[8];
 
     // Furniture this round has already passed through (each piece reacts once).
+    private readonly HashSet<Enemy> pierced = new HashSet<Enemy>();   // Hollow Points: zombies already passed through
     private readonly HashSet<FurnitureDamage> furnitureHit = new HashSet<FurnitureDamage>();
 
     private void Awake()
@@ -182,7 +183,7 @@ public class Projectile : MonoBehaviour
 
         foreach (Enemy enemy in Noise.Enemies)
         {
-            if (enemy == null || !enemy.IsActive)
+            if (enemy == null || !enemy.IsActive || pierced.Contains(enemy))
                 continue;
 
             Vector3 to = enemy.transform.position - transform.position;
@@ -246,7 +247,7 @@ public class Projectile : MonoBehaviour
         {
             Collider hit = sweepHits[i].collider;
 
-            if (hit.GetComponentInParent<FurnitureDamage>() != null)
+            if (hit.GetComponentInParent<FurnitureDamage>() != null || (pierced.Count > 0 && hit.TryGetComponent(out Enemy passed) && pierced.Contains(passed)))
                 continue;
 
             bool hitsShooter = hit.transform.root == shooterRoot;
@@ -307,7 +308,7 @@ public class Projectile : MonoBehaviour
 
         foreach (SpriteCharacter sprite in SpriteCharacter.Enemies)
         {
-            if (sprite == null || (sprite.Enemy == null && sprite.Npc == null) || sprite.transform.root == shooterRoot)
+            if (sprite == null || (sprite.Enemy == null && sprite.Npc == null) || sprite.transform.root == shooterRoot || (sprite.Enemy != null && pierced.Contains(sprite.Enemy)))
                 continue;
 
             if (!sprite.Footprint(start.y, out Vector3 from, out Vector3 to, out float radius))
@@ -513,7 +514,7 @@ public class Projectile : MonoBehaviour
     // Blood where it went in (drawn up at the tracer's height), and the damage.
     private void HitEnemy(Enemy enemy, Vector3 point, Vector3 normal)
     {
-        if (spent || enemy == null)
+        if (spent || enemy == null || pierced.Contains(enemy))
             return;
 
         // Turned aside by a shield: sparks and a clank, no blood, no damage.
@@ -530,8 +531,12 @@ public class Projectile : MonoBehaviour
 
         ImpactEffects.FleshHit(point + Vector3.up * tracerLift, normal, rb != null ? rb.linearVelocity : transform.forward, enemy.transform, EffectMaterials);
 
-        // The enemy's own voice reacts to the hit (EnemyVoice).
-        spent = true;
+        // The enemy's own voice reacts to the hit (EnemyVoice). Hollow Points rounds fly on.
+        bool pierce = PlayerItems.Has(RunItem.HollowPoints) && !explodes;
+        spent = !pierce;
+
+        if (pierce)
+            pierced.Add(enemy);
         int dealt = DamageAt(point, enemy.OpeningHitMultiplier);
 
         // TakeDamage always does at least 1, so a round that rolled nothing doesn't call it.
@@ -544,7 +549,8 @@ public class Projectile : MonoBehaviour
         if (enemy.IsDead && PlayerItems.Has(RunItem.IncendiaryRounds))
             FirePatch.Create(enemy.transform.position, FloorPickups.RoomAt(enemy.transform.position), 0.6f, 4f);
 
-        Finish();
+        if (!pierce)
+            Finish();
     }
 
     private void PlayImpact(string key, AudioClip[] clips, float volume)

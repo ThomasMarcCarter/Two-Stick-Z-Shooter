@@ -26,6 +26,7 @@ public class PowerupScreen : MonoBehaviour
     private PlayerWeapon player;
     private GameObject panel;
     private TMP_Text hint;
+    private TMP_Text title;
     private CrtMenu menu;
     private int openedFrame;
     private int count;
@@ -97,6 +98,24 @@ public class PowerupScreen : MonoBehaviour
         if (chosen < 0)
             return;
 
+        if (powerup.CaseMode == PowerupCase.Mode.Blood)
+        {
+            // Several buys: refresh the cards; a greyed card does nothing.
+            PowerupCase bank = powerup;
+
+            if (!PowerupCase.CanAfford(shown[chosen], player.GetComponent<PlayerHealth>()))
+                return;
+
+            bank.Choose(shown[chosen], player);
+
+            if (bank != null && bank.Offers.Count > 0)
+                Fill();
+            else
+                Close();
+
+            return;
+        }
+
         powerup.Choose(shown[chosen], player);
         Close();
     }
@@ -122,9 +141,24 @@ public class PowerupScreen : MonoBehaviour
             rect.localScale = Vector3.one;
             cards[i].Label.text = RunItems.Name(shown[i]);
             details[i].text = RunItems.Describe(shown[i]);
+            Color colour = powerup.CaseMode == PowerupCase.Mode.Normal ? UiColours.Phosphor : RunItems.CursedColour;
+
+            if (powerup.CaseMode == PowerupCase.Mode.Blood)
+            {
+                details[i].text += $"\n\n-{PowerupCase.BloodCost(shown[i])} MAX HEALTH";
+
+                if (!PowerupCase.CanAfford(shown[i], player.GetComponent<PlayerHealth>()))
+                    colour = UiColours.WithAlpha(colour, 0.35f);
+            }
+
+            cards[i].Label.color = colour;
+            details[i].color = UiColours.WithAlpha(colour, 0.75f);
             columns[i] = new[] { cards[i] };
         }
 
+        title.text = powerup.CaseMode == PowerupCase.Mode.Normal ? "CHOOSE ONE:"
+            : powerup.CaseMode == PowerupCase.Mode.Cursed ? "CURSED: CHOOSE ONE" : "BLOOD BANK: PAY IN MAX HEALTH";
+        title.color = powerup.CaseMode == PowerupCase.Mode.Normal ? UiColours.Phosphor : RunItems.CursedColour;
         hint.text = $"<alpha=#88>[{GameInput.Label(GameInput.Cancel)}] LEAVE IT FOR NOW";
         menu = new CrtMenu(columns, 0, 0);
         menu.Open();
@@ -151,7 +185,7 @@ public class PowerupScreen : MonoBehaviour
         panel = CrtPanel.CreatePanel(root, PanelSize);
         float inner = PanelSize.x - 60f;
 
-        CrtPanel.MakeText(panel.transform, font, "Title", "CHOOSE ONE:", 40, new Vector2(0f, -48f), 1f, new Vector2(inner, 50f), UiColours.Phosphor, 10f, TextAlignmentOptions.Center);
+        title = CrtPanel.MakeText(panel.transform, font, "Title", "CHOOSE ONE:", 40, new Vector2(0f, -48f), 1f, new Vector2(inner, 50f), UiColours.Phosphor, 10f, TextAlignmentOptions.Center);
         hint = CrtPanel.MakeText(panel.transform, font, "Hint", "", 13, new Vector2(0f, 24f), 0f, new Vector2(inner, 20f), UiColours.Phosphor, 4f, TextAlignmentOptions.Center);
 
         for (int i = 0; i < CardCount; i++)

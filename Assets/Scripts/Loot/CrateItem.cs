@@ -31,7 +31,24 @@ public class CrateItem
     public MaterialType Material { get; private set; }
 
     // Rounds in a gun's magazine, or how many of a stack.
-    public int Amount { get; private set; }
+    private int amount;
+    private bool halved;
+
+    // Hollow Points halves loose ammo (once, the first time it's looked at).
+    public int Amount
+    {
+        get
+        {
+            if (!halved && Kind == ItemKind.Ammo && PlayerItems.Has(RunItem.HollowPoints))
+            {
+                halved = true;
+                amount = PlayerItems.HalvedAmmo(amount);
+            }
+
+            return amount;
+        }
+        private set => amount = value;
+    }
 
     public bool IsEmpty => Kind != ItemKind.Gun && Kind != ItemKind.Attachment && Kind != ItemKind.MeleeUpgrade && Amount <= 0;
 

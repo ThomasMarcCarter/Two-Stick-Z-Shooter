@@ -88,6 +88,8 @@ public partial class FloorGenerator : MonoBehaviour
     [SerializeField] private Material doorMaterial;
     [SerializeField] private Color treasureTint = new Color(1f, 0.85f, 0.3f);
     [SerializeField] private Color bossTint = new Color(0.8f, 0.25f, 0.25f);
+    [SerializeField] private Color shopTint = new Color(0.45f, 0.9f, 0.55f);
+    [SerializeField] private Color cursedTint = new Color(0.75f, 0.3f, 0.4f);
     [Tooltip("Physics material for walls, doors and enemies. Frictionless, so bodies slide along walls instead of catching on them.")]
     [SerializeField] private PhysicsMaterial slidePhysics;
 
@@ -566,6 +568,8 @@ public partial class FloorGenerator : MonoBehaviour
                 BuildCorridor(planned.ParentCell, planned.DoorDirection);
         }
 
+        BuildCrackedWalls(plan);
+
         if (IsTutorial)
             ReserveTutorialHatch();
 
@@ -592,6 +596,7 @@ public partial class FloorGenerator : MonoBehaviour
         AddDraught(room);
         List<Vector3> placed = SpawnEnemies(room);
         SpawnTreasureCrate(room);
+        FillSpecialRoom(room);
         placed.AddRange(lootFloorPoints);
         SpawnAmmoCrate(room, placed);
     }
@@ -610,6 +615,7 @@ public partial class FloorGenerator : MonoBehaviour
         clutter.Clear();
         wallFeatures.Clear();
         exitSpots.Clear();
+        secretDoors.Clear();
 
         foreach (Mesh mesh in floorMeshes)
             Destroy(mesh);
@@ -646,6 +652,9 @@ public partial class FloorGenerator : MonoBehaviour
     // scouted (Recon).
     public bool IsKnown(Room room)
     {
+        if (room.Hidden)
+            return false;
+
         if (room.Visited || room.Scouted)
             return true;
 
@@ -659,9 +668,12 @@ public partial class FloorGenerator : MonoBehaviour
     }
 
     // Whether the corridor between two rooms shows on the maps: once either side has been
-    // entered, or both were scouted.
+    // entered, or both were scouted. Never into a secret room still hidden.
     public static bool IsCorridorKnown(Room room, Room neighbour)
     {
+        if (room.Hidden || neighbour.Hidden)
+            return false;
+
         return room.Visited || neighbour.Visited || (room.Scouted && neighbour.Scouted);
     }
 
@@ -742,6 +754,9 @@ public partial class FloorGenerator : MonoBehaviour
 
         List<NavMeshBuildSource> sources = new List<NavMeshBuildSource>();
         NavMeshBuilder.CollectSources(floorRoot, ~0, NavMeshCollectGeometry.PhysicsColliders, 0, new List<NavMeshBuildMarkup>(), sources);
+
+        // A cracked wall's plug isn't baked in: it carves the navmesh itself (NavMeshObstacle) until blown open.
+        sources.RemoveAll(source => source.component != null && source.component.GetComponentInParent<CrackedWall>() != null);
 
         const int notWalkable = 1;
 

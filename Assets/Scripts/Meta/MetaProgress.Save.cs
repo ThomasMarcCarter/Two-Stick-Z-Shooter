@@ -99,12 +99,16 @@ public static partial class MetaProgress
         saved.story ??= new int[0];
         saved.zones ??= new int[0];
         saved.scenes ??= new int[0];
+        saved.stats ??= new int[0];
+        saved.achieved ??= new int[0];
         saved.version = 4;
         return saved;
     }
 
     private static void Save()
     {
+        statsDirty = false;
+
         try
         {
             // Write to a temporary file first, so a crash mid-write can't corrupt the save.

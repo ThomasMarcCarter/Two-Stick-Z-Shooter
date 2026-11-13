@@ -15,12 +15,22 @@ public partial class FloorGenerator
 
         int target = rng.Next(minRooms, maxRooms + 1);
 
+        // Which special rooms this floor gets are rolled once; a layout without enough spare dead
+        // ends for them is regrown (for the first attempts, then they make do with what is left).
+        List<RoomType> specials = new List<RoomType>();
+        RollSpecial(specials, RoomType.Shop, Drops.shopChance);
+        RollSpecial(specials, RoomType.Cursed, Drops.cursedChance);
+        RollSpecial(specials, RoomType.Blood, Drops.bloodChance);
+
         for (int attempt = 0; attempt < 200; attempt++)
         {
             List<PlannedRoom> plan = TryGrowLayout(target);
 
-            if (plan != null && AssignRoomTypes(plan))
+            if (plan != null && AssignRoomTypes(plan, specials, attempt < SpecialAttempts))
+            {
+                AddSecretRoom(plan);
                 return plan;
+            }
         }
 
         Debug.LogWarning("FloorGenerator: couldn't build a valid layout, falling back to a single room.");
@@ -89,8 +99,9 @@ public partial class FloorGenerator
         return plan.Count >= target ? plan : null;
     }
 
-    // Boss goes in the 1x1 dead end furthest from the start, treasure in another 1x1 dead end.
-    private bool AssignRoomTypes(List<PlannedRoom> plan)
+    // Boss goes in the 1x1 dead end furthest from the start, treasure in another 1x1 dead end, then
+    // the shop, cursed and blood rooms in any spare ones.
+    private bool AssignRoomTypes(List<PlannedRoom> plan, List<RoomType> specials, bool needAll)
     {
         List<PlannedRoom> deadEnds = new List<PlannedRoom>();
 
@@ -103,13 +114,39 @@ public partial class FloorGenerator
         if (deadEnds.Count < 2)
             return false;
 
+        if (needAll && deadEnds.Count < 2 + specials.Count)
+            return false;
+
         deadEnds.Sort((a, b) => b.Depth.CompareTo(a.Depth));
 
         plan[0].Type = RoomType.Start;
         deadEnds[0].Type = RoomType.Boss;
-        deadEnds[rng.Next(1, deadEnds.Count)].Type = RoomType.Treasure;
+        int treasure = rng.Next(1, deadEnds.Count);
+        deadEnds[treasure].Type = RoomType.Treasure;
+        deadEnds.RemoveAt(treasure);
+        deadEnds.RemoveAt(0);
+
+        // The special rooms take the 1x1 dead ends that are left, as many as there are.
+        foreach (RoomType type in specials)
+        {
+            if (deadEnds.Count == 0)
+                break;
+
+            int pick = rng.Next(deadEnds.Count);
+            deadEnds[pick].Type = type;
+            deadEnds.RemoveAt(pick);
+        }
 
         return true;
+    }
+
+    private const int SpecialAttempts = 120;
+
+    // Adds the type to the floor's list if it is unlocked and its chance comes up.
+    private void RollSpecial(List<RoomType> specials, RoomType type, float chance)
+    {
+        if (Unlocks.IsUnlocked(type) && rng.NextDouble() < chance)
+            specials.Add(type);
     }
 
     private RoomShape PickShape()

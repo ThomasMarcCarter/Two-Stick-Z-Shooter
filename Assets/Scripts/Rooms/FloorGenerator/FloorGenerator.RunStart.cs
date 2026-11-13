@@ -79,7 +79,13 @@ public partial class FloorGenerator
 
         if (armory > 0 && armoryWeapons != null && armoryWeapons.Length > 0 && player.TryGetComponent(out PlayerWeapon weapons))
         {
-            Gun gun = weapons.Give(armoryWeapons[Mathf.Min(armory, armoryWeapons.Length) - 1]);
+            int tier = Mathf.Min(armory, armoryWeapons.Length) - 1;
+
+            // A locked gun isn't handed out: fall back to the tier below.
+            while (tier > 0 && !Unlocks.IsWeaponUnlocked(armoryWeapons[tier]))
+                tier--;
+
+            Gun gun = weapons.Give(armoryWeapons[tier]);
 
             // A spare magazine's worth for it.
             if (gun != null && ammo != null)

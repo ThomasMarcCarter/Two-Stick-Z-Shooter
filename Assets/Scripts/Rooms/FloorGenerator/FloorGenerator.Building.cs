@@ -261,6 +261,11 @@ public partial class FloorGenerator
         after.DoorAtStart = true;
         HideIfSouth(CreateWallSpan(room.transform, alongX, across, start, middle - doorWidth / 2f, inward, before), south);
         HideIfSouth(CreateWallSpan(room.transform, alongX, across, middle + doorWidth / 2f, end, inward, after), south);
+
+        // A secret room's doorway is bare on both sides: no frame, beacons, stripe or threshold to give it away.
+        if (secretDoors.Contains((cell, direction)))
+            return;
+
         CreateDoorFrame(room.transform, alongX, across, middle, new Vector3(-direction.x, 0f, -direction.y));
         CreateDoorStripe(room.transform, alongX, across - (direction.x + direction.y) * (wallThickness / 2f + 0.3f), middle);
         CreateThreshold(room.transform, alongX, across, middle, direction);

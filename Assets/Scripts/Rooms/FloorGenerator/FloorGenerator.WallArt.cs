@@ -144,7 +144,7 @@ public partial class FloorGenerator
             Shuffle(slots);
 
             // An EXIT sign beside the door, its arrow pointing at it, takes that side's slot.
-            if (door.HasValue && room.Type != RoomType.Boss && decalRng.NextDouble() < exitSignChance)
+            if (door.HasValue && room.Type != RoomType.Boss && !secretDoors.Contains((cell, Vector2Int.up)) && decalRng.NextDouble() < exitSignChance)
             {
                 bool right = decalRng.NextDouble() < 0.5;
                 float x = door.Value + (right ? 2.2f : -2.2f);

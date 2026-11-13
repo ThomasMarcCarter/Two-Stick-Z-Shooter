@@ -124,6 +124,16 @@ public class LootTable : ScriptableObject
     [Tooltip("Materials the treasure room's crate always holds.")]
     [Min(0)] public int treasureMaterials = 2;
 
+    [Header("Special rooms")]
+    [Tooltip("Chance a floor has a shop in a spare dead end (when unlocked).")]
+    [Range(0f, 1f)] public float shopChance = 0.55f;
+    [Tooltip("Chance a floor has a cursed room in a spare dead end (when unlocked).")]
+    [Range(0f, 1f)] public float cursedChance = 0.35f;
+    [Tooltip("Chance a floor has a blood bank in a spare dead end (when unlocked).")]
+    [Range(0f, 1f)] public float bloodChance = 0.25f;
+    [Tooltip("Chance a floor has a secret room behind a cracked wall (when unlocked).")]
+    [Range(0f, 1f)] public float secretChance = 0.5f;
+
     [Header("Attachments")]
     [Tooltip("Chance each attachment is picked from those that fit a gun the player is carrying, rather than any.")]
     [Range(0f, 1f)] public float attachmentFitBias = 0.7f;

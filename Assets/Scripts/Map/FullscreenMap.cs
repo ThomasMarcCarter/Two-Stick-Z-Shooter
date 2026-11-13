@@ -403,6 +403,10 @@ public class FullscreenMap : MonoBehaviour
             case RoomType.Start: return "SPAWN";
             case RoomType.Treasure: return "TREASURE";
             case RoomType.Boss: return "BOSS";
+            case RoomType.Shop: return "SHOP";
+            case RoomType.Cursed: return "CURSED";
+            case RoomType.Blood: return "BLOOD BANK";
+            case RoomType.Secret: return "SECRET";
             default: return "COMBAT";
         }
     }

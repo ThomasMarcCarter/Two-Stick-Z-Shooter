@@ -29,7 +29,13 @@ public enum RunItem
     ShortFuse,
     ClusterPin,
     FieldMedic,
-    JunkDrawer
+    JunkDrawer,
+    BloodPact,
+    HollowPoints,
+    LightsOut,
+    Overclock,
+    Leech,
+    BadOmen
 }
 
 // The run items: passive finds that change the rules for the rest of a run, most with a catch.
@@ -39,6 +45,15 @@ public enum RunItem
 public static class RunItems
 {
     public static readonly RunItem[] All = (RunItem[])System.Enum.GetValues(typeof(RunItem));
+
+    // Cursed items: a stronger benefit with a harsher catch. Never in a normal powerup case; cursed and
+    // blood bank rooms offer them.
+    public static readonly RunItem[] Cursed = { RunItem.BloodPact, RunItem.HollowPoints, RunItem.LightsOut, RunItem.Overclock, RunItem.Leech, RunItem.BadOmen };
+
+    public static bool IsCursed(RunItem item) => System.Array.IndexOf(Cursed, item) >= 0;
+
+    // Every item a normal powerup case can hold.
+    public static readonly RunItem[] Normal = System.Array.FindAll(All, item => !IsCursed(item));
 
     public static string Name(RunItem item)
     {
@@ -71,6 +86,12 @@ public static class RunItems
             case RunItem.ClusterPin: return "CLUSTER PIN";
             case RunItem.FieldMedic: return "FIELD MEDIC";
             case RunItem.JunkDrawer: return "JUNK DRAWER";
+            case RunItem.BloodPact: return "BLOOD PACT";
+            case RunItem.HollowPoints: return "HOLLOW POINTS";
+            case RunItem.LightsOut: return "LIGHTS OUT";
+            case RunItem.Overclock: return "OVERCLOCK";
+            case RunItem.Leech: return "LEECH";
+            case RunItem.BadOmen: return "BAD OMEN";
             default: return "ARMOR PLATE CARRIER";
         }
     }
@@ -106,6 +127,12 @@ public static class RunItems
             case RunItem.ClusterPin: return "GRENADES SPLIT INTO 3 SMALL BLASTS, EACH MUCH WEAKER THAN A NORMAL ONE";
             case RunItem.FieldMedic: return "MEDKITS HEAL TWICE AS MUCH, BUT TAKE TWICE AS LONG";
             case RunItem.JunkDrawer: return "CLEARED COMBAT ROOMS DROP A RANDOM THROWABLE, BUT SUPPLY CRATES HOLD ONE LESS ITEM";
+            case RunItem.BloodPact: return "GUNS AND MELEE DO 2.5X DAMAGE, BUT YOU LOSE 2 MAX HEALTH";
+            case RunItem.HollowPoints: return "BULLETS PIERCE EVERY ZOMBIE, BUT AMMO PICKUPS GIVE HALF";
+            case RunItem.LightsOut: return "ZOMBIES CAN'T SEE YOU BEYOND 4M, BUT YOUR FLASHLIGHT IS OFF";
+            case RunItem.Overclock: return "MOVE, FIRE AND RELOAD 30% FASTER, BUT YOU LOSE 1 HEALTH EACH FLOOR";
+            case RunItem.Leech: return "EVERY 10TH KILL HEALS 1, BUT MEDKITS HEAL NOTHING";
+            case RunItem.BadOmen: return "CLEARED ROOMS DROP LOOT TWICE, BUT EACH COMBAT ROOM HOLDS AN EXTRA ELITE";
             default: return "3 ARMOR PLATES OVER YOUR HEALTH, EACH STOPS 1 DAMAGE // REFILL FROM CRATES, RARE DROPS AND BOSSES";
         }
     }
@@ -122,9 +149,17 @@ public static class RunItems
             case RunItem.LastWord:
             case RunItem.CorpseBloat: return new Color(1f, 0.35f, 0.3f);
             case RunItem.PlateCarrier: return UiColours.Amber;
+            case RunItem.BloodPact:
+            case RunItem.HollowPoints:
+            case RunItem.LightsOut:
+            case RunItem.Overclock:
+            case RunItem.Leech:
+            case RunItem.BadOmen: return CursedColour;
             default: return new Color(1f, 0.85f, 0.3f);
         }
     }
+
+    public static readonly Color CursedColour = new Color(1f, 0.25f, 0.2f);
 
     // A spare armour plate, as shown in crates and on the floor.
     public static readonly Color PlateColour = UiColours.Amber;

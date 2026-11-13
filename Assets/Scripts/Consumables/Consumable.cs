@@ -104,6 +104,6 @@ public static class ConsumableInfo
 
     public static int Heal(ConsumableType type)
     {
-        return (type == ConsumableType.LargeMedkit ? LargeHeal : type == ConsumableType.Medkit ? SmallHeal : 0) * MedicFactor;
+        return PlayerItems.Has(RunItem.Leech) ? 0 : (type == ConsumableType.LargeMedkit ? LargeHeal : type == ConsumableType.Medkit ? SmallHeal : 0) * MedicFactor;
     }
 }

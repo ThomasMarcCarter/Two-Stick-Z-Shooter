@@ -7,7 +7,8 @@ using UnityEngine;
 // tall sprites and light spill) is checked against each room's Bounds; a room outside it has its
 // renderers, lights and particles switched off and its per-frame visual scripts (sprite placing,
 // light flicker, flies, drips, fluttering paper...) disabled. Coming back into view switches back
-// on exactly what was switched off, so anything that was meant to be off stays off.
+// on exactly what was switched off, so anything that was meant to be off stays off. A Hidden room (secret, behind its cracked wall) is
+// kept switched off until it opens.
 // Colliders, audio (zombie groans are how the player hears them) and gameplay scripts (enemies,
 // pickups, doors, the room itself) are never touched, so nothing plays differently. Corridors
 // aren't rooms and are always drawn. Made by the FloorGenerator when it starts.
@@ -71,7 +72,8 @@ public class RoomCulling : MonoBehaviour
             if (room == null)
                 continue;
 
-            bool show = !Enabled || !haveView || room.Bounds.Overlaps(view);
+            // A room still hidden from the maps (a secret room behind its cracked wall) isn't drawn either.
+            bool show = !room.Hidden && (!Enabled || !haveView || room.Bounds.Overlaps(view));
 
             if (show)
                 Show(room);

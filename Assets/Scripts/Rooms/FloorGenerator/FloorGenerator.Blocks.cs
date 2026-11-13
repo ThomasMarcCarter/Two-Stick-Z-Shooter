@@ -153,6 +153,9 @@ public partial class FloorGenerator
         {
             RoomType.Treasure => treasureTint,
             RoomType.Boss => bossTint,
+            RoomType.Shop => shopTint,
+            RoomType.Cursed => cursedTint,
+            RoomType.Blood => cursedTint,
             _ => null
         };
 

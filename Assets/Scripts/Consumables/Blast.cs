@@ -25,6 +25,7 @@ public class Blast : MonoBehaviour
         public Color HotColour;
         public Color CoolColour;
         public Color LightColour;
+        public bool Theirs;             // a zombie's doing (bursts), so no blast kill for the player
         public bool Acid;               // the acid burst look, green droplets, and a pool left behind
     }
 
@@ -65,6 +66,7 @@ public class Blast : MonoBehaviour
         HashSet<Object> done = new HashSet<Object>();
         bool haveMaterials = ImpactEffects.TryGetMaterials(out ImpactEffects.Materials materials);
         float radius = settings.Radius;
+        CrackedWall.BlastAt(centre);
 
         foreach (Collider collider in Physics.OverlapSphere(centre, radius, ~0, QueryTriggerInteraction.Ignore))
         {
@@ -82,7 +84,7 @@ public class Blast : MonoBehaviour
                 float falloff = Mathf.Clamp01(distance / radius);
                 int damage = Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(settings.MaxDamage, 1f, falloff)));
                 enemy.Knock(direction * Mathf.Lerp(settings.Push, settings.Push * 0.3f, falloff), 0.5f);
-                enemy.TakeDamage(damage);
+                enemy.TakeDamage(damage, false, !settings.Acid && !settings.Theirs);
                 continue;
             }
 

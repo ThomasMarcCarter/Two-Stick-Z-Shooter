@@ -41,8 +41,18 @@ public partial class FloorGenerator
                 placed.Add(position);
                 EnemyKind kind = IsTutorial ? EnemyKind.Walker : PickEnemyKind((float)rng.NextDouble(), kindsPlaced);
                 kindsPlaced[kind] = kindsPlaced.TryGetValue(kind, out int already) ? already + 1 : 1;
-                SpawnNormalEnemy(room, position, kind);
+                Enemy spawned = SpawnNormalEnemy(room, position, kind);
+
+                if (!IsTutorial && UnityEngine.Random.value < Elites.Chance(FloorNumber))
+                    spawned.SetElite(Elites.Random());
             }
+        }
+
+        // Bad Omen: one more, an elite, in every combat room.
+        if (!IsTutorial && PlayerItems.Has(RunItem.BadOmen) && TryFindSpawnPoint(room, doorways, placed, out Vector3 omen))
+        {
+            placed.Add(omen);
+            SpawnNormalEnemy(room, omen, PickEnemyKind((float)rng.NextDouble(), kindsPlaced)).SetElite(Elites.Random());
         }
 
         return placed;
@@ -212,6 +222,31 @@ public partial class FloorGenerator
 
         AmmoType type = PickAmmoType(UnityEngine.Random.value, UnityEngine.Random.value);
         AmmoPickup.Spawn(type, DropAmount(type, 1f, UnityEngine.Random.value), InsideRoom(room, enemy.transform.position), room.transform, ammoMaterial, false);
+    }
+
+    // An elite's better drop: always ammo, half the time a material, and 3 bonus scrap.
+    private void DropEliteLoot(Room room, Vector3 position)
+    {
+        if (ammoMaterial != null)
+        {
+            AmmoType type = PickAmmoType(UnityEngine.Random.value, UnityEngine.Random.value);
+            AmmoPickup.Spawn(type, DropAmount(type, 1f, UnityEngine.Random.value), InsideRoom(room, position + new Vector3(-0.6f, 0f, 0.5f)), room.transform, ammoMaterial, false);
+        }
+
+        if (UnityEngine.Random.value < Elites.MaterialChance)
+            MaterialPickup.Spawn(PickMaterial(UnityEngine.Random.value), 1, InsideRoom(room, position + new Vector3(0.5f, 0f, -0.6f)), room.transform);
+
+        MetaProgress.AddBonusScrap(Elites.BonusScrap);
+    }
+
+    // Debug: one elite of each kind in a row, on walkers.
+    public void SpawnElites(Vector3 position, Vector3 right)
+    {
+        if (!TryGetRoom(position, out Room room))
+            return;
+
+        for (int i = 1; i <= 3; i++)
+            SpawnNormalEnemy(room, position + right * ((i - 2) * 1.8f), EnemyKind.Walker).SetElite((EliteKind)i);
     }
 
     // Usually ammo for a gun the player is carrying, so drops are useful; sometimes any type.
@@ -394,6 +429,32 @@ public partial class FloorGenerator
         }
     }
 
+    // The lifetime counters a death feeds (not on the training floor).
+    private void CountKillStats(Enemy dead, bool boss)
+    {
+        if (IsTutorial)
+            return;
+
+        MetaProgress.AddStat(Stat.Kills);
+
+        if (boss)
+        {
+            MetaProgress.AddStat(Stat.BossKills);
+
+            if (FloorNumber == 2)
+                MetaProgress.AddStat(Stat.FloorTwoBossKills);
+        }
+
+        if (dead.KilledByMelee)
+            MetaProgress.AddStat(Stat.MeleeKills);
+
+        if (dead.KilledByBlast)
+            MetaProgress.AddStat(Stat.BlastKills);
+
+        if (dead.KilledUnaware)
+            MetaProgress.AddStat(Stat.UnawareKills);
+    }
+
     // An enemy is down: counted, its blood on the floor (the sprite art's pixel pool, else a
     // splat decal), and its drops; a boss leaves its supply crate instead.
     private void OnEnemyDied(Room room, Enemy dead, bool boss)
@@ -401,6 +462,7 @@ public partial class FloorGenerator
         EnemiesKilled++;
         lastDeaths[room] = dead.transform.position;
         PlayerItems.EnemyKilled(dead, boss, room.transform);
+        CountKillStats(dead, boss);
 
         if (!ImpactEffects.FloorPool(dead.transform.position, boss ? 3f : 1.6f, room.transform)
             && bloodSplatMaterials != null && bloodSplatMaterials.Length > 0)
@@ -417,6 +479,10 @@ public partial class FloorGenerator
 
         DropAmmo(room, dead);
         DropMaterials(room, dead.transform.position);
+
+        if (dead.Elite != EliteKind.None)
+            DropEliteLoot(room, dead.transform.position);
+
         DropPlate(room, dead.transform.position);
     }
 
