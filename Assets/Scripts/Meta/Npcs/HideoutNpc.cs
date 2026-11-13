@@ -78,7 +78,7 @@ public class HideoutNpc : MonoBehaviour, FloorPickups.IPickup
             {
                 Renderer renderer = capsule.GetComponent<Renderer>();
                 renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-                ConsumableModel.Tint(renderer, Npcs.Voice(kind) * 0.5f, Color.black);
+                ModelParts.Tint(renderer, Npcs.Voice(kind) * 0.5f, Color.black);
             }
         }
 

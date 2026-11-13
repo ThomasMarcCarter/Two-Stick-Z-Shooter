@@ -108,6 +108,6 @@ public class DoorBeacon : MonoBehaviour
     private void SetLit(Renderer[] parts, float on)
     {
         foreach (Renderer part in parts)
-            ConsumableModel.Tint(part, Color.Lerp(Amber * 0.25f, Amber, on), Amber * Mathf.Lerp(0.15f, 5f, on));
+            ModelParts.Tint(part, Color.Lerp(Amber * 0.25f, Amber, on), Amber * Mathf.Lerp(0.15f, 5f, on));
     }
 }

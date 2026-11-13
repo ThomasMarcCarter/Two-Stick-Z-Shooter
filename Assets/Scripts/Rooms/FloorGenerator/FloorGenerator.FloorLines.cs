@@ -117,16 +117,6 @@ public partial class FloorGenerator
             }
         }
 
-        // An area style over every tile at least `depth` tiles in from the walls.
-        public void FillInside(FloorLineStyle style, int depth)
-        {
-            foreach (Vector2Int tile in Floor)
-            {
-                if (DepthOf(tile) >= depth)
-                    Of(style)[tile] = 0;
-            }
-        }
-
         // A line round the room `depth` tiles in from the walls, following its shape, broken at the doors.
         public void Ring(FloorLineStyle style, int depth)
         {

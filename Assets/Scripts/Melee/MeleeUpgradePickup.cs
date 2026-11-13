@@ -8,9 +8,6 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
     private const float LabelRange = 3f;
     private const float UseRange = 1.4f;
 
-    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-
     private static Transform player;
     private static PlayerMelee playerMelee;
     private static PlayerWeapon playerWeapon;
@@ -60,7 +57,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
         Part(model.transform, new Vector3(0f, -0.1f, 0f), new Vector3(0.16f, 0.03f, 0.05f), material, new Color(0.3f, 0.3f, 0.3f), Color.black);
         Part(model.transform, new Vector3(0f, -0.2f, 0f), new Vector3(0.045f, 0.17f, 0.045f), material, colour * 0.5f, colour * 3f);
 
-        AddGlow(root.transform, colour);
+        FloorPickups.AddGlow(root.transform, colour);
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
         pickup.label.Compactable = true;
         ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Melee(upgrade), true);
@@ -69,50 +66,7 @@ public class MeleeUpgradePickup : MonoBehaviour, FloorPickups.IPickup
 
     private static void Part(Transform parent, Vector3 localPosition, Vector3 size, Material material, Color baseColour, Color emission)
     {
-        GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = localPosition;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        if (material == null)
-            return;
-
-        renderer.sharedMaterial = material;
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        block.SetColor(BaseColorId, baseColour);
-        block.SetColor(EmissionColorId, emission);
-        renderer.SetPropertyBlock(block);
-    }
-
-    private static void AddGlow(Transform root, Color colour)
-    {
-        AmmoVisuals visuals = AmmoVisuals.Current;
-
-        if (visuals == null || visuals.glowMaterial == null)
-            return;
-
-        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        glow.name = "Glow";
-        Destroy(glow.GetComponent<Collider>());
-        glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
-        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        glow.transform.localScale = Vector3.one * visuals.glowSize;
-
-        Renderer renderer = glow.GetComponent<Renderer>();
-        renderer.sharedMaterial = visuals.glowMaterial;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        Color tint = colour * visuals.glowStrength;
-        tint.a = 0.8f;
-        block.SetColor("_Color", tint);
-        renderer.SetPropertyBlock(block);
+        ModelParts.Part(parent, null, PrimitiveType.Cube, localPosition, size, material, baseColour, emission);
     }
 
     private void OnEnable()

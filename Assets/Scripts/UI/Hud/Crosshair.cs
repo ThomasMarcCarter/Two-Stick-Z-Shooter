@@ -113,14 +113,17 @@ public class Crosshair : MaskableGraphic
 
     private void FollowMouse()
     {
-        RectTransform parent = (RectTransform)rectTransform.parent;
-        Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-        Vector2 screenPoint = GameInput.Pointer;
+        FollowPointer(rectTransform, canvas);
+    }
 
-        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, screenPoint, uiCamera, out Vector3 worldPoint))
-        {
-            rectTransform.position = worldPoint;
-        }
+    // Puts a HUD graphic on the pointer (CRT-corrected). Also used by the ReloadRing.
+    public static void FollowPointer(RectTransform rect, Canvas canvas)
+    {
+        RectTransform parent = (RectTransform)rect.parent;
+        Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+
+        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, GameInput.Pointer, uiCamera, out Vector3 worldPoint))
+            rect.position = worldPoint;
     }
 
     protected override void OnPopulateMesh(VertexHelper vh)

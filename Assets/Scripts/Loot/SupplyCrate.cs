@@ -118,22 +118,7 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
     private static Renderer Part(string name, Transform parent, Vector3 position, Vector3 size, Material material, Color colour,
         PrimitiveType shape = PrimitiveType.Cube)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        part.name = name;
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = position;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-
-        if (material != null)
-        {
-            renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, Color.black);
-        }
-
-        return renderer;
+        return ModelParts.Part(parent, name, shape, position, size, material, colour, Color.black, shadows: true);
     }
 
     // Puts something in (materials of a kind share one entry).
@@ -269,7 +254,7 @@ public class SupplyCrate : MonoBehaviour, FloorPickups.IPickup
         lid.localRotation = Quaternion.Euler(-lidAngle, 0f, 0f);
 
         bool on = !opened && Mathf.Repeat(Time.time, 1f) < 0.5f;
-        ConsumableModel.Tint(lamp, LampColour, on ? LampColour * 3f : LampColour * 0.15f);
+        ModelParts.Tint(lamp, LampColour, on ? LampColour * 3f : LampColour * 0.15f);
 
         if (glow != null)
             glow.intensity = opened ? 0.5f : on ? 1.6f : 0.8f;

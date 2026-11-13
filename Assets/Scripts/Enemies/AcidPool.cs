@@ -148,7 +148,7 @@ public class AcidPool : MonoBehaviour
             float cycle = Mathf.Repeat(Time.time * 1.3f + bubblePhase[i], 1f);
             float size = Mathf.Sin(cycle * Mathf.PI) * 0.18f * strength;
             bubbles[i].localScale = new Vector3(size, size * 0.7f, size);
-            ConsumableModel.Tint(bubbleRenderers[i], Acid * 0.4f, Acid * 2.5f * strength);
+            ModelParts.Tint(bubbleRenderers[i], Acid * 0.4f, Acid * 2.5f * strength);
         }
 
         if (poolRenderer != null)

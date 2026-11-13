@@ -80,7 +80,7 @@ public class EnemyBullet : MonoBehaviour
             if (ConsumablePickup.DefaultMaterial != null)
             {
                 renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-                ConsumableModel.Tint(renderer, colour * 0.6f, colour * 3f);
+                ModelParts.Tint(renderer, colour * 0.6f, colour * 3f);
             }
         }
 

@@ -138,6 +138,17 @@ public static class CrtPanel
         return image;
     }
 
+    // A plain-text line hung from the top centre of `parent` (640 wide), for text typed out a
+    // character at a time (radio messages, the unlock card), so rich-text tags never show half-typed.
+    public static TMP_Text MakeTypedLine(Transform parent, string name, TMP_FontAsset font, float size, float y, float height, Color colour)
+    {
+        Vector2 top = new Vector2(0.5f, 1f);
+        RectTransform rect = MakeRect(parent, name, top, top, new Vector2(0f, y), new Vector2(640f, height));
+        TMP_Text text = MakeLabel(rect, font, "", size, colour, 4f, TextAlignmentOptions.Top);
+        text.richText = false;
+        return text;
+    }
+
     // An empty child of `parent` on its layer, anchored at `anchor` with its pivot at `pivot`.
     public static RectTransform MakeRect(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
     {

@@ -102,23 +102,8 @@ public partial class StationConsole : MonoBehaviour, FloorPickups.IPickup
     private static Renderer Part(Transform parent, string name, Vector3 position, Vector3 size, Material material, Color colour,
         Color emission, bool shadows, PrimitiveType shape = PrimitiveType.Cube)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        part.name = name;
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = position;
-        part.transform.localScale = shape == PrimitiveType.Cylinder ? new Vector3(size.x, size.y / 2f, size.z) : size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.shadowCastingMode = shadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        if (material != null)
-        {
-            renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, emission);
-        }
-
-        return renderer;
+        Vector3 scale = shape == PrimitiveType.Cylinder ? new Vector3(size.x, size.y / 2f, size.z) : size;
+        return ModelParts.Part(parent, name, shape, position, scale, material, colour, emission, shadows: shadows);
     }
 
     private void OnEnable()
@@ -162,7 +147,7 @@ public partial class StationConsole : MonoBehaviour, FloorPickups.IPickup
     private void Animate()
     {
         if (screen != null && station != HideoutStation.Workbench && station != HideoutStation.TradePost)
-            ConsumableModel.Tint(screen, ScreenGlow * 0.3f, ScreenGlow * (2f + Mathf.PerlinNoise(Time.time * 3f, transform.position.x) * 0.6f));
+            ModelParts.Tint(screen, ScreenGlow * 0.3f, ScreenGlow * (2f + Mathf.PerlinNoise(Time.time * 3f, transform.position.x) * 0.6f));
 
         if (moving == null)
             return;

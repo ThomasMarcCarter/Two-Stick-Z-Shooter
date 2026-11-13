@@ -67,18 +67,9 @@ public class UnlockCard : MonoBehaviour
 
         TMP_Text sample = hud.GetComponentInChildren<TMP_Text>(true);
         TMP_FontAsset font = sample != null ? sample.font : TMP_Settings.defaultFontAsset;
-        card.header = card.MakeText("Header", font, 22f, 0f, 30f, UiColours.Amber);
-        card.body = card.MakeText("Unlocks", font, 15f, -32f, 36f, UiColours.Phosphor);
+        card.header = CrtPanel.MakeTypedLine(card.transform, "Header", font, 22f, 0f, 30f, UiColours.Amber);
+        card.body = CrtPanel.MakeTypedLine(card.transform, "Unlocks", font, 15f, -32f, 36f, UiColours.Phosphor);
         return card;
-    }
-
-    private TMP_Text MakeText(string name, TMP_FontAsset font, float size, float y, float height, Color colour)
-    {
-        Vector2 top = new Vector2(0.5f, 1f);
-        RectTransform rect = CrtPanel.MakeRect(transform, name, top, top, new Vector2(0f, y), new Vector2(640f, height));
-        TMP_Text text = CrtPanel.MakeLabel(rect, font, "", size, colour, 4f, TextAlignmentOptions.Top);
-        text.richText = false;
-        return text;
     }
 
     private void OnDestroy()

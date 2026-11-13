@@ -118,7 +118,7 @@ public partial class FloorGenerator
         if (material != null)
         {
             renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, emission);
+            ModelParts.Tint(renderer, colour, emission);
         }
 
         return prop;

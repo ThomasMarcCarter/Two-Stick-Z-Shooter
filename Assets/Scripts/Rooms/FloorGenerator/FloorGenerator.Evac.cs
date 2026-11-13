@@ -138,7 +138,7 @@ public partial class FloorGenerator
             if (paint != null)
             {
                 renderer.sharedMaterial = paint;
-                ConsumableModel.Tint(renderer, yellow, yellow * 0.2f);
+                ModelParts.Tint(renderer, yellow, yellow * 0.2f);
             }
         }
     }

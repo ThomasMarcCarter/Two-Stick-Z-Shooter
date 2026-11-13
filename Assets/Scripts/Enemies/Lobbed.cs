@@ -53,7 +53,7 @@ public static class Lobbed
             if (ConsumablePickup.DefaultMaterial != null)
             {
                 renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-                ConsumableModel.Tint(renderer, style == Style.Suitcase ? new Color(0.45f, 0.26f, 0.14f) : new Color(0.45f, 0.44f, 0.4f), Color.black);
+                ModelParts.Tint(renderer, style == Style.Suitcase ? new Color(0.45f, 0.26f, 0.14f) : new Color(0.45f, 0.44f, 0.4f), Color.black);
             }
         }
 

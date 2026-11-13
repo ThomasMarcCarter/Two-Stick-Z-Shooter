@@ -240,21 +240,6 @@ public partial class FloorGenerator
         }
     }
 
-    private static string TypeLabel(RoomType type)
-    {
-        switch (type)
-        {
-            case RoomType.Start: return "SPAWN";
-            case RoomType.Treasure: return "TREASURE";
-            case RoomType.Boss: return "BOSS";
-            case RoomType.Shop: return "SHOP";
-            case RoomType.Cursed: return "CURSED";
-            case RoomType.Blood: return "BLOOD BANK";
-            case RoomType.Secret: return "SECRET";
-            default: return "COMBAT";
-        }
-    }
-
     private RoomTheme PickTheme(Room room)
     {
         bool mall = Zone == Zone.ShoppingMall;
@@ -327,7 +312,7 @@ public partial class FloorGenerator
             return RoomTheme.None;
         }
 
-        room.DisplayName = $"{TypeLabel(room.Type)} // {ThemeName(theme)}";
+        room.DisplayName = $"{Room.TypeName(room.Type)} // {ThemeName(theme)}";
 
         Vector2Int count = room.Type == RoomType.Start ? new Vector2Int(1, 2) : furniturePerCell;
 

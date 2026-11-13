@@ -20,23 +20,14 @@ public partial class FloorGenerator
     {
         switch (room.Type)
         {
-            case RoomType.Shop:
-                room.DisplayName = "SHOP";
-                FillShop(room);
-                break;
-            case RoomType.Cursed:
-                room.DisplayName = "CURSED";
-                FillCursed(room);
-                break;
-            case RoomType.Blood:
-                room.DisplayName = "BLOOD BANK";
-                FillBloodBank(room);
-                break;
-            case RoomType.Secret:
-                room.DisplayName = "SECRET";
-                FillSecret(room);
-                break;
+            case RoomType.Shop: FillShop(room); break;
+            case RoomType.Cursed: FillCursed(room); break;
+            case RoomType.Blood: FillBloodBank(room); break;
+            case RoomType.Secret: FillSecret(room); break;
+            default: return;
         }
+
+        room.DisplayName = Room.TypeName(room.Type);
     }
 
     // Red doorways, 1 health taken on the first entry (never the last, plates don't help), and a

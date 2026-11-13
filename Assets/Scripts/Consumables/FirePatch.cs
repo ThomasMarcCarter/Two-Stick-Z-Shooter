@@ -194,7 +194,7 @@ public class FirePatch : MonoBehaviour
             flames[i].localPosition = new Vector3(flames[i].localPosition.x, size.y / 2f, flames[i].localPosition.z);
 
             Color heat = Color.Lerp(new Color(1f, 0.25f, 0.03f), new Color(1f, 0.75f, 0.3f), flicker);
-            ConsumableModel.Tint(flameRenderers[i], heat, heat * 14f * strength);
+            ModelParts.Tint(flameRenderers[i], heat, heat * 14f * strength);
         }
 
         // The glow beneath flickers with the flames.

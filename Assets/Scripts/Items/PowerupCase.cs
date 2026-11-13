@@ -65,7 +65,7 @@ public class PowerupCase : MonoBehaviour, FloorPickups.IPickup
         {
             Renderer renderer = model.GetComponent<Renderer>();
             renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-            ConsumableModel.Tint(renderer, glowColour * 0.5f, glowColour);
+            ModelParts.Tint(renderer, glowColour * 0.5f, glowColour);
         }
     }
 

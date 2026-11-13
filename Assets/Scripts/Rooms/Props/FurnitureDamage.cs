@@ -49,8 +49,6 @@ public class FurnitureDamage : MonoBehaviour
     private Vector3 velocity;
     private bool broken;
 
-    public bool IsBroken => broken;
-
     public static bool HasBrokenArt(string name)
     {
         return Glass.Contains(name);

@@ -112,7 +112,7 @@ public class SupplyShelfItem : MonoBehaviour, FloorPickups.IPickup
         if (ConsumablePickup.DefaultMaterial != null)
         {
             renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-            ConsumableModel.Tint(renderer, colour, colour * 0.3f);
+            ModelParts.Tint(renderer, colour, colour * 0.3f);
         }
     }
 

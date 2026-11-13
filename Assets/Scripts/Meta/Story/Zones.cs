@@ -114,7 +114,4 @@ public static class Zones
         int index = Math.Max(1, floor) - 1;
         return bosses[index % bosses.Length];
     }
-
-    // "MILITARY BASE // FLOOR 2".
-    public static string Location(Zone zone, int floor) => $"{Name(zone)} // FLOOR {floor}";
 }

@@ -20,6 +20,35 @@ public static class FloorPickups
     // lie a centimetre or two up), so the clutter never hides it.
     public const float GlowHeight = 0.05f;
 
+    // A soft disc of `colour` on the floor under a drop (child of `root`), so it shows up in the
+    // dark. Shared by every floor drop; `scale` enlarges it (ammo crates).
+    public static void AddGlow(Transform root, Color colour, float scale = 1f)
+    {
+        AmmoVisuals visuals = AmmoVisuals.Current;
+
+        if (visuals == null || visuals.glowMaterial == null)
+            return;
+
+        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        glow.name = "Glow";
+        Object.Destroy(glow.GetComponent<Collider>());
+        glow.transform.SetParent(root, false);
+        glow.transform.localPosition = Vector3.up * GlowHeight;
+        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        glow.transform.localScale = Vector3.one * visuals.glowSize * scale;
+
+        Renderer renderer = glow.GetComponent<Renderer>();
+        renderer.sharedMaterial = visuals.glowMaterial;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+
+        MaterialPropertyBlock block = new MaterialPropertyBlock();
+        Color tint = colour * visuals.glowStrength;
+        tint.a = 0.8f;
+        block.SetColor("_Color", tint);
+        renderer.SetPropertyBlock(block);
+    }
+
     private static readonly List<IPickup> all = new List<IPickup>();
 
     // Statics outlive Play sessions with domain reload off.

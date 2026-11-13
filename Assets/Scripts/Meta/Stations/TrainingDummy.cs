@@ -118,23 +118,7 @@ public class TrainingDummy : MonoBehaviour
     private static Renderer Part(Transform parent, string name, PrimitiveType shape, Vector3 position, Vector3 size, Material material,
         Color colour, Quaternion? rotation = null)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        part.name = name;
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = position;
-        part.transform.localRotation = rotation ?? Quaternion.identity;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-
-        if (material != null)
-        {
-            renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, Color.black);
-        }
-
-        return renderer;
+        return ModelParts.Part(parent, name, shape, position, size, material, colour, Color.black, rotation, shadows: true);
     }
 
     // Struck for `damage`, from `direction` (the way the blow travels), at a point.
@@ -174,7 +158,7 @@ public class TrainingDummy : MonoBehaviour
             flash = Mathf.Max(0f, flash - dt * 6f);
 
             for (int i = 0; i < renderers.Length; i++)
-                ConsumableModel.Tint(renderers[i], Color.Lerp(colours[i], Color.white, flash * 0.6f), Color.white * flash * 0.4f);
+                ModelParts.Tint(renderers[i], Color.Lerp(colours[i], Color.white, flash * 0.6f), Color.white * flash * 0.4f);
         }
 
         while (hits.Count > 0 && Time.time - hits[0].time > DpsWindow)

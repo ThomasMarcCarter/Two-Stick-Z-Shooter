@@ -45,6 +45,22 @@ public class Room : MonoBehaviour
     public Vector2Int GridPosition => cells[0];
     public RoomType Type { get; private set; }
     public string ShapeName { get; private set; }
+
+    // A room type's name on the maps and room labels: "SPAWN", "BLOOD BANK", "COMBAT"...
+    public static string TypeName(RoomType type)
+    {
+        switch (type)
+        {
+            case RoomType.Start: return "SPAWN";
+            case RoomType.Treasure: return "TREASURE";
+            case RoomType.Boss: return "BOSS";
+            case RoomType.Shop: return "SHOP";
+            case RoomType.Cursed: return "CURSED";
+            case RoomType.Blood: return "BLOOD BANK";
+            case RoomType.Secret: return "SECRET";
+            default: return "COMBAT";
+        }
+    }
     public bool Visited { get; private set; }
 
     // On the maps from the start (the Recon upgrade) without having been entered; it still

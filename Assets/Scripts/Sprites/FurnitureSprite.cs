@@ -80,9 +80,6 @@ public class FurnitureSprite : MonoBehaviour
         set => Dusty = value;
     }
 
-    // Whether this piece's second rows are drawn broken rather than dusty.
-    public bool CanBreak => entryName != null && FurnitureDamage.HasBrokenArt(entryName);
-
     // Redrawn as another sheet where it stands now (a chair knocked over), keeping its facing,
     // size and lift. False without a sheet for the name.
     public bool Swap(string name)

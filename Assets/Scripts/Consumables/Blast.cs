@@ -220,7 +220,7 @@ public class Blast : MonoBehaviour
             float size = t < 0.15f ? Mathf.Lerp(0.4f, full, t / 0.15f) : Mathf.Lerp(full, 0f, (t - 0.15f) / 0.85f);
             ball.localScale = Vector3.one * size;
             Color heat = Color.Lerp(settings.HotColour, settings.CoolColour, t);
-            ConsumableModel.Tint(ballRenderer, heat * 0.5f, heat * Mathf.Lerp(12f, 1f, t));
+            ModelParts.Tint(ballRenderer, heat * 0.5f, heat * Mathf.Lerp(12f, 1f, t));
         }
 
         flash.intensity = Mathf.Lerp(18f, 0f, Mathf.Sqrt(t)) * Mathf.Clamp01(settings.Radius / 3.5f);

@@ -43,7 +43,7 @@ public class MaterialPickup : MonoBehaviour
         pickup.visual.localPosition = Vector3.up * 0.3f;
         pickup.visual.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         pickup.bobOffset = Random.value * 10f;
-        AddGlow(root.transform, Materials.Colour(type));
+        FloorPickups.AddGlow(root.transform, Materials.Colour(type));
         pickup.label = PickupLabel.Create(root.transform, 1.5f);
         pickup.label.Compactable = true;
         ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Material(type), true);
@@ -134,50 +134,9 @@ public class MaterialPickup : MonoBehaviour
     private static void Part(Transform parent, PrimitiveType shape, Vector3 position, Vector3 size, Quaternion rotation,
         Material material, Color colour, Color emission)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = position;
-        part.transform.localRotation = rotation;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        if (material != null)
-        {
-            renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, emission);
-        }
+        ModelParts.Part(parent, null, shape, position, size, material, colour, emission, rotation);
     }
 
-    // A soft disc of its colour beneath it, like ammo, so it shows up in the dark.
-    private static void AddGlow(Transform root, Color colour)
-    {
-        AmmoVisuals visuals = AmmoVisuals.Current;
-
-        if (visuals == null || visuals.glowMaterial == null)
-            return;
-
-        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        glow.name = "Glow";
-        Destroy(glow.GetComponent<Collider>());
-        glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
-        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        glow.transform.localScale = Vector3.one * visuals.glowSize;
-
-        Renderer renderer = glow.GetComponent<Renderer>();
-        renderer.sharedMaterial = visuals.glowMaterial;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        Color tint = colour * visuals.glowStrength;
-        tint.a = 0.8f;
-        block.SetColor("_Color", tint);
-        renderer.SetPropertyBlock(block);
-    }
 
     private void Update()
     {

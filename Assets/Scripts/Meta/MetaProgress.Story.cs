@@ -71,9 +71,6 @@ public static partial class MetaProgress
         Save();
     }
 
-    // Times the game's been finished: everyone flown out in the evac chopper (EvacSequence).
-    public static int Evacs => Data.evacs;
-
     public static void RecordEvac()
     {
         Data.evacs++;

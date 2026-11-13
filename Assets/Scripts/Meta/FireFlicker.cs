@@ -28,7 +28,7 @@ public class FireFlicker : MonoBehaviour
 
         if (flame != null)
         {
-            ConsumableModel.Tint(flame, new Color(1f, 0.5f, 0.15f), new Color(1f, 0.45f, 0.1f) * (1.5f + 2f * n));
+            ModelParts.Tint(flame, new Color(1f, 0.5f, 0.15f), new Color(1f, 0.45f, 0.1f) * (1.5f + 2f * n));
             flame.transform.localScale = new Vector3(0.5f, 0.12f + 0.08f * m, 0.5f);
         }
     }

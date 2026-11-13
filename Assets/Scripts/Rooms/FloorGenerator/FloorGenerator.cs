@@ -352,8 +352,6 @@ public partial class FloorGenerator : MonoBehaviour
             return fallbackDrops;
         }
     }
-    public Vector2 RoomSize => roomSize;
-    public float WallThickness => wallThickness;
 
     // Distance between the centres of neighbouring cells.
     public Vector2 CellStep => roomSize + Vector2.one * (wallThickness * 2f + corridorLength);

@@ -324,7 +324,7 @@ public class FullscreenMap : MonoBehaviour
         text.AppendLine("ROOM DATA");
         text.AppendLine();
         text.AppendLine(sector);
-        text.AppendLine($"TYPE      {room.DisplayName ?? TypeName(room.Type)}");
+        text.AppendLine($"TYPE      {room.DisplayName ?? Room.TypeName(room.Type)}");
         text.AppendLine($"STATUS    {status}");
         text.AppendLine($"HOSTILES  {room.Enemies.Count}");
         text.AppendLine();
@@ -394,20 +394,5 @@ public class FullscreenMap : MonoBehaviour
         string ammo = gun != null ? $"  {pickup.GetStoredAmmo()}/{gun.GetMagazineSize()} RDS" : "";
 
         return Gun.DisplayName(weapon) + ammo;
-    }
-
-    private static string TypeName(RoomType type)
-    {
-        switch (type)
-        {
-            case RoomType.Start: return "SPAWN";
-            case RoomType.Treasure: return "TREASURE";
-            case RoomType.Boss: return "BOSS";
-            case RoomType.Shop: return "SHOP";
-            case RoomType.Cursed: return "CURSED";
-            case RoomType.Blood: return "BLOOD BANK";
-            case RoomType.Secret: return "SECRET";
-            default: return "COMBAT";
-        }
     }
 }

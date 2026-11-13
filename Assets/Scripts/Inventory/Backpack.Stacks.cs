@@ -5,6 +5,46 @@ using UnityEngine;
 // up and taken across every stack of its type.
 public partial class Backpack
 {
+    // ---------- Shared ----------
+
+    // Tops up the stacks `isStack` picks (in cell order, up to `size` each), then, if allowed,
+    // starts new ones made by `newStack(amount)`. Returns how many went in.
+    private int AddStacked(int amount, int size, bool newStacks, Func<Item, bool> isStack, Func<int, Item> newStack)
+    {
+        int left = Mathf.Max(0, amount);
+
+        for (int i = 0; i < CellCount && left > 0; i++)
+        {
+            Item item = cells[i];
+
+            if (!isStack(item) || item.Amount >= size)
+                continue;
+
+            int add = Mathf.Min(left, size - item.Amount);
+            item.Amount += add;
+            left -= add;
+        }
+
+        while (newStacks && left > 0)
+        {
+            int free = FirstFree();
+
+            if (free < 0)
+                break;
+
+            int add = Mathf.Min(left, size);
+            cells[free] = newStack(add);
+            left -= add;
+        }
+
+        int added = Mathf.Max(0, amount) - left;
+
+        if (added > 0)
+            Touched();
+
+        return added;
+    }
+
     // ---------- Ammo ----------
 
     public int AmmoCount(AmmoType type)
@@ -44,39 +84,8 @@ public partial class Backpack
     // Returns how many rounds went in.
     public int AddAmmo(AmmoType type, int amount, bool newStacks)
     {
-        int size = StackSize(type);
-        int left = Mathf.Max(0, amount);
-
-        for (int i = 0; i < CellCount && left > 0; i++)
-        {
-            Item item = cells[i];
-
-            if (!IsStack(item, type) || item.Amount >= size)
-                continue;
-
-            int add = Mathf.Min(left, size - item.Amount);
-            item.Amount += add;
-            left -= add;
-        }
-
-        while (newStacks && left > 0)
-        {
-            int free = FirstFree();
-
-            if (free < 0)
-                break;
-
-            int add = Mathf.Min(left, size);
-            cells[free] = new Item { Kind = ItemKind.Ammo, AmmoType = type, Amount = add };
-            left -= add;
-        }
-
-        int added = Mathf.Max(0, amount) - left;
-
-        if (added > 0)
-            Touched();
-
-        return added;
+        return AddStacked(amount, StackSize(type), newStacks, item => IsStack(item, type),
+            add => new Item { Kind = ItemKind.Ammo, AmmoType = type, Amount = add });
     }
 
     // Takes from the emptiest stacks first, so part-used stacks are used up before full ones
@@ -152,39 +161,8 @@ public partial class Backpack
     // Returns how many went in.
     public int AddConsumable(ConsumableType type, int amount, bool newStacks)
     {
-        int size = ConsumableInfo.StackSize(type);
-        int left = Mathf.Max(0, amount);
-
-        for (int i = 0; i < CellCount && left > 0; i++)
-        {
-            Item item = cells[i];
-
-            if (!IsStack(item, type) || item.Amount >= size)
-                continue;
-
-            int add = Mathf.Min(left, size - item.Amount);
-            item.Amount += add;
-            left -= add;
-        }
-
-        while (newStacks && left > 0)
-        {
-            int free = FirstFree();
-
-            if (free < 0)
-                break;
-
-            int add = Mathf.Min(left, size);
-            cells[free] = new Item { Kind = ItemKind.Consumable, Consumable = type, Amount = add };
-            left -= add;
-        }
-
-        int added = Mathf.Max(0, amount) - left;
-
-        if (added > 0)
-            Touched();
-
-        return added;
+        return AddStacked(amount, ConsumableInfo.StackSize(type), newStacks, item => IsStack(item, type),
+            add => new Item { Kind = ItemKind.Consumable, Consumable = type, Amount = add });
     }
 
     // Uses one up, from the emptiest stack, so a part-used stack goes first. False if there
@@ -241,38 +219,8 @@ public partial class Backpack
     // Tops up the stacks already there, then starts new ones in free cells. Returns how many went in.
     public int AddMaterial(MaterialType type, int amount)
     {
-        int left = Mathf.Max(0, amount);
-
-        for (int i = 0; i < CellCount && left > 0; i++)
-        {
-            Item item = cells[i];
-
-            if (!IsStack(item, type) || item.Amount >= Materials.StackSize)
-                continue;
-
-            int add = Mathf.Min(left, Materials.StackSize - item.Amount);
-            item.Amount += add;
-            left -= add;
-        }
-
-        while (left > 0)
-        {
-            int free = FirstFree();
-
-            if (free < 0)
-                break;
-
-            int add = Mathf.Min(left, Materials.StackSize);
-            cells[free] = new Item { Kind = ItemKind.Material, Material = type, Amount = add };
-            left -= add;
-        }
-
-        int added = Mathf.Max(0, amount) - left;
-
-        if (added > 0)
-            Touched();
-
-        return added;
+        return AddStacked(amount, Materials.StackSize, true, item => IsStack(item, type),
+            add => new Item { Kind = ItemKind.Material, Material = type, Amount = add });
     }
 
     // Empties out every material stack (sent home, or lost). Returns what was taken, indexed by

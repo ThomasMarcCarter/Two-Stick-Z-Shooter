@@ -41,7 +41,7 @@ public class ArmorPlatePickup : MonoBehaviour
         if (ConsumablePickup.DefaultMaterial != null)
         {
             renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-            ConsumableModel.Tint(renderer, RunItems.PlateColour, RunItems.PlateColour * 0.5f);
+            ModelParts.Tint(renderer, RunItems.PlateColour, RunItems.PlateColour * 0.5f);
         }
     }
 

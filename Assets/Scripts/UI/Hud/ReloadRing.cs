@@ -15,21 +15,9 @@ public class ReloadRing : MaskableGraphic
             return;
 
         canvasRenderer.cull = !GameFlow.ShowCrosshair;
-        FollowMouse();
+        Crosshair.FollowPointer(rectTransform, canvas);
 
         SetVerticesDirty();
-    }
-
-    private void FollowMouse()
-    {
-        RectTransform parent = (RectTransform)rectTransform.parent;
-        Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-        Vector2 screenPoint = GameInput.Pointer;
-
-        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, screenPoint, uiCamera, out Vector3 worldPoint))
-        {
-            rectTransform.position = worldPoint;
-        }
     }
 
     protected override void OnPopulateMesh(VertexHelper vh)

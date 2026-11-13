@@ -181,7 +181,7 @@ public class CagedSurvivor : MonoBehaviour, FloorPickups.IPickup
         {
             Renderer renderer = part.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, Color.black);
+            ModelParts.Tint(renderer, colour, Color.black);
         }
     }
 

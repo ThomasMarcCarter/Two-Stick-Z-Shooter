@@ -113,7 +113,7 @@ public class BossCaptain : MonoBehaviour, IBossMoves
         if (ConsumablePickup.DefaultMaterial != null)
         {
             renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-            ConsumableModel.Tint(renderer, new Color(0.3f, 0.3f, 0.32f), new Color(1f, 0.4f, 0.1f) * 0.5f);
+            ModelParts.Tint(renderer, new Color(0.3f, 0.3f, 0.32f), new Color(1f, 0.4f, 0.1f) * 0.5f);
         }
 
         for (float t = 0f; t < dropTime; t += Time.deltaTime)

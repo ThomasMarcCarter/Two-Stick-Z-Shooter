@@ -30,8 +30,6 @@ public class EnemyVoice : MonoBehaviour
         nextGroan = Time.time + Random.Range(0.5f, aliveInterval.y);
     }
 
-    public ZombieSoundPack Pack => pack;
-
     private void Awake()
     {
         enemy = GetComponent<Enemy>();

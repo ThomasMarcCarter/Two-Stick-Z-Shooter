@@ -6,9 +6,6 @@ using UnityEngine;
 // middle; size 1 is pickup size.
 public static class ConsumableModel
 {
-    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-
     public static Transform Build(ConsumableType type, Transform parent, Material material, float scale = 1f)
     {
         GameObject root = new GameObject("Model");
@@ -95,33 +92,7 @@ public static class ConsumableModel
     private static void Part(Transform parent, PrimitiveType shape, Vector3 localPosition, Vector3 size, Material material,
         Color baseColour, Color emission, Quaternion? rotation = null)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        part.name = shape.ToString();
-        Object.Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(parent, false);
-        part.transform.localPosition = localPosition;
-        part.transform.localRotation = rotation ?? Quaternion.identity;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        if (material == null)
-            return;
-
-        renderer.sharedMaterial = material;
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        block.SetColor(BaseColorId, baseColour);
-        block.SetColor(EmissionColorId, emission);
-        renderer.SetPropertyBlock(block);
+        ModelParts.Part(parent, shape.ToString(), shape, localPosition, size, material, baseColour, emission, rotation);
     }
 
-    // Lit and emissive in a colour, for the effects (blasts, fire) built from the same material.
-    public static void Tint(Renderer renderer, Color baseColour, Color emission)
-    {
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        block.SetColor(BaseColorId, baseColour);
-        block.SetColor(EmissionColorId, emission);
-        renderer.SetPropertyBlock(block);
-    }
 }

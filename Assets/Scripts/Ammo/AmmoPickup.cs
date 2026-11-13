@@ -104,7 +104,7 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
             foreach (Collider part in model.GetComponentsInChildren<Collider>())
                 Object.Destroy(part);
 
-            AddGlow(root.transform, type, visuals, crate);
+            FloorPickups.AddGlow(root.transform, AmmoInfo.Colour(type), crate ? 1.4f : 1f);
         }
         else
         {
@@ -166,31 +166,6 @@ public class AmmoPickup : MonoBehaviour, FloorPickups.IPickup
         FloorPickups.Unregister(this);
     }
 
-    // A soft disc of the ammo's colour on the floor beneath it, so it shows up in the dark.
-    private static void AddGlow(Transform root, AmmoType type, AmmoVisuals visuals, bool crate)
-    {
-        if (visuals.glowMaterial == null)
-            return;
-
-        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        glow.name = "Glow";
-        Object.Destroy(glow.GetComponent<Collider>());
-        glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
-        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        glow.transform.localScale = Vector3.one * visuals.glowSize * (crate ? 1.4f : 1f);
-
-        Renderer renderer = glow.GetComponent<Renderer>();
-        renderer.sharedMaterial = visuals.glowMaterial;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        Color colour = AmmoInfo.Colour(type) * visuals.glowStrength;
-        colour.a = 0.8f;
-        block.SetColor("_Color", colour);
-        renderer.SetPropertyBlock(block);
-    }
 
     private void Update()
     {

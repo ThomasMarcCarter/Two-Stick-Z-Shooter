@@ -44,7 +44,7 @@ public class AcidGlob : MonoBehaviour
             if (ConsumablePickup.DefaultMaterial != null)
             {
                 renderer.sharedMaterial = ConsumablePickup.DefaultMaterial;
-                ConsumableModel.Tint(renderer, new Color(0.3f, 0.6f, 0.05f), Acid * 3f);
+                ModelParts.Tint(renderer, new Color(0.3f, 0.6f, 0.05f), Acid * 3f);
             }
         }
 

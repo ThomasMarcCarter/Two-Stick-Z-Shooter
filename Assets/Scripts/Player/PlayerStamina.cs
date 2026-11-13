@@ -33,9 +33,6 @@ public class PlayerStamina : MonoBehaviour
     public bool Boosted => Time.time < boostUntil;
     public float BoostLeft => Mathf.Max(0f, boostUntil - Time.time);
 
-    // Seconds until refilling starts (0 while refilling or full).
-    public float RegenWait => Mathf.Max(0f, regenStartTime - Time.time);
-
     // Sprinting costs nothing outside a fight (no room locked with the player in it).
     public bool InCombat
     {

@@ -413,14 +413,6 @@ public static partial class MetaProgress
         AddMaterials(amounts);
     }
 
-    // Debug: a completed run on the record (unlocks survivors' signals).
-    public static void AddVictory()
-    {
-        Data.victories++;
-        Save();
-        Changed?.Invoke();
-    }
-
     // Debug: every survivor freed.
     public static void RescueAll()
     {

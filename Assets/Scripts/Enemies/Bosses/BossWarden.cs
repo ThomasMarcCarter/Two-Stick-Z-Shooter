@@ -44,9 +44,6 @@ public class BossWarden : MonoBehaviour, IBossMoves
     public float MoveProgress => Stunned ? Mathf.Clamp01(1f - (stunnedUntil - Time.time) / StunTime)
         : whistleAt >= 0f ? Mathf.Clamp01(1f - (whistleAt - Time.time) / WhistleWindUp) : 0f;
 
-    // Which way the shield faces (flat).
-    public Vector3 ShieldFacing => shieldFacing;
-
     public void Configure(Func<Vector3, EnemyKind, Enemy> spawn)
     {
         spawnMinion = spawn;

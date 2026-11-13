@@ -67,7 +67,7 @@ public class ConsumablePickup : MonoBehaviour, FloorPickups.IPickup
         pickup.visual.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         pickup.bobOffset = Random.value * 10f;
         pickup.reach = trigger.radius + 0.6f;
-        AddGlow(root.transform, type);
+        FloorPickups.AddGlow(root.transform, ConsumableInfo.Colour(type));
         pickup.label = PickupLabel.Create(root.transform, 1.6f);
         pickup.label.Compactable = true;
         ItemSprite.Apply(root, SpriteVisuals.Current != null ? SpriteVisuals.Current.items : null, ItemSprites.Consumable(type), true);
@@ -82,33 +82,6 @@ public class ConsumablePickup : MonoBehaviour, FloorPickups.IPickup
         return pickup;
     }
 
-    // A soft disc of its colour on the floor beneath it, like ammo, so it shows up in the dark.
-    private static void AddGlow(Transform root, ConsumableType type)
-    {
-        AmmoVisuals visuals = AmmoVisuals.Current;
-
-        if (visuals == null || visuals.glowMaterial == null)
-            return;
-
-        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        glow.name = "Glow";
-        Destroy(glow.GetComponent<Collider>());
-        glow.transform.SetParent(root, false);
-        glow.transform.localPosition = Vector3.up * FloorPickups.GlowHeight;
-        glow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        glow.transform.localScale = Vector3.one * visuals.glowSize;
-
-        Renderer renderer = glow.GetComponent<Renderer>();
-        renderer.sharedMaterial = visuals.glowMaterial;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-        Color colour = ConsumableInfo.Colour(type) * visuals.glowStrength;
-        colour.a = 0.8f;
-        block.SetColor("_Color", colour);
-        renderer.SetPropertyBlock(block);
-    }
 
     private void OnEnable()
     {

@@ -86,24 +86,7 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
     private Renderer Part(string name, PrimitiveType shape, Vector3 position, Vector3 size, Material material, Color colour,
         Quaternion? rotation = null)
     {
-        GameObject part = GameObject.CreatePrimitive(shape);
-        part.name = name;
-        Destroy(part.GetComponent<Collider>());
-        part.transform.SetParent(transform, false);
-        part.transform.localPosition = position;
-        part.transform.localRotation = rotation ?? Quaternion.identity;
-        part.transform.localScale = size;
-
-        Renderer renderer = part.GetComponent<Renderer>();
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        if (material != null)
-        {
-            renderer.sharedMaterial = material;
-            ConsumableModel.Tint(renderer, colour, colour);
-        }
-
-        return renderer;
+        return ModelParts.Part(transform, name, shape, position, size, material, colour, colour, rotation);
     }
 
     private void OnEnable()
@@ -149,12 +132,12 @@ public class UplinkTerminal : MonoBehaviour, FloorPickups.IPickup
         float flicker = 0.85f + Mathf.PerlinNoise(Time.time * 6f, 0.3f) * 0.3f;
 
         if (screen != null)
-            ConsumableModel.Tint(screen, ScreenColour * 0.3f, ScreenColour * (0.6f * flicker + flash * 1.5f));
+            ModelParts.Tint(screen, ScreenColour * 0.3f, ScreenColour * (0.6f * flicker + flash * 1.5f));
 
         if (beacon != null)
         {
             bool on = Mathf.Repeat(Time.time, sinceSend < 1.5f ? 0.25f : 1.2f) < 0.12f;
-            ConsumableModel.Tint(beacon, BeaconColour, on ? BeaconColour * 3f : Color.black);
+            ModelParts.Tint(beacon, BeaconColour, on ? BeaconColour * 3f : Color.black);
         }
 
         if (lamp != null)

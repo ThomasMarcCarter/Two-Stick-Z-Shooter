@@ -15,33 +15,10 @@ public partial class ZoneExit
 
     private IEnumerator GoIn(Transform player, Action done)
     {
-        Descending = true;
-        Rigidbody body = player.GetComponent<Rigidbody>();
-        bool gravity = body != null && body.useGravity;
-
-        if (body != null)
-        {
-            body.useGravity = false;
-            body.detectCollisions = false;
-            body.linearVelocity = Vector3.zero;
-        }
+        Rigidbody body = TakeControl(player);
 
         float rest = player.position.y;
         Vector3 Local(float x, float y, float z) => transform.TransformPoint(new Vector3(x, 0f, z)) + Vector3.up * (rest + y);
-
-        restore = () =>
-        {
-            if (player == null)
-                return;
-
-            if (body != null)
-            {
-                body.useGravity = gravity;
-                body.detectCollisions = true;
-            }
-
-            Show(player, true);
-        };
 
         yield return Move(player, body, new Vector3(Entry.x, rest, Entry.z), WalkSpeed);
 
@@ -89,6 +66,40 @@ public partial class ZoneExit
     // sinking through the floor, then `done` (the floor transition). Run on the hatch's FloorExit.
     public static IEnumerator ClimbDown(Transform player, Vector3 hatch, Action done)
     {
+        Rigidbody body = TakeControl(player);
+
+        float rest = player.position.y;
+        yield return Move(player, body, new Vector3(hatch.x, rest, hatch.z - 0.2f), WalkSpeed);
+        Climbing = true;
+        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), hatch, 0.35f, 1.3f);
+        yield return Move(player, body, new Vector3(hatch.x, rest - 1.8f, hatch.z - 0.2f), 1.5f);
+        Show(player, false);
+        yield return new WaitForSeconds(0.2f);
+        done?.Invoke();
+    }
+
+    // Out through a hideout's doors (HideoutDoor): the player walks up to them, they open (the
+    // shutter rolls up; automatic doors are open already), the player goes on through and is
+    // hidden past them, they shut behind, then `done` (the transition).
+    public static IEnumerator WalkOut(Transform player, Vector3 entry, HideoutDoor door, Action done)
+    {
+        Rigidbody body = TakeControl(player);
+
+        float rest = player.position.y;
+        yield return Move(player, body, new Vector3(entry.x, rest, entry.z), WalkSpeed);
+        door.Open();
+        yield return new WaitForSeconds(door.OpenTime);
+        yield return Move(player, body, new Vector3(door.Inside.x, rest, door.Inside.z), WalkSpeed * 0.8f);
+        Show(player, false);
+        door.Shut();
+        yield return new WaitForSeconds(0.7f);
+        done?.Invoke();
+    }
+
+    // The player's body taken over for a scripted walk (no gravity, no collisions) until
+    // FinishDescent puts it back and shows them again.
+    private static Rigidbody TakeControl(Transform player)
+    {
         Descending = true;
         Rigidbody body = player.GetComponent<Rigidbody>();
         bool gravity = body != null && body.useGravity;
@@ -116,55 +127,7 @@ public partial class ZoneExit
             Show(player, true);
         };
 
-        float rest = player.position.y;
-        yield return Move(player, body, new Vector3(hatch.x, rest, hatch.z - 0.2f), WalkSpeed);
-        Climbing = true;
-        SoundFX.PlayAt(SoundFX.Pick(SoundFX.Clips("metal.clank", 3, ProceduralAudio.MetalClank)), hatch, 0.35f, 1.3f);
-        yield return Move(player, body, new Vector3(hatch.x, rest - 1.8f, hatch.z - 0.2f), 1.5f);
-        Show(player, false);
-        yield return new WaitForSeconds(0.2f);
-        done?.Invoke();
-    }
-
-    // Out through a hideout's doors (HideoutDoor): the player walks up to them, they open (the
-    // shutter rolls up; automatic doors are open already), the player goes on through and is
-    // hidden past them, they shut behind, then `done` (the transition).
-    public static IEnumerator WalkOut(Transform player, Vector3 entry, HideoutDoor door, Action done)
-    {
-        Descending = true;
-        Rigidbody body = player.GetComponent<Rigidbody>();
-        bool gravity = body != null && body.useGravity;
-
-        if (body != null)
-        {
-            body.useGravity = false;
-            body.detectCollisions = false;
-            body.linearVelocity = Vector3.zero;
-        }
-
-        restore = () =>
-        {
-            if (player == null)
-                return;
-
-            if (body != null)
-            {
-                body.useGravity = gravity;
-                body.detectCollisions = true;
-            }
-
-            Show(player, true);
-        };
-
-        float rest = player.position.y;
-        yield return Move(player, body, new Vector3(entry.x, rest, entry.z), WalkSpeed);
-        door.Open();
-        yield return new WaitForSeconds(door.OpenTime);
-        yield return Move(player, body, new Vector3(door.Inside.x, rest, door.Inside.z), WalkSpeed * 0.8f);
-        Show(player, false);
-        door.Shut();
-        yield return new WaitForSeconds(0.7f);
-        done?.Invoke();
+        return body;
     }
 
     // The player's body moved by hand to a point at a speed (metres a second).
